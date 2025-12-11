@@ -172,3 +172,59 @@
     color: #1565c0;
   }
 }
+
+// Tab Navigation Styles
+.invoice-tabs {
+  margin-top: 16px;
+
+  ::ng-deep {
+    .mat-mdc-tab-group {
+      --mdc-tab-indicator-active-indicator-color: #1976d2;
+    }
+
+    .mat-mdc-tab {
+      &.mdc-tab--active {
+        .mdc-tab__text-label {
+          color: #1976d2;
+        }
+      }
+    }
+  }
+
+  .tab-icon {
+    margin-right: 8px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.tab-content {
+  padding: 24px 16px;
+  min-height: 400px;
+
+  &.history-tab-content {
+    padding: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+}
+
+// Responsive adjustments for tabs
+@media (max-width: 768px) {
+  .invoice-tabs {
+    ::ng-deep .mat-mdc-tab {
+      min-width: 120px;
+
+      .tab-icon {
+        display: none;
+      }
+    }
+  }
+
+  .tab-content {
+    padding: 16px 8px;
+  }
+}

@@ -255,3 +255,54 @@ public class PageRequest
     public bool SortDescending { get; set; } = false;
     public string? SearchTerm { get; set; }
 }
+
+// Invoice History DTOs
+public class InvoiceHistoryDto
+{
+    public int Id { get; set; }
+    public int InvoiceId { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string ActionType { get; set; } = string.Empty;
+    public string ActionSource { get; set; } = string.Empty;
+    public string? OldStatus { get; set; }
+    public string? NewStatus { get; set; }
+    public Dictionary<string, object>? FieldChanges { get; set; }
+    public string? Comments { get; set; }
+    public string? PolicyReference { get; set; }
+    public string? SystemReason { get; set; }
+    public UserDto? ChangedByUser { get; set; }
+    public DateTime ChangedAt { get; set; }
+    public string? ImportChannel { get; set; }
+    public string DisplayIcon { get; set; } = string.Empty; // For UI rendering
+    public string DisplayColor { get; set; } = string.Empty; // For UI rendering
+}
+
+public class FieldChangeDto
+{
+    public string FieldName { get; set; } = string.Empty;
+    public string? OldValue { get; set; }
+    public string? NewValue { get; set; }
+    public string DisplayName { get; set; } = string.Empty;
+}
+
+public class CreateHistoryEntryDto
+{
+    public int InvoiceId { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string ActionType { get; set; } = string.Empty;
+    public string ActionSource { get; set; } = string.Empty;
+    public string? OldStatus { get; set; }
+    public string? NewStatus { get; set; }
+    public List<FieldChangeDto>? FieldChanges { get; set; }
+    public string? Comments { get; set; }
+    public string? PolicyReference { get; set; }
+    public string? SystemReason { get; set; }
+    public int? ChangedBy { get; set; }
+    public string? ImportChannel { get; set; }
+}
+
+public class InvoiceHistoryTimelineDto
+{
+    public string Date { get; set; } = string.Empty; // "HEUTE", "GESTERN", "10. DEZEMBER 2023"
+    public List<InvoiceHistoryDto> Entries { get; set; } = new List<InvoiceHistoryDto>();
+}

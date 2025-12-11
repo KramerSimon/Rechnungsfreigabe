@@ -45,7 +45,63 @@ public class MappingProfile : Profile
         // Approval Workflow mappings
         CreateMap<ApprovalWorkflow, ApprovalWorkflowDto>();
 
+        // Invoice History mappings  
+        CreateMap<InvoiceHistory, InvoiceHistoryDto>()
+            .ForMember(dest => dest.ActionType, opt => opt.MapFrom(src => src.ActionType.ToString()))
+            .ForMember(dest => dest.ActionSource, opt => opt.MapFrom(src => src.ActionSource.ToString()))
+            .ForMember(dest => dest.FieldChanges, opt => opt.MapFrom(src => ParseFieldChanges(src.FieldChanges)))
+            .ForMember(dest => dest.DisplayIcon, opt => opt.MapFrom(src => GetDisplayIcon(src.ActionType, src.ActionSource)))
+            .ForMember(dest => dest.DisplayColor, opt => opt.MapFrom(src => GetDisplayColor(src.ActionType, src.ActionSource)));
+
         // Notification mappings
         CreateMap<Notification, NotificationDto>();
+    }
+
+    private static string GetDisplayIcon(HistoryActionType actionType, HistoryActionSource actionSource)
+    {
+        return actionType switch
+        {
+            HistoryActionType.Created => "+",
+            HistoryActionType.Approved => "✓",
+            HistoryActionType.Rejected => "✗",
+            HistoryActionType.Escalated => "!",
+            HistoryActionType.Assigned => "@", 
+            HistoryActionType.DataCompleted => "✎",
+            HistoryActionType.PaymentInitiated => "€",
+            HistoryActionType.PolicyTriggered => "⚙",
+            HistoryActionType.SystemAction => "🤖",
+            _ => "•"
+        };
+    }
+
+    private static string GetDisplayColor(HistoryActionType actionType, HistoryActionSource actionSource)
+    {
+        return actionSource switch
+        {
+            HistoryActionSource.System => "#6c757d", // gray
+            HistoryActionSource.Escalation => "#dc3545", // red
+            _ => actionType switch
+            {
+                HistoryActionType.Approved => "#28a745", // green
+                HistoryActionType.Rejected => "#dc3545", // red
+                HistoryActionType.PaymentInitiated => "#007bff", // blue
+                _ => "#495057" // dark gray
+            }
+        };
+    }
+
+    private static Dictionary<string, object>? ParseFieldChanges(string? fieldChanges)
+    {
+        if (string.IsNullOrEmpty(fieldChanges))
+            return null;
+        
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(fieldChanges);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

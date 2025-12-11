@@ -1,0 +1,138 @@
+<!-- Invoice History Timeline Header -->
+<div class="timeline-header">
+  <h2 class="timeline-title">
+    Rechnung {{invoiceNumber}} - Historie & Aktivitäten
+  </h2>
+  <div class="timeline-actions">
+    <button mat-raised-button color="primary" (click)="onExportPdf()" [disabled]="isLoading">
+      <mat-icon>picture_as_pdf</mat-icon>
+      Export als PDF
+    </button>
+    <button mat-icon-button (click)="refresh()" matTooltip="Aktualisieren" [disabled]="isLoading">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="isLoading" class="loading-container">
+  <mat-icon class="loading-icon">history</mat-icon>
+  <p>Historie wird geladen...</p>
+</div>
+
+<!-- Error State -->
+<div *ngIf="error && !isLoading" class="error-container">
+  <mat-icon color="warn">error</mat-icon>
+  <p>{{error}}</p>
+  <button mat-button color="primary" (click)="refresh()">
+    <mat-icon>refresh</mat-icon>
+    Erneut versuchen
+  </button>
+</div>
+
+<!-- Timeline Content -->
+<div *ngIf="!isLoading && !error" class="timeline-container">
+  <div *ngFor="let timelineGroup of timeline" class="timeline-group">
+
+    <!-- Date Header -->
+    <div class="timeline-date-header">
+      <h3 class="timeline-date">{{timelineGroup.date}}</h3>
+    </div>
+
+    <!-- Timeline Entries -->
+    <div class="timeline-entries">
+      <div *ngFor="let entry of timelineGroup.entries; let last = last" class="timeline-entry"
+           [class.system-entry]="isSystemAction(entry)"
+           [class.escalation-entry]="isEscalationEntry(entry)"
+           [class.last-entry]="last">
+
+        <!-- Timeline Icon -->
+        <div class="timeline-icon-container">
+          <div class="timeline-icon"
+               [style.background-color]="getEntryColor(entry)"
+               [class.escalation-icon]="isEscalationEntry(entry)">
+            {{getEntryIcon(entry)}}
+          </div>
+          <div *ngIf="!last" class="timeline-line"></div>
+        </div>
+
+        <!-- Entry Content -->
+        <div class="timeline-content">
+
+          <!-- Entry Header -->
+          <div class="entry-header">
+            <div class="entry-time-action">
+              <span class="entry-time">{{getTimeForDisplay(entry)}} Uhr</span>
+              <span class="entry-separator">|</span>
+              <span class="entry-action" [class.escalation-action]="isEscalationEntry(entry)">
+                {{getActionDescription(entry)}}
+                <span *ngIf="isEscalationEntry(entry)" class="escalation-badge">(!)</span>
+              </span>
+              <span class="entry-icon-badge">{{getEntryIcon(entry)}}</span>
+            </div>
+          </div>
+
+          <!-- Entry Details -->
+          <div class="entry-details">
+            <!-- User Information -->
+            <div class="entry-user" [class.system-user]="isSystemAction(entry)">
+              Benutzer: {{getUserDisplayName(entry)}}
+              <span *ngIf="entry.changedByUser && !isSystemAction(entry)" class="user-role">
+                ({{entry.changedByUser.username}})
+              </span>
+            </div>
+
+            <!-- Comments -->
+            <div *ngIf="entry.comments" class="entry-comments">
+              Kommentar: "{{entry.comments}}"
+            </div>
+
+            <!-- Contextual Information -->
+            <div *ngFor="let info of getContextualInfo(entry)" class="entry-context">
+              {{info}}
+            </div>
+
+            <!-- Field Changes Expansion Panel -->
+            <mat-expansion-panel *ngIf="hasFieldChanges(entry)" class="field-changes-panel">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  Änderungsdetails anzeigen
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+
+              <div class="field-changes-table">
+                <div class="field-changes-header">
+                  <div class="field-col">Feld</div>
+                  <div class="old-value-col">Alt</div>
+                  <div class="new-value-col">Neu</div>
+                </div>
+                <div class="field-changes-divider"></div>
+                <div *ngFor="let change of getFieldChanges(entry)" class="field-change-row">
+                  <div class="field-col">{{change.displayName}}</div>
+                  <div class="old-value-col">{{change.oldValue}}</div>
+                  <div class="new-value-col">{{change.newValue}}</div>
+                </div>
+              </div>
+            </mat-expansion-panel>
+
+            <!-- Additional System Information -->
+            <div *ngIf="entry.policyReference && isSystemAction(entry)" class="system-policy">
+              Regel: {{entry.policyReference}}
+            </div>
+
+            <div *ngIf="entry.systemReason && isSystemAction(entry)" class="system-reason">
+              Grund: {{entry.systemReason}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="timeline.length === 0" class="empty-state">
+    <mat-icon class="empty-icon">history</mat-icon>
+    <h3>Keine Historie verfügbar</h3>
+    <p>Für diese Rechnung sind noch keine Aktivitäten aufgezeichnet.</p>
+  </div>
+</div>

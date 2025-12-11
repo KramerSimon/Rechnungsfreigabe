@@ -105,20 +105,27 @@ public class UserRole
 public class CostCenter
 {
     [StringLength(20)]
+    [Column("id")]
     public string Id { get; set; } = string.Empty;
 
     [Required]
     [StringLength(100)]
+    [Column("name")]
     public string Name { get; set; } = string.Empty;
 
+    [Column("description")]
     public string? Description { get; set; }
 
+    [Column("manager_id")]
     public int? ManagerId { get; set; }
 
-    [Column(TypeName = "decimal(12,2)")]
+    [Column("budget", TypeName = "decimal(12,2)")]
     public decimal Budget { get; set; } = 0;
 
+    [Column("is_active")]
     public bool IsActive { get; set; } = true;
+    
+    [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
@@ -131,29 +138,41 @@ public class CostCenter
 public class Project
 {
     [StringLength(20)]
+    [Column("id")]
     public string Id { get; set; } = string.Empty;
 
     [Required]
     [StringLength(100)]
+    [Column("name")]
     public string Name { get; set; } = string.Empty;
 
+    [Column("description")]
     public string? Description { get; set; }
 
     [Required]
     [StringLength(20)]
+    [Column("cost_center_id")]
     public string CostCenterId { get; set; } = string.Empty;
 
-    [Column(TypeName = "decimal(12,2)")]
+    [Column("budget", TypeName = "decimal(12,2)")]
     public decimal Budget { get; set; } = 0;
 
-    [Column(TypeName = "decimal(12,2)")]
+    [Column("spent_amount", TypeName = "decimal(12,2)")]
     public decimal SpentAmount { get; set; } = 0;
 
+    [Column("status")]
     public ProjectStatus Status { get; set; } = ProjectStatus.Geplant;
 
+    [Column("start_date")]
     public DateTime? StartDate { get; set; }
+    
+    [Column("end_date")]
     public DateTime? EndDate { get; set; }
+    
+    [Column("project_manager_id")]
     public int? ProjectManagerId { get; set; }
+    
+    [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

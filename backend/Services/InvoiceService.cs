@@ -24,17 +24,20 @@ public class InvoiceService : IInvoiceService
     private readonly ILogger<InvoiceService> _logger;
     private readonly IApprovalService _approvalService;
     private readonly INotificationService _notificationService;
+    private readonly IInvoiceHistoryService _historyService;
 
     public InvoiceService(
         ApplicationDbContext context, 
         ILogger<InvoiceService> logger,
         IApprovalService approvalService,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IInvoiceHistoryService historyService)
     {
         _context = context;
         _logger = logger;
         _approvalService = approvalService;
         _notificationService = notificationService;
+        _historyService = historyService;
     }
 
     public async Task<PagedResult<InvoiceDto>> GetInvoicesPagedAsync(PageRequest pageRequest, int? userId = null)
@@ -148,7 +151,16 @@ public class InvoiceService : IInvoiceService
             }
 
             // Create audit trail entry
-            await CreateInvoiceHistoryAsync(invoice.Id, "Created", null, invoice.Status.ToString(), null, createdBy);
+            await _historyService.CreateHistoryEntryAsync(new CreateHistoryEntryDto
+            {
+                InvoiceId = invoice.Id,
+                Action = "Rechnung importiert",
+                ActionType = HistoryActionType.Created.ToString(),
+                ActionSource = HistoryActionSource.Import.ToString(),
+                NewStatus = invoice.Status.ToString(),
+                ImportChannel = "E-Mail", // Default, can be parameterized later
+                ChangedBy = createdBy
+            });
 
             await transaction.CommitAsync();
 
@@ -240,8 +252,20 @@ public class InvoiceService : IInvoiceService
             // Create audit trail entry if there were changes
             if (changes.Any())
             {
-                var fieldChanges = string.Join(", ", changes);
-                await CreateInvoiceHistoryAsync(id, "Updated", oldStatus, invoice.Status.ToString(), fieldChanges, updatedBy);
+                var fieldChangesList = changes.Select(change => {
+                    var parts = change.Split(':', 2);
+                    var fieldName = parts[0].Trim();
+                    var values = parts.Length > 1 ? parts[1].Split(" -> ") : new[] { "", "" };
+                    return new FieldChangeDto
+                    {
+                        FieldName = fieldName,
+                        DisplayName = GetFieldDisplayName(fieldName),
+                        OldValue = values.Length > 0 ? values[0].Trim() : null,
+                        NewValue = values.Length > 1 ? values[1].Trim() : null
+                    };
+                }).ToList();
+                
+                await _historyService.CreateDataCompletionAsync(invoice.Id, fieldChangesList, updatedBy);
             }
 
             await transaction.CommitAsync();
@@ -350,8 +374,7 @@ public class InvoiceService : IInvoiceService
                 invoice.ProcessedBy = approverId;
                 invoice.UpdatedAt = DateTime.UtcNow;
 
-                await CreateInvoiceHistoryAsync(invoiceId, "Rejected", InvoiceStatus.Freigabe_Erforderlich.ToString(), 
-                    InvoiceStatus.Abgelehnt.ToString(), approveDto.Comments, approverId);
+                await _historyService.CreateApprovalActionAsync(invoiceId, false, approverId, approveDto.Comments);
             }
             else
             {
@@ -366,13 +389,14 @@ public class InvoiceService : IInvoiceService
                     invoice.ProcessedBy = approverId;
                     invoice.UpdatedAt = DateTime.UtcNow;
 
-                    await CreateInvoiceHistoryAsync(invoiceId, "Approved", InvoiceStatus.Freigabe_Erforderlich.ToString(), 
-                        InvoiceStatus.Freigegeben.ToString(), approveDto.Comments, approverId);
+                    await _historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
                 }
                 else
                 {
-                    await CreateInvoiceHistoryAsync(invoiceId, "Partially Approved", null, null, 
-                        approveDto.Comments, approverId);
+                    var totalSteps = allWorkflows.Count;
+                    var currentStep = pendingWorkflow.StepNumber;
+                    await _historyService.CreateApprovalActionAsync(invoiceId, true, approverId, 
+                        $"{approveDto.Comments} (Teilfreigabe - Schritt {currentStep} von {totalSteps})");
                 }
             }
 
@@ -410,7 +434,7 @@ public class InvoiceService : IInvoiceService
 
             await _context.SaveChangesAsync();
 
-            await CreateInvoiceHistoryAsync(id, "Status Changed", oldStatus, status.ToString(), null, updatedBy);
+            await _historyService.CreateStatusChangeAsync(id, oldStatus, status.ToString(), updatedBy);
 
             _logger.LogInformation("Invoice status updated: {InvoiceId} from {OldStatus} to {NewStatus}", 
                 id, oldStatus, status);
@@ -422,24 +446,6 @@ public class InvoiceService : IInvoiceService
             _logger.LogError(ex, "Error updating invoice status for ID: {InvoiceId}", id);
             throw;
         }
-    }
-
-    private async Task CreateInvoiceHistoryAsync(int invoiceId, string action, string? oldStatus, 
-        string? newStatus, string? comments, int changedBy)
-    {
-        var history = new InvoiceHistory
-        {
-            InvoiceId = invoiceId,
-            Action = action,
-            OldStatus = oldStatus,
-            NewStatus = newStatus,
-            Comments = comments,
-            ChangedBy = changedBy,
-            ChangedAt = DateTime.UtcNow
-        };
-
-        _context.InvoiceHistories.Add(history);
-        await _context.SaveChangesAsync();
     }
 
     private static InvoiceDto MapToDto(Invoice invoice)
@@ -514,6 +520,24 @@ public class InvoiceService : IInvoiceService
                     CreatedAt = aw.CreatedAt
                 })
                 .ToArray()
+        };
+    }
+
+    private static string GetFieldDisplayName(string fieldName)
+    {
+        return fieldName switch
+        {
+            "CostCenterId" => "Kostenstelle",
+            "ProjectId" => "Projekt", 
+            "SupplierId" => "Lieferant",
+            "NetAmount" => "Nettobetrag",
+            "TaxAmount" => "Steuerbetrag",
+            "TotalAmount" => "Gesamtbetrag",
+            "DueDate" => "Fälligkeitsdatum",
+            "InvoiceDate" => "Rechnungsdatum",
+            "Description" => "Beschreibung",
+            "InternalNotes" => "Interne Notizen",
+            _ => fieldName
         };
     }
 }

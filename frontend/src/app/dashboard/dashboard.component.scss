@@ -5,12 +5,28 @@
 }
 
 .greeting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 2rem;
 
   h2 {
     font-size: 1.5rem;
     font-weight: 400;
     color: #333;
+    margin: 0;
+  }
+
+  .refresh-button {
+    color: #666;
+
+    &:hover {
+      color: #1976d2;
+    }
+
+    &:disabled {
+      color: #ccc;
+    }
   }
 }
 
@@ -125,5 +141,127 @@
 
   .overdue-row:hover {
     background-color: #ffcdd2;
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: #666;
+
+  p {
+    margin-top: 1rem;
+    font-size: 1rem;
+  }
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: #d32f2f;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+}
+
+.no-data-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: #666;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+    color: #ccc;
+  }
+
+  p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+  }
+
+  .no-data-subtitle {
+    font-size: 0.9rem;
+    color: #999;
+  }
+}
+
+// Additional status classes
+.status-received {
+  color: #2196f3;
+
+  mat-icon {
+    color: #2196f3;
+  }
+}
+
+.status-reviewing {
+  color: #ff9800;
+
+  mat-icon {
+    color: #ff9800;
+  }
+}
+
+.status-approval-required {
+  color: #f57c00;
+
+  mat-icon {
+    color: #f57c00;
+  }
+}
+
+.status-approved {
+  color: #4caf50;
+
+  mat-icon {
+    color: #4caf50;
+  }
+}
+
+.status-rejected {
+  color: #f44336;
+
+  mat-icon {
+    color: #f44336;
+  }
+}
+
+.status-paid {
+  color: #009688;
+
+  mat-icon {
+    color: #009688;
+  }
+}
+
+.status-unknown {
+  color: #9e9e9e;
+
+  mat-icon {
+    color: #9e9e9e;
   }
 }

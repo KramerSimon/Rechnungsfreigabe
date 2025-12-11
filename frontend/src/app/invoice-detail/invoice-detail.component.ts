@@ -8,9 +8,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatTabsModule } from '@angular/material/tabs';
 import { FormsModule } from '@angular/forms';
+import { InvoiceHistoryTimelineComponent } from '../components/invoice-history-timeline/invoice-history-timeline.component';
 
 interface InvoiceDetail {
+  id: number;
   invoiceNumber: string;
   supplier: string;
   amount: string;
@@ -32,7 +35,9 @@ interface InvoiceDetail {
     MatSelectModule,
     MatCardModule,
     MatDialogModule,
-    FormsModule
+    MatTabsModule,
+    FormsModule,
+    InvoiceHistoryTimelineComponent
   ],
   templateUrl: './invoice-detail.component.html',
   styleUrl: './invoice-detail.component.scss'
@@ -41,6 +46,7 @@ export class InvoiceDetailComponent implements OnInit {
   invoiceNumber: string = '';
 
   invoice: InvoiceDetail = {
+    id: 1, // This would come from route parameters in real implementation
     invoiceNumber: 'TS-554',
     supplier: 'TechSolutions',
     amount: '€ 2.300,00',
