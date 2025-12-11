@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,7 +12,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { AuthService } from '../../core/services/auth.service';
 import { AuthState } from '../../core/models/auth.models';
 import { InvoiceService, Invoice, PagedResult } from '../../core/services/invoice.service';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, finalize, of, filter, Subscription } from 'rxjs';
 
 interface UserTask {
   id: number;
@@ -44,9 +44,11 @@ interface UserTask {
     MatBadgeModule
   ]
 })
-export class UserDashboardComponent implements OnInit {
+export class UserDashboardComponent implements OnInit, OnDestroy {
   loading = false;
   currentUser: any = null;
+  userPermissions: string[] = [];
+  private navigationSubscription?: Subscription;
 
   urgentCount = 0;
   incompleteCount = 0;
@@ -67,10 +69,22 @@ export class UserDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.authService.authState$.subscribe(authState => {
-      this.currentUser = authState.user;
+      this.currentUser = authState?.user;
+      this.userPermissions = authState?.permissions || [];
     });
 
     this.loadUserTasks();
+
+    // Listen for navigation events to refresh data when returning to dashboard
+    this.navigationSubscription = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: NavigationEnd) => {
+      // Refresh data when navigating to dashboard
+      if (event.url.includes('/dashboard')) {
+        console.log('Dashboard navigation detected, refreshing tasks...');
+        this.loadUserTasks();
+      }
+    });
   }
 
   private loadUserTasks(): void {
@@ -113,7 +127,7 @@ export class UserDashboardComponent implements OnInit {
       statusIcon = 'warning';
       statusText = 'EILT';
       statusClass = 'status-urgent';
-      actionText = 'Bearbeiten';
+      actionText = this.getActionButtonText();
       actionClass = 'action-urgent';
       reason = isEscalated ? 'Eskaliert' : 'Überfällig';
     } else if (isIncomplete) {
@@ -129,7 +143,7 @@ export class UserDashboardComponent implements OnInit {
       statusIcon = 'radio_button_unchecked';
       statusText = 'Offen';
       statusClass = 'status-normal';
-      actionText = 'Bearbeiten';
+      actionText = this.getActionButtonText();
       actionClass = 'action-normal';
     }
 
@@ -146,6 +160,12 @@ export class UserDashboardComponent implements OnInit {
       actionClass,
       reason
     };
+
+  // Manual refresh method that can be called from UI
+  refreshTasks(): void {
+    console.log('Manual refresh triggered');
+    this.loadUserTasks();
+  }
   }
 
   private formatDueDate(dueDate: string): string {
@@ -201,6 +221,44 @@ export class UserDashboardComponent implements OnInit {
       return `Guten Tag, ${firstName}!`;
     } else {
       return `Guten Abend, ${firstName}!`;
+    }
+  }
+
+  getActionVerb(): string {
+    // Admin und Freigeber sehen "freizugeben"
+    if (this.userPermissions.includes('all') ||
+        this.userPermissions.includes('approve_invoices')) {
+      return 'freizugeben';
+    }
+    // Manager sehen "zu genehmigen"
+    if (this.userPermissions.includes('approve_cost_center_invoices')) {
+      return 'zu genehmigen';
+    }
+    // Buchhaltung und andere sehen "zu bearbeiten"
+    if (this.userPermissions.includes('edit_invoices')) {
+      return 'zu bearbeiten';
+    }
+    // Fallback für normale Benutzer
+    return 'zu prüfen';
+  }
+
+  getActionButtonText(): string {
+    // Admin und Freigeber sehen "Freigeben"
+    if (this.userPermissions.includes('all') ||
+        this.userPermissions.includes('approve_invoices')) {
+      return 'Freigeben';
+    }
+    // Manager sehen "Genehmigen"
+    if (this.userPermissions.includes('approve_cost_center_invoices')) {
+      return 'Genehmigen';
+    }
+    // Buchhaltung und andere sehen "Bearbeiten"
+    return 'Bearbeiten';
+  }
+
+  ngOnDestroy(): void {
+    if (this.navigationSubscription) {
+      this.navigationSubscription.unsubscribe();
     }
   }
 }

@@ -2,13 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
+using System.Linq.Expressions;
 
 namespace RechnungsfreigabeAPI.Services;
 
 public interface IInvoiceService
 {
-    Task<PagedResult<InvoiceDto>> GetInvoicesPagedAsync(PageRequest pageRequest, int? userId = null);
-    Task<InvoiceDto?> GetInvoiceByIdAsync(int id);
+    Task<PagedResult<InvoiceDto>> GetInvoicesPagedAsync(PageRequest pageRequest, int userId, string[] userPermissions);
+    Task<InvoiceDto?> GetInvoiceByIdAsync(int id, int userId, string[] userPermissions);
     Task<InvoiceDto> CreateInvoiceAsync(CreateInvoiceDto createInvoiceDto, int createdBy);
     Task<InvoiceDto?> UpdateInvoiceAsync(int id, UpdateInvoiceDto updateInvoiceDto, int updatedBy);
     Task<bool> DeleteInvoiceAsync(int id);
@@ -25,22 +26,25 @@ public class InvoiceService : IInvoiceService
     private readonly IApprovalService _approvalService;
     private readonly INotificationService _notificationService;
     private readonly IInvoiceHistoryService _historyService;
+    private readonly IUserService _userService;
 
     public InvoiceService(
         ApplicationDbContext context, 
         ILogger<InvoiceService> logger,
         IApprovalService approvalService,
         INotificationService notificationService,
-        IInvoiceHistoryService historyService)
+        IInvoiceHistoryService historyService,
+        IUserService userService)
     {
         _context = context;
         _logger = logger;
         _approvalService = approvalService;
         _notificationService = notificationService;
         _historyService = historyService;
+        _userService = userService;
     }
 
-    public async Task<PagedResult<InvoiceDto>> GetInvoicesPagedAsync(PageRequest pageRequest, int? userId = null)
+    public async Task<PagedResult<InvoiceDto>> GetInvoicesPagedAsync(PageRequest pageRequest, int userId, string[] userPermissions)
     {
         var query = _context.Invoices
             .Include(i => i.Supplier)
@@ -52,12 +56,8 @@ public class InvoiceService : IInvoiceService
             .ThenInclude(aw => aw.Approver)
             .AsQueryable();
 
-        // Filter by user permissions if specified
-        if (userId.HasValue)
-        {
-            // TODO: Add permission-based filtering based on user roles
-            // For now, show all invoices - implement proper filtering based on user permissions
-        }
+        // Apply permission-based filtering
+        query = await ApplyPermissionFilterAsync(query, userId, userPermissions);
 
         // Apply search filter
         if (!string.IsNullOrEmpty(pageRequest.SearchTerm))
@@ -98,7 +98,26 @@ public class InvoiceService : IInvoiceService
         };
     }
 
-    public async Task<InvoiceDto?> GetInvoiceByIdAsync(int id)
+    public async Task<InvoiceDto?> GetInvoiceByIdAsync(int id, int userId, string[] userPermissions)
+    {
+        var query = _context.Invoices
+            .Include(i => i.Supplier)
+            .Include(i => i.CostCenter)
+            .Include(i => i.Project)
+            .Include(i => i.Creator)
+            .Include(i => i.Processor)
+            .Include(i => i.ApprovalWorkflows)
+            .ThenInclude(aw => aw.Approver)
+            .Where(i => i.Id == id);
+
+        // Apply permission filtering
+        query = await ApplyPermissionFilterAsync(query, userId, userPermissions);
+        
+        var invoice = await query.FirstOrDefaultAsync();
+        return invoice != null ? MapToDto(invoice) : null;
+    }
+
+    private async Task<InvoiceDto?> GetInvoiceByIdInternalAsync(int id)
     {
         var invoice = await _context.Invoices
             .Include(i => i.Supplier)
@@ -170,7 +189,7 @@ public class InvoiceService : IInvoiceService
             _logger.LogInformation("Invoice created successfully: {InvoiceNumber}", invoice.InvoiceNumber);
 
             // Return the created invoice with full details
-            return await GetInvoiceByIdAsync(invoice.Id) ?? throw new InvalidOperationException("Failed to retrieve created invoice");
+            return await GetInvoiceByIdInternalAsync(invoice.Id) ?? throw new InvalidOperationException("Failed to retrieve created invoice");
         }
         catch (Exception ex)
         {
@@ -271,7 +290,7 @@ public class InvoiceService : IInvoiceService
             await transaction.CommitAsync();
 
             _logger.LogInformation("Invoice updated successfully: {InvoiceId}", id);
-            return await GetInvoiceByIdAsync(id);
+            return await GetInvoiceByIdInternalAsync(id);
         }
         catch (Exception ex)
         {
@@ -439,13 +458,84 @@ public class InvoiceService : IInvoiceService
             _logger.LogInformation("Invoice status updated: {InvoiceId} from {OldStatus} to {NewStatus}", 
                 id, oldStatus, status);
 
-            return await GetInvoiceByIdAsync(id);
+            return await GetInvoiceByIdInternalAsync(id);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating invoice status for ID: {InvoiceId}", id);
             throw;
         }
+    }
+
+    private async Task<IQueryable<Invoice>> ApplyPermissionFilterAsync(IQueryable<Invoice> query, int userId, string[] userPermissions)
+    {
+        // Admin users with "all" permission can see everything
+        if (userPermissions.Contains("all"))
+        {
+            return query;
+        }
+
+        // Users with "view_all_invoices" permission can see all invoices
+        if (userPermissions.Contains("view_all_invoices"))
+        {
+            return query;
+        }
+
+        // Get user details for filtering
+        var user = await _userService.GetUserEntityByIdAsync(userId);
+        if (user == null)
+        {
+            // If user not found, return empty result
+            return query.Where(i => false);
+        }
+
+        var filters = new List<Expression<Func<Invoice, bool>>>();
+
+        // Users with "view_own_invoices" can see invoices they created
+        if (userPermissions.Contains("view_own_invoices"))
+        {
+            filters.Add(i => i.CreatedBy == userId);
+        }
+
+        // Users with "view_team_invoices" can see invoices from their cost centers
+        if (userPermissions.Contains("view_team_invoices"))
+        {
+            // Get cost centers where the user is a manager
+            var managedCostCenters = await _context.CostCenters
+                .Where(cc => cc.ManagerId == userId)
+                .Select(cc => cc.Id)
+                .ToListAsync();
+
+            if (managedCostCenters.Any())
+            {
+                filters.Add(i => i.CostCenterId != null && managedCostCenters.Contains(i.CostCenterId));
+            }
+        }
+
+        // Users with "approve_cost_center_invoices" can see invoices they can approve
+        if (userPermissions.Contains("approve_cost_center_invoices"))
+        {
+            // Get invoices where this user is in the approval workflow
+            filters.Add(i => i.ApprovalWorkflows.Any(aw => aw.ApproverId == userId));
+        }
+
+        // If no specific permissions match, deny access
+        if (!filters.Any())
+        {
+            return query.Where(i => false);
+        }
+
+        // Combine filters with OR logic
+        var combinedFilter = filters.Aggregate((filter1, filter2) => 
+        {
+            var parameter = Expression.Parameter(typeof(Invoice), "i");
+            var body1 = Expression.Invoke(filter1, parameter);
+            var body2 = Expression.Invoke(filter2, parameter);
+            var combined = Expression.OrElse(body1, body2);
+            return Expression.Lambda<Func<Invoice, bool>>(combined, parameter);
+        });
+
+        return query.Where(combinedFilter);
     }
 
     private static InvoiceDto MapToDto(Invoice invoice)

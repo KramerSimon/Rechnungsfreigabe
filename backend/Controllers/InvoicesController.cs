@@ -12,11 +12,13 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
+    private readonly IUserService _userService;
     private readonly ILogger<InvoicesController> _logger;
 
-    public InvoicesController(IInvoiceService invoiceService, ILogger<InvoicesController> logger)
+    public InvoicesController(IInvoiceService invoiceService, IUserService userService, ILogger<InvoicesController> logger)
     {
         _invoiceService = invoiceService;
+        _userService = userService;
         _logger = logger;
     }
 
@@ -29,7 +31,8 @@ public class InvoicesController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var result = await _invoiceService.GetInvoicesPagedAsync(pageRequest, userId);
+            var userPermissions = await _userService.GetUserPermissionsAsync(userId);
+            var result = await _invoiceService.GetInvoicesPagedAsync(pageRequest, userId, userPermissions);
             return Ok(result);
         }
         catch (Exception ex)
@@ -47,7 +50,9 @@ public class InvoicesController : ControllerBase
     {
         try
         {
-            var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
+            var userId = GetCurrentUserId();
+            var userPermissions = await _userService.GetUserPermissionsAsync(userId);
+            var invoice = await _invoiceService.GetInvoiceByIdAsync(id, userId, userPermissions);
             
             if (invoice == null)
             {

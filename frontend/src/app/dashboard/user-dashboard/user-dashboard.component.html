@@ -3,7 +3,7 @@
   <!-- Header mit Begrüßung -->
   <div class="welcome-section">
     <h1>{{ getGreeting() }}</h1>
-    <p>Du hast heute <strong>{{ totalTasks }}</strong> {{ totalTasks === 1 ? 'Rechnung' : 'Rechnungen' }} zu prüfen.</p>
+    <p>Du hast heute <strong>{{ totalTasks }}</strong> {{ totalTasks === 1 ? 'Rechnung' : 'Rechnungen' }} {{ getActionVerb() }}.</p>
   </div>
 
   <!-- Status-Kacheln -->

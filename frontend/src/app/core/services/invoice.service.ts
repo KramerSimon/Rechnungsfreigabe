@@ -108,12 +108,15 @@ export class InvoiceService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  approveInvoice(id: number, comment?: string): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/approve`, { comment });
+  approveInvoice(id: number, approvalData: { approved: boolean; comments?: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/approve`, approvalData);
   }
 
-  rejectInvoice(id: number, reason: string): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/reject`, { reason });
+  rejectInvoice(id: number, reason: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/approve`, {
+      approved: false,
+      comments: reason
+    });
   }
 
   getOverdueInvoices(): Observable<Invoice[]> {

@@ -4,7 +4,7 @@
       <mat-icon>arrow_back</mat-icon>
       Zurück zur Übersicht
     </button>
-    <h2>Rechnung #{{ invoice.invoiceNumber }} von {{ invoice.supplier }}</h2>
+    <h2>Rechnung #{{ invoice.invoiceNumber }} von {{ invoice.supplier.name }}</h2>
   </div>
 
   <!-- Tab Navigation -->
@@ -28,11 +28,11 @@
         <mat-card-content>
           <div class="pdf-mock">
             <div class="pdf-header">
-              <strong>{{ invoice.supplier }} GmbH</strong>
+              <strong>{{ invoice.supplier.name }} GmbH</strong>
               <div>Rechnung</div>
             </div>
             <div class="pdf-content">
-              <p><strong>Betrag: {{ invoice.amount }}</strong></p>
+              <p><strong>Betrag: {{ invoice.totalAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</strong></p>
               <p>Rechnungsnummer: {{ invoice.invoiceNumber }}</p>
               <p>Datum: 01.12.2023</p>
               <p>Fälligkeitsdatum: 15.12.2023</p>
@@ -57,12 +57,12 @@
         <mat-card-content>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Projekt</mat-label>
-            <input matInput [(ngModel)]="invoice.project" placeholder="z.B. Website Relaunch" required>
+            <input matInput [(ngModel)]="invoice.projectName" placeholder="z.B. Website Relaunch" required>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Kostenstelle</mat-label>
-            <mat-select [(ngModel)]="invoice.costCenter" required>
+            <mat-select [(ngModel)]="invoice.costCenterName" required>
               <mat-option *ngFor="let center of costCenters" [value]="center.label">
                 {{ center.label }}
               </mat-option>
@@ -71,7 +71,7 @@
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Bestellung</mat-label>
-            <mat-select [(ngModel)]="invoice.purchaseOrder">
+            <mat-select [(ngModel)]="invoice.purchaseOrderId">
               <mat-option *ngFor="let po of purchaseOrders" [value]="po.value">
                 {{ po.label }}
               </mat-option>
