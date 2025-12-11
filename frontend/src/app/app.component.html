@@ -1,1 +1,41 @@
-<app-dashboard></app-dashboard>
+<nav class="navbar">
+  <img src="/images.jpeg" alt="App Logo" class="app-logo">
+  <button mat-button routerLink="/dashboard">Dashboard</button>
+  <button mat-button routerLink="/history">History</button>
+  <button mat-icon-button [matMenuTriggerFor]="accountMenu" class="account-button"><mat-icon>account_circle</mat-icon></button>
+</nav>
+
+<mat-menu #accountMenu="matMenu" class="account-menu">
+  <div class="user-profile-header" (click)="$event.stopPropagation()">
+    <mat-icon class="user-avatar">account_circle</mat-icon>
+    <div class="user-info">
+      <div class="user-name">Max Mustermann</div>
+      <div class="user-email">max.mustermann&#64;firma.de</div>
+      <div class="user-role">Rolle: <strong>Freigeber</strong> / Buchhaltung</div>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <button mat-menu-item routerLink="/account">
+    <mat-icon>settings</mat-icon>
+    <span>Einstellungen (Mein Profil)</span>
+  </button>
+  <button mat-menu-item routerLink="/notifications">
+    <mat-icon>notifications</mat-icon>
+    <span>Benachrichtigungen</span>
+  </button>
+  <button mat-menu-item routerLink="/help">
+    <mat-icon>help_outline</mat-icon>
+    <span>Hilfe & Support</span>
+  </button>
+
+  <mat-divider></mat-divider>
+
+  <button mat-menu-item routerLink="/logout">
+    <mat-icon>logout</mat-icon>
+    <span>Abmelden</span>
+  </button>
+</mat-menu>
+
+<router-outlet></router-outlet>

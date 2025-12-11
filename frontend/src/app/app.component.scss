@@ -1,0 +1,60 @@
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+img {
+  width: 100px;
+}
+
+.account-button {
+  margin-left: auto;
+}
+
+::ng-deep .account-menu {
+  min-width: 320px;
+
+  .user-profile-header {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: default;
+
+    .user-avatar {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: #757575;
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .user-name {
+        font-weight: 600;
+        font-size: 16px;
+        color: #212121;
+      }
+
+      .user-email {
+        font-size: 14px;
+        color: #757575;
+      }
+
+      .user-role {
+        font-size: 13px;
+        color: #616161;
+        margin-top: 4px;
+      }
+    }
+  }
+
+  mat-divider {
+    margin: 8px 0;
+  }
+}
