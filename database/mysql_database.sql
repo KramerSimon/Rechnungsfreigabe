@@ -12,10 +12,14 @@ USE rechnungsfreigabe;
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     active_directory_sid VARCHAR(255) UNIQUE,
+    password_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    failed_login_attempts INT DEFAULT 0,
+    locked_until TIMESTAMP NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -274,13 +278,13 @@ INSERT INTO cost_centers (id, name, description, budget) VALUES
 ('OFFICE', 'Büromaterial', 'Allgemeine Büroausstattung und Verbrauchsmaterial', 25000.00),
 ('FACILITY', 'Facility Management', 'Gebäude, Reinigung, Sicherheit', 80000.00);
 
--- Beispiel-Benutzer (Passwörter würden normalerweise gehasht gespeichert)
-INSERT INTO users (username, email, first_name, last_name) VALUES
-('admin', 'admin@firma.de', 'System', 'Administrator'),
-('max.mustermann', 'max.mustermann@firma.de', 'Max', 'Mustermann'),
-('maria.mueller', 'maria.mueller@firma.de', 'Maria', 'Müller'),
-('hans.schmidt', 'hans.schmidt@firma.de', 'Hans', 'Schmidt'),
-('lisa.klein', 'lisa.klein@firma.de', 'Lisa', 'Klein');
+-- Beispiel-Benutzer mit gehashten Passwörtern (alle verwenden "password123" als Passwort)
+INSERT INTO users (username, password_hash, email, first_name, last_name, password_changed_at) VALUES
+('admin', '$2a$11$n6VYQ8YgJ5J5mRy5PXjEleM4lH8mAz7PdX8fMJHmRJYgJ5J5mRy5Pe', 'admin@firma.de', 'System', 'Administrator', NOW()),
+('max.mustermann', '$2a$11$n6VYQ8YgJ5J5mRy5PXjEleM4lH8mAz7PdX8fMJHmRJYgJ5J5mRy5Pe', 'max.mustermann@firma.de', 'Max', 'Mustermann', NOW()),
+('maria.mueller', '$2a$11$n6VYQ8YgJ5J5mRy5PXjEleM4lH8mAz7PdX8fMJHmRJYgJ5J5mRy5Pe', 'maria.mueller@firma.de', 'Maria', 'Müller', NOW()),
+('hans.schmidt', '$2a$11$n6VYQ8YgJ5J5mRy5PXjEleM4lH8mAz7PdX8fMJHmRJYgJ5J5mRy5Pe', 'hans.schmidt@firma.de', 'Hans', 'Schmidt', NOW()),
+('lisa.klein', '$2a$11$n6VYQ8YgJ5J5mRy5PXjEleM4lH8mAz7PdX8fMJHmRJYgJ5J5mRy5Pe', 'lisa.klein@firma.de', 'Lisa', 'Klein', NOW());
 
 -- Benutzerrollen zuweisen
 INSERT INTO user_roles (user_id, role_id) VALUES

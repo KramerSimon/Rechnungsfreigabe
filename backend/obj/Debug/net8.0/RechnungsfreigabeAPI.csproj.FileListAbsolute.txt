@@ -124,3 +124,4 @@ C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\refint\Rechn
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.pdb
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.genruntimeconfig.cache
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\ref\RechnungsfreigabeAPI.dll
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\BCrypt.Net-Next.dll

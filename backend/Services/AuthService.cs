@@ -13,18 +13,24 @@ public interface IAuthService
     Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginRequest);
     Task<UserDto?> GetCurrentUserAsync(string token);
     Task<bool> ValidateTokenAsync(string token);
+    Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
+    Task<bool> ResetPasswordAsync(string username, string newPassword);
     string GenerateToken(User user, string[] permissions);
 }
 
 public class AuthService : IAuthService
 {
     private readonly IUserService _userService;
+    private readonly IPasswordService _passwordService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
+    private const int MaxFailedAttempts = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
-    public AuthService(IUserService userService, IConfiguration configuration, ILogger<AuthService> logger)
+    public AuthService(IUserService userService, IPasswordService passwordService, IConfiguration configuration, ILogger<AuthService> logger)
     {
         _userService = userService;
+        _passwordService = passwordService;
         _configuration = configuration;
         _logger = logger;
     }
@@ -33,15 +39,41 @@ public class AuthService : IAuthService
     {
         try
         {
-            // For demo purposes, we'll use a simple username-based authentication
-            // In production, implement proper password hashing and verification
             var user = await _userService.GetUserByUsernameAsync(loginRequest.Username);
             
             if (user == null || !user.IsActive)
             {
-                _logger.LogWarning("Login attempt failed for username: {Username}", loginRequest.Username);
+                _logger.LogWarning("Login attempt failed for username: {Username} - User not found or inactive", loginRequest.Username);
                 return null;
             }
+
+            // Check if user is locked out
+            if (user.LockedUntil.HasValue && user.LockedUntil.Value > DateTime.UtcNow)
+            {
+                _logger.LogWarning("Login attempt failed for username: {Username} - Account locked until {LockedUntil}", 
+                    loginRequest.Username, user.LockedUntil.Value);
+                return null;
+            }
+
+            // Verify password
+            if (!_passwordService.VerifyPassword(loginRequest.Password, user.PasswordHash))
+            {
+                // Increment failed login attempts
+                await _userService.IncrementFailedLoginAttemptsAsync(user.Id);
+                
+                // Check if we should lock the account
+                if (user.FailedLoginAttempts + 1 >= MaxFailedAttempts)
+                {
+                    await _userService.LockUserAccountAsync(user.Id, DateTime.UtcNow.Add(LockoutDuration));
+                    _logger.LogWarning("Account locked for username: {Username} due to too many failed attempts", loginRequest.Username);
+                }
+                
+                _logger.LogWarning("Login attempt failed for username: {Username} - Invalid password", loginRequest.Username);
+                return null;
+            }
+
+            // Reset failed login attempts on successful login
+            await _userService.ResetFailedLoginAttemptsAsync(user.Id);
 
             // Get user permissions from roles
             var permissions = await _userService.GetUserPermissionsAsync(user.Id);
@@ -192,6 +224,74 @@ public class AuthService : IAuthService
         catch
         {
             return null;
+        }
+    }
+
+    public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+    {
+        try
+        {
+            var user = await _userService.GetUserEntityByIdAsync(userId);
+            if (user == null || !user.IsActive)
+                return false;
+
+            // Verify current password
+            if (!_passwordService.VerifyPassword(currentPassword, user.PasswordHash))
+            {
+                _logger.LogWarning("Password change failed for user {UserId} - Invalid current password", userId);
+                return false;
+            }
+
+            // Validate new password
+            if (!_passwordService.IsPasswordValid(newPassword))
+            {
+                _logger.LogWarning("Password change failed for user {UserId} - New password doesn't meet requirements", userId);
+                return false;
+            }
+
+            // Hash new password and update user
+            var newPasswordHash = _passwordService.HashPassword(newPassword);
+            await _userService.UpdatePasswordAsync(userId, newPasswordHash);
+
+            _logger.LogInformation("Password successfully changed for user {UserId}", userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing password for user {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<bool> ResetPasswordAsync(string username, string newPassword)
+    {
+        try
+        {
+            var user = await _userService.GetUserByUsernameAsync(username);
+            if (user == null || !user.IsActive)
+                return false;
+
+            // Validate new password
+            if (!_passwordService.IsPasswordValid(newPassword))
+            {
+                _logger.LogWarning("Password reset failed for user {Username} - New password doesn't meet requirements", username);
+                return false;
+            }
+
+            // Hash new password and update user
+            var newPasswordHash = _passwordService.HashPassword(newPassword);
+            await _userService.UpdatePasswordAsync(user.Id, newPasswordHash);
+
+            // Reset failed login attempts and unlock account
+            await _userService.ResetFailedLoginAttemptsAsync(user.Id);
+
+            _logger.LogInformation("Password successfully reset for user {Username}", username);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting password for user {Username}", username);
+            return false;
         }
     }
 }

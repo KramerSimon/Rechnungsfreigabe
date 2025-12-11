@@ -11,11 +11,16 @@ public interface IUserService
     Task<IEnumerable<UserDto>> GetAllUsersAsync();
     Task<UserDto?> GetUserByIdAsync(int id);
     Task<User?> GetUserByUsernameAsync(string username);
+    Task<User?> GetUserEntityByIdAsync(int id);
     Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
     Task<UserDto?> UpdateUserAsync(int id, UpdateUserDto updateUserDto);
     Task<bool> DeleteUserAsync(int id);
     Task<string[]> GetUserPermissionsAsync(int userId);
     Task<PagedResult<UserDto>> GetUsersPagedAsync(PageRequest pageRequest);
+    Task IncrementFailedLoginAttemptsAsync(int userId);
+    Task ResetFailedLoginAttemptsAsync(int userId);
+    Task LockUserAccountAsync(int userId, DateTime lockedUntil);
+    Task UpdatePasswordAsync(int userId, string passwordHash);
 }
 
 public class UserService : IUserService
@@ -56,6 +61,14 @@ public class UserService : IUserService
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+    }
+
+    public async Task<User?> GetUserEntityByIdAsync(int id)
+    {
+        return await _context.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
@@ -275,5 +288,51 @@ public class UserService : IUserService
                 Permissions = JsonSerializer.Deserialize<string[]>(ur.Role.Permissions) ?? Array.Empty<string>()
             }).ToArray()
         };
+    }
+
+    public async Task IncrementFailedLoginAttemptsAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.FailedLoginAttempts++;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task ResetFailedLoginAttemptsAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.FailedLoginAttempts = 0;
+            user.LockedUntil = null;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task LockUserAccountAsync(int userId, DateTime lockedUntil)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.LockedUntil = lockedUntil;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task UpdatePasswordAsync(int userId, string passwordHash)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.PasswordHash = passwordHash;
+            user.PasswordChangedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
     }
 }

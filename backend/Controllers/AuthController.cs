@@ -96,4 +96,76 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { message = "An error occurred while validating token" });
         }
     }
+
+    /// <summary>
+    /// Change user password
+    /// </summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var token = Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _authService.GetCurrentUserAsync(token);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var success = await _authService.ChangePasswordAsync(user.Id, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
+            
+            if (success)
+            {
+                return Ok(new { message = "Password changed successfully" });
+            }
+
+            return BadRequest(new { message = "Failed to change password. Please check your current password." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing password");
+            return StatusCode(500, new { message = "An error occurred while changing password" });
+        }
+    }
+
+    /// <summary>
+    /// Reset user password (admin only)
+    /// </summary>
+    [HttpPost("reset-password")]
+    [Authorize] // Add role-based authorization for admin users later
+    public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var success = await _authService.ResetPasswordAsync(resetPasswordDto.Username, resetPasswordDto.NewPassword);
+            
+            if (success)
+            {
+                return Ok(new { message = "Password reset successfully" });
+            }
+
+            return BadRequest(new { message = "Failed to reset password. User not found or inactive." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting password");
+            return StatusCode(500, new { message = "An error occurred while resetting password" });
+        }
+    }
 }

@@ -33,3 +33,504 @@ WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
 2025-12-11 18:20:13.557 +01:00 [WRN] Failed to determine the https port for redirect.
 2025-12-11 18:20:13.584 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/?id=6da9eabc-5b95-425f-983a-16f11502ef87&vscodeBrowserReqId=1765473613521 - 404 0 null 39.6209ms
 2025-12-11 18:20:13.588 +01:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5000/, Response status code: 404
+2025-12-11 18:41:29.336 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:41:29.359 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:41:29.370 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:41:29.396 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:41:29.398 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:41:29.398 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:41:29.399 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:43:26.502 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:43:26.524 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:43:26.534 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:43:26.561 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:43:26.563 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:43:26.564 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:43:26.564 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:44:03.533 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - null null
+2025-12-11 18:44:03.547 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-12-11 18:44:03.550 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:44:03.554 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - 204 null null 21.8951ms
+2025-12-11 18:44:03.558 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 45
+2025-12-11 18:44:03.562 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:44:03.579 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:44:03.600 +01:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.LoginResponseDto]] Login(RechnungsfreigabeAPI.DTOs.LoginRequestDto) on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-11 18:44:03.868 +01:00 [ERR] Failed executing DbCommand (31ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`Id`, `t`.`ActiveDirectorySid`, `t`.`CreatedAt`, `t`.`Email`, `t`.`FailedLoginAttempts`, `t`.`FirstName`, `t`.`IsActive`, `t`.`LastName`, `t`.`LockedUntil`, `t`.`PasswordChangedAt`, `t`.`PasswordHash`, `t`.`UpdatedAt`, `t`.`Username`, `t0`.`UserId`, `t0`.`RoleId`, `t0`.`AssignedAt`, `t0`.`Id`, `t0`.`Description`, `t0`.`Name`, `t0`.`Permissions`
+FROM (
+    SELECT `u`.`Id`, `u`.`ActiveDirectorySid`, `u`.`CreatedAt`, `u`.`Email`, `u`.`FailedLoginAttempts`, `u`.`FirstName`, `u`.`IsActive`, `u`.`LastName`, `u`.`LockedUntil`, `u`.`PasswordChangedAt`, `u`.`PasswordHash`, `u`.`UpdatedAt`, `u`.`Username`
+    FROM `users` AS `u`
+    WHERE (`u`.`Username` = @__username_0) AND `u`.`IsActive`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`UserId`, `u0`.`RoleId`, `u0`.`AssignedAt`, `r`.`Id`, `r`.`Description`, `r`.`Name`, `r`.`Permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`RoleId` = `r`.`Id`
+) AS `t0` ON `t`.`Id` = `t0`.`UserId`
+ORDER BY `t`.`Id`, `t0`.`UserId`, `t0`.`RoleId`
+2025-12-11 18:44:03.888 +01:00 [ERR] An exception occurred while iterating over the results of a query for context type 'RechnungsfreigabeAPI.Data.ApplicationDbContext'.
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2025-12-11 18:44:03.895 +01:00 [ERR] Error during login for username: admin
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at RechnungsfreigabeAPI.Services.UserService.GetUserByUsernameAsync(String username) in C:\Users\threk\Documents\Rechnungsfreigabe\backend\Services\UserService.cs:line 60
+   at RechnungsfreigabeAPI.Services.AuthService.LoginAsync(LoginRequestDto loginRequest) in C:\Users\threk\Documents\Rechnungsfreigabe\backend\Services\AuthService.cs:line 42
+2025-12-11 18:44:03.916 +01:00 [INF] Executing UnauthorizedObjectResult, writing value of type '<>f__AnonymousType0`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-12-11 18:44:03.924 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI) in 320.4504ms
+2025-12-11 18:44:03.926 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:44:03.930 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 401 null application/json; charset=utf-8 371.8721ms
+2025-12-11 18:45:11.943 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - null null
+2025-12-11 18:45:11.945 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:45:11.946 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - 204 null null 2.8705ms
+2025-12-11 18:45:11.949 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 45
+2025-12-11 18:45:11.951 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:45:11.952 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:45:11.953 +01:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.LoginResponseDto]] Login(RechnungsfreigabeAPI.DTOs.LoginRequestDto) on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-11 18:45:12.000 +01:00 [ERR] Failed executing DbCommand (2ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`Id`, `t`.`ActiveDirectorySid`, `t`.`CreatedAt`, `t`.`Email`, `t`.`FailedLoginAttempts`, `t`.`FirstName`, `t`.`IsActive`, `t`.`LastName`, `t`.`LockedUntil`, `t`.`PasswordChangedAt`, `t`.`PasswordHash`, `t`.`UpdatedAt`, `t`.`Username`, `t0`.`UserId`, `t0`.`RoleId`, `t0`.`AssignedAt`, `t0`.`Id`, `t0`.`Description`, `t0`.`Name`, `t0`.`Permissions`
+FROM (
+    SELECT `u`.`Id`, `u`.`ActiveDirectorySid`, `u`.`CreatedAt`, `u`.`Email`, `u`.`FailedLoginAttempts`, `u`.`FirstName`, `u`.`IsActive`, `u`.`LastName`, `u`.`LockedUntil`, `u`.`PasswordChangedAt`, `u`.`PasswordHash`, `u`.`UpdatedAt`, `u`.`Username`
+    FROM `users` AS `u`
+    WHERE (`u`.`Username` = @__username_0) AND `u`.`IsActive`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`UserId`, `u0`.`RoleId`, `u0`.`AssignedAt`, `r`.`Id`, `r`.`Description`, `r`.`Name`, `r`.`Permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`RoleId` = `r`.`Id`
+) AS `t0` ON `t`.`Id` = `t0`.`UserId`
+ORDER BY `t`.`Id`, `t0`.`UserId`, `t0`.`RoleId`
+2025-12-11 18:45:12.003 +01:00 [ERR] An exception occurred while iterating over the results of a query for context type 'RechnungsfreigabeAPI.Data.ApplicationDbContext'.
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2025-12-11 18:45:12.008 +01:00 [ERR] Error during login for username: admin
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at RechnungsfreigabeAPI.Services.UserService.GetUserByUsernameAsync(String username) in C:\Users\threk\Documents\Rechnungsfreigabe\backend\Services\UserService.cs:line 60
+   at RechnungsfreigabeAPI.Services.AuthService.LoginAsync(LoginRequestDto loginRequest) in C:\Users\threk\Documents\Rechnungsfreigabe\backend\Services\AuthService.cs:line 42
+2025-12-11 18:45:12.015 +01:00 [INF] Executing UnauthorizedObjectResult, writing value of type '<>f__AnonymousType0`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-12-11 18:45:12.017 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI) in 62.1205ms
+2025-12-11 18:45:12.018 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:45:12.019 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 401 null application/json; charset=utf-8 69.4923ms
+2025-12-11 18:45:43.313 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - null null
+2025-12-11 18:45:43.315 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:45:43.316 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - 204 null null 2.8333ms
+2025-12-11 18:45:43.317 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 45
+2025-12-11 18:45:43.319 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:45:43.321 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:45:43.322 +01:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.LoginResponseDto]] Login(RechnungsfreigabeAPI.DTOs.LoginRequestDto) on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-11 18:45:43.330 +01:00 [ERR] Failed executing DbCommand (1ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`Id`, `t`.`ActiveDirectorySid`, `t`.`CreatedAt`, `t`.`Email`, `t`.`FailedLoginAttempts`, `t`.`FirstName`, `t`.`IsActive`, `t`.`LastName`, `t`.`LockedUntil`, `t`.`PasswordChangedAt`, `t`.`PasswordHash`, `t`.`UpdatedAt`, `t`.`Username`, `t0`.`UserId`, `t0`.`RoleId`, `t0`.`AssignedAt`, `t0`.`Id`, `t0`.`Description`, `t0`.`Name`, `t0`.`Permissions`
+FROM (
+    SELECT `u`.`Id`, `u`.`ActiveDirectorySid`, `u`.`CreatedAt`, `u`.`Email`, `u`.`FailedLoginAttempts`, `u`.`FirstName`, `u`.`IsActive`, `u`.`LastName`, `u`.`LockedUntil`, `u`.`PasswordChangedAt`, `u`.`PasswordHash`, `u`.`UpdatedAt`, `u`.`Username`
+    FROM `users` AS `u`
+    WHERE (`u`.`Username` = @__username_0) AND `u`.`IsActive`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`UserId`, `u0`.`RoleId`, `u0`.`AssignedAt`, `r`.`Id`, `r`.`Description`, `r`.`Name`, `r`.`Permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`RoleId` = `r`.`Id`
+) AS `t0` ON `t`.`Id` = `t0`.`UserId`
+ORDER BY `t`.`Id`, `t0`.`UserId`, `t0`.`RoleId`
+2025-12-11 18:45:43.333 +01:00 [ERR] An exception occurred while iterating over the results of a query for context type 'RechnungsfreigabeAPI.Data.ApplicationDbContext'.
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2025-12-11 18:45:43.338 +01:00 [ERR] Error during login for username: admin
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u.ActiveDirectorySid' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at RechnungsfreigabeAPI.Services.UserService.GetUserByUsernameAsync(String username) in C:\Users\threk\Documents\Rechnungsfreigabe\backend\Services\UserService.cs:line 60
+   at RechnungsfreigabeAPI.Services.AuthService.LoginAsync(LoginRequestDto loginRequest) in C:\Users\threk\Documents\Rechnungsfreigabe\backend\Services\AuthService.cs:line 42
+2025-12-11 18:45:43.342 +01:00 [INF] Executing UnauthorizedObjectResult, writing value of type '<>f__AnonymousType0`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-12-11 18:45:43.344 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI) in 20.3382ms
+2025-12-11 18:45:43.345 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:45:43.346 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 401 null application/json; charset=utf-8 28.0381ms
+2025-12-11 18:46:28.189 +01:00 [INF] Application is shutting down...
+2025-12-11 18:47:39.575 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:47:39.599 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:47:39.609 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:47:39.636 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:47:39.637 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:47:39.638 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:47:39.638 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:47:58.195 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - null null
+2025-12-11 18:47:58.212 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-12-11 18:47:58.215 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:47:58.218 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - 204 null null 23.508ms
+2025-12-11 18:47:58.222 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 45
+2025-12-11 18:47:58.226 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:47:58.242 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:47:58.256 +01:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.LoginResponseDto]] Login(RechnungsfreigabeAPI.DTOs.LoginRequestDto) on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-11 18:47:58.496 +01:00 [ERR] Failed executing DbCommand (22ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`id`, `t`.`active_directory_sid`, `t`.`created_at`, `t`.`email`, `t`.`failed_login_attempts`, `t`.`first_name`, `t`.`is_active`, `t`.`last_name`, `t`.`locked_until`, `t`.`password_changed_at`, `t`.`password_hash`, `t`.`updated_at`, `t`.`username`, `t0`.`UserId`, `t0`.`RoleId`, `t0`.`AssignedAt`, `t0`.`Id`, `t0`.`Description`, `t0`.`Name`, `t0`.`Permissions`
+FROM (
+    SELECT `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`
+    FROM `users` AS `u`
+    WHERE (`u`.`username` = @__username_0) AND `u`.`is_active`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`UserId`, `u0`.`RoleId`, `u0`.`AssignedAt`, `r`.`Id`, `r`.`Description`, `r`.`Name`, `r`.`Permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`RoleId` = `r`.`Id`
+) AS `t0` ON `t`.`id` = `t0`.`UserId`
+ORDER BY `t`.`id`, `t0`.`UserId`, `t0`.`RoleId`
+2025-12-11 18:47:58.513 +01:00 [ERR] An exception occurred while iterating over the results of a query for context type 'RechnungsfreigabeAPI.Data.ApplicationDbContext'.
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u0.UserId' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u0.UserId' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2025-12-11 18:47:58.518 +01:00 [ERR] Error during login for username: admin
+MySqlConnector.MySqlException (0x80004005): Unknown column 'u0.UserId' in 'field list'
+   at MySqlConnector.Core.ServerSession.ReceiveReplyAsync(IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/ServerSession.cs:line 894
+   at MySqlConnector.Core.ResultSet.ReadResultSetHeaderAsync(IOBehavior ioBehavior) in /_/src/MySqlConnector/Core/ResultSet.cs:line 37
+   at MySqlConnector.MySqlDataReader.ActivateResultSet(CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 130
+   at MySqlConnector.MySqlDataReader.InitAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, IDictionary`2 cachedProcedures, IMySqlCommand command, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlDataReader.cs:line 483
+   at MySqlConnector.Core.CommandExecutor.ExecuteReaderAsync(CommandListPosition commandListPosition, ICommandPayloadCreator payloadCreator, CommandBehavior behavior, Activity activity, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/Core/CommandExecutor.cs:line 56
+   at MySqlConnector.MySqlCommand.ExecuteReaderAsync(CommandBehavior behavior, IOBehavior ioBehavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 357
+   at MySqlConnector.MySqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken) in /_/src/MySqlConnector/MySqlCommand.cs:line 350
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Pomelo.EntityFrameworkCore.MySql.Storage.Internal.MySqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at RechnungsfreigabeAPI.Services.UserService.GetUserByUsernameAsync(String username) in C:\Users\threk\Documents\Rechnungsfreigabe\backend\Services\UserService.cs:line 60
+   at RechnungsfreigabeAPI.Services.AuthService.LoginAsync(LoginRequestDto loginRequest) in C:\Users\threk\Documents\Rechnungsfreigabe\backend\Services\AuthService.cs:line 42
+2025-12-11 18:47:58.542 +01:00 [INF] Executing UnauthorizedObjectResult, writing value of type '<>f__AnonymousType0`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-12-11 18:47:58.550 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI) in 290.3024ms
+2025-12-11 18:47:58.551 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:47:58.556 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 401 null application/json; charset=utf-8 333.8364ms
+2025-12-11 18:49:44.996 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:49:45.021 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:49:45.032 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:49:45.061 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:49:45.063 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:49:45.063 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:49:45.064 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:51:22.266 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - null null
+2025-12-11 18:51:22.279 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-12-11 18:51:22.281 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:51:22.284 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - 204 null null 18.3588ms
+2025-12-11 18:51:22.287 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 45
+2025-12-11 18:51:22.290 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:51:22.303 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:51:22.314 +01:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.LoginResponseDto]] Login(RechnungsfreigabeAPI.DTOs.LoginRequestDto) on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-11 18:51:22.543 +01:00 [INF] Executed DbCommand (21ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`id`, `t`.`active_directory_sid`, `t`.`created_at`, `t`.`email`, `t`.`failed_login_attempts`, `t`.`first_name`, `t`.`is_active`, `t`.`last_name`, `t`.`locked_until`, `t`.`password_changed_at`, `t`.`password_hash`, `t`.`updated_at`, `t`.`username`, `t0`.`user_id`, `t0`.`role_id`, `t0`.`assigned_at`, `t0`.`id`, `t0`.`description`, `t0`.`name`, `t0`.`permissions`
+FROM (
+    SELECT `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`
+    FROM `users` AS `u`
+    WHERE (`u`.`username` = @__username_0) AND `u`.`is_active`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`user_id`, `u0`.`role_id`, `u0`.`assigned_at`, `r`.`id`, `r`.`description`, `r`.`name`, `r`.`permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`role_id` = `r`.`id`
+) AS `t0` ON `t`.`id` = `t0`.`user_id`
+ORDER BY `t`.`id`, `t0`.`user_id`, `t0`.`role_id`
+2025-12-11 18:51:23.098 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[@p2='?' (DbType = Int32), @p0='?' (DbType = Int32), @p1='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SET AUTOCOMMIT = 1;
+UPDATE `users` SET `failed_login_attempts` = @p0, `updated_at` = @p1
+WHERE `id` = @p2;
+SELECT ROW_COUNT();
+2025-12-11 18:51:23.105 +01:00 [WRN] Login attempt failed for username: admin - Invalid password
+2025-12-11 18:51:23.109 +01:00 [INF] Executing UnauthorizedObjectResult, writing value of type '<>f__AnonymousType0`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-12-11 18:51:23.115 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI) in 798.6167ms
+2025-12-11 18:51:23.116 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:51:23.120 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 401 null application/json; charset=utf-8 833.3617ms
+2025-12-11 18:52:30.395 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:52:30.417 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:52:30.427 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:52:30.454 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:52:30.455 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:52:30.456 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:52:30.456 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:52:42.457 +01:00 [INF] Application is shutting down...
+2025-12-11 18:52:56.912 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:52:56.935 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:52:56.945 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:52:56.973 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:52:56.974 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:52:56.975 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:52:56.975 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:53:12.715 +01:00 [INF] Application is shutting down...
+2025-12-11 18:53:21.492 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:53:21.515 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:53:21.524 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:53:21.549 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:53:21.551 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:53:21.551 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:53:21.552 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:53:26.897 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/fix-admin-password - application/json 0
+2025-12-11 18:53:26.909 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-12-11 18:53:26.922 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.FixAdminPassword (RechnungsfreigabeAPI)'
+2025-12-11 18:53:26.931 +01:00 [INF] Route matched with {action = "FixAdminPassword", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult] FixAdminPassword() on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-11 18:53:27.133 +01:00 [INF] Executed DbCommand (20ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`id`, `t`.`active_directory_sid`, `t`.`created_at`, `t`.`email`, `t`.`failed_login_attempts`, `t`.`first_name`, `t`.`is_active`, `t`.`last_name`, `t`.`locked_until`, `t`.`password_changed_at`, `t`.`password_hash`, `t`.`updated_at`, `t`.`username`, `t0`.`user_id`, `t0`.`role_id`, `t0`.`assigned_at`, `t0`.`id`, `t0`.`description`, `t0`.`name`, `t0`.`permissions`
+FROM (
+    SELECT `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`
+    FROM `users` AS `u`
+    WHERE (`u`.`username` = @__username_0) AND `u`.`is_active`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`user_id`, `u0`.`role_id`, `u0`.`assigned_at`, `r`.`id`, `r`.`description`, `r`.`name`, `r`.`permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`role_id` = `r`.`id`
+) AS `t0` ON `t`.`id` = `t0`.`user_id`
+ORDER BY `t`.`id`, `t0`.`user_id`, `t0`.`role_id`
+2025-12-11 18:53:27.622 +01:00 [INF] Executed DbCommand (9ms) [Parameters=[@p3='?' (DbType = Int32), @p0='?' (DbType = DateTime), @p1='?' (Size = 255), @p2='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SET AUTOCOMMIT = 1;
+UPDATE `users` SET `password_changed_at` = @p0, `password_hash` = @p1, `updated_at` = @p2
+WHERE `id` = @p3;
+SELECT ROW_COUNT();
+2025-12-11 18:53:27.635 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[@p2='?' (DbType = Int32), @p0='?' (DbType = Int32), @p1='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SET AUTOCOMMIT = 1;
+UPDATE `users` SET `failed_login_attempts` = @p0, `updated_at` = @p1
+WHERE `id` = @p2;
+SELECT ROW_COUNT();
+2025-12-11 18:53:27.637 +01:00 [INF] Password successfully reset for user admin
+2025-12-11 18:53:27.641 +01:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType0`1[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-12-11 18:53:27.651 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.FixAdminPassword (RechnungsfreigabeAPI) in 717.4458ms
+2025-12-11 18:53:27.653 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.FixAdminPassword (RechnungsfreigabeAPI)'
+2025-12-11 18:53:27.657 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/fix-admin-password - 200 null application/json; charset=utf-8 760.4613ms
+2025-12-11 18:54:58.733 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:54:58.756 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:54:58.767 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:54:58.792 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:54:58.793 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:54:58.794 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:54:58.794 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:55:41.402 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - null null
+2025-12-11 18:55:41.414 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-12-11 18:55:41.417 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:55:41.421 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - 204 null null 19.561ms
+2025-12-11 18:55:41.426 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 45
+2025-12-11 18:55:41.429 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:55:41.444 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:55:41.458 +01:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.LoginResponseDto]] Login(RechnungsfreigabeAPI.DTOs.LoginRequestDto) on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-11 18:55:41.688 +01:00 [INF] Executed DbCommand (22ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`id`, `t`.`active_directory_sid`, `t`.`created_at`, `t`.`email`, `t`.`failed_login_attempts`, `t`.`first_name`, `t`.`is_active`, `t`.`last_name`, `t`.`locked_until`, `t`.`password_changed_at`, `t`.`password_hash`, `t`.`updated_at`, `t`.`username`, `t0`.`user_id`, `t0`.`role_id`, `t0`.`assigned_at`, `t0`.`id`, `t0`.`description`, `t0`.`name`, `t0`.`permissions`
+FROM (
+    SELECT `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`
+    FROM `users` AS `u`
+    WHERE (`u`.`username` = @__username_0) AND `u`.`is_active`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`user_id`, `u0`.`role_id`, `u0`.`assigned_at`, `r`.`id`, `r`.`description`, `r`.`name`, `r`.`permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`role_id` = `r`.`id`
+) AS `t0` ON `t`.`id` = `t0`.`user_id`
+ORDER BY `t`.`id`, `t0`.`user_id`, `t0`.`role_id`
+2025-12-11 18:55:42.219 +01:00 [INF] Executed DbCommand (9ms) [Parameters=[@p1='?' (DbType = Int32), @p0='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SET AUTOCOMMIT = 1;
+UPDATE `users` SET `updated_at` = @p0
+WHERE `id` = @p1;
+SELECT ROW_COUNT();
+2025-12-11 18:55:42.237 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[@__userId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `r`.`permissions`
+FROM `user_roles` AS `u`
+INNER JOIN `roles` AS `r` ON `u`.`role_id` = `r`.`id`
+WHERE `u`.`user_id` = @__userId_0
+2025-12-11 18:55:42.259 +01:00 [INF] Executing OkObjectResult, writing value of type 'RechnungsfreigabeAPI.DTOs.LoginResponseDto'.
+2025-12-11 18:55:42.274 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI) in 812.6474ms
+2025-12-11 18:55:42.275 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:55:42.279 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 200 null application/json; charset=utf-8 853.4667ms
+2025-12-11 18:56:15.561 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - null null
+2025-12-11 18:56:15.563 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:56:15.563 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - 204 null null 2.6831ms
+2025-12-11 18:56:15.565 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 45
+2025-12-11 18:56:15.567 +01:00 [INF] CORS policy execution successful.
+2025-12-11 18:56:15.569 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:56:15.569 +01:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.LoginResponseDto]] Login(RechnungsfreigabeAPI.DTOs.LoginRequestDto) on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-11 18:56:15.612 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`id`, `t`.`active_directory_sid`, `t`.`created_at`, `t`.`email`, `t`.`failed_login_attempts`, `t`.`first_name`, `t`.`is_active`, `t`.`last_name`, `t`.`locked_until`, `t`.`password_changed_at`, `t`.`password_hash`, `t`.`updated_at`, `t`.`username`, `t0`.`user_id`, `t0`.`role_id`, `t0`.`assigned_at`, `t0`.`id`, `t0`.`description`, `t0`.`name`, `t0`.`permissions`
+FROM (
+    SELECT `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`
+    FROM `users` AS `u`
+    WHERE (`u`.`username` = @__username_0) AND `u`.`is_active`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`user_id`, `u0`.`role_id`, `u0`.`assigned_at`, `r`.`id`, `r`.`description`, `r`.`name`, `r`.`permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`role_id` = `r`.`id`
+) AS `t0` ON `t`.`id` = `t0`.`user_id`
+ORDER BY `t`.`id`, `t0`.`user_id`, `t0`.`role_id`
+2025-12-11 18:56:15.903 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[@p1='?' (DbType = Int32), @p0='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SET AUTOCOMMIT = 1;
+UPDATE `users` SET `updated_at` = @p0
+WHERE `id` = @p1;
+SELECT ROW_COUNT();
+2025-12-11 18:56:15.906 +01:00 [INF] Executed DbCommand (0ms) [Parameters=[@__userId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `r`.`permissions`
+FROM `user_roles` AS `u`
+INNER JOIN `roles` AS `r` ON `u`.`role_id` = `r`.`id`
+WHERE `u`.`user_id` = @__userId_0
+2025-12-11 18:56:15.908 +01:00 [INF] Executing OkObjectResult, writing value of type 'RechnungsfreigabeAPI.DTOs.LoginResponseDto'.
+2025-12-11 18:56:15.909 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI) in 338.4725ms
+2025-12-11 18:56:15.910 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-11 18:56:15.911 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 200 null application/json; charset=utf-8 345.3743ms

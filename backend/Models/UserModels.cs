@@ -5,31 +5,55 @@ namespace RechnungsfreigabeAPI.Models;
 
 public class User
 {
+    [Column("id")]
     public int Id { get; set; }
 
     [Required]
     [StringLength(50)]
+    [Column("username")]
     public string Username { get; set; } = string.Empty;
 
     [Required]
     [StringLength(255)]
+    [Column("password_hash")]
+    public string PasswordHash { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(255)]
     [EmailAddress]
+    [Column("email")]
     public string Email { get; set; } = string.Empty;
 
     [Required]
     [StringLength(100)]
+    [Column("first_name")]
     public string FirstName { get; set; } = string.Empty;
 
     [Required]
     [StringLength(100)]
+    [Column("last_name")]
     public string LastName { get; set; } = string.Empty;
 
     [StringLength(255)]
+    [Column("active_directory_sid")]
     public string? ActiveDirectorySid { get; set; }
 
+    [Column("password_changed_at")]
+    public DateTime PasswordChangedAt { get; set; } = DateTime.UtcNow;
+    
+    [Column("failed_login_attempts")]
+    public int FailedLoginAttempts { get; set; } = 0;
+    
+    [Column("locked_until")]
+    public DateTime? LockedUntil { get; set; }
+
+    [Column("is_active")]
     public bool IsActive { get; set; } = true;
 
+    [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
@@ -44,15 +68,18 @@ public class User
 
 public class Role
 {
+    [Column("id")]
     public int Id { get; set; }
 
     [Required]
     [StringLength(50)]
+    [Column("name")]
     public string Name { get; set; } = string.Empty;
 
+    [Column("description")]
     public string? Description { get; set; }
 
-    [Column(TypeName = "json")]
+    [Column("permissions", TypeName = "json")]
     public string Permissions { get; set; } = "[]";
 
     // Navigation properties
@@ -61,12 +88,13 @@ public class Role
 
 public class UserRole
 {
-    [Key, Column(Order = 0)]
+    [Key, Column("user_id", Order = 0)]
     public int UserId { get; set; }
 
-    [Key, Column(Order = 1)]
+    [Key, Column("role_id", Order = 1)]
     public int RoleId { get; set; }
 
+    [Column("assigned_at", TypeName = "timestamp")]
     public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
