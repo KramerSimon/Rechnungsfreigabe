@@ -1,0 +1,128 @@
+<!-- User Dashboard: "Meine Aufgaben" - Handlungsorientiert -->
+<div class="user-dashboard">
+  <!-- Header mit Begrüßung -->
+  <div class="welcome-section">
+    <h1>{{ getGreeting() }}</h1>
+    <p>Du hast heute <strong>{{ totalTasks }}</strong> {{ totalTasks === 1 ? 'Rechnung' : 'Rechnungen' }} zu prüfen.</p>
+  </div>
+
+  <!-- Status-Kacheln -->
+  <div class="status-cards">
+    <div class="status-card urgent" [class.has-items]="urgentCount > 0">
+      <div class="status-icon">⚠️</div>
+      <div class="status-content">
+        <div class="status-title">DRINGEND</div>
+        <div class="status-count">{{ urgentCount }} {{ urgentCount === 1 ? 'Überfällig' : 'Überfällig' }}</div>
+      </div>
+    </div>
+
+    <div class="status-card incomplete" [class.has-items]="incompleteCount > 0">
+      <div class="status-icon">📝</div>
+      <div class="status-content">
+        <div class="status-title">DATEN FEHLEN</div>
+        <div class="status-count">{{ incompleteCount }} {{ incompleteCount === 1 ? 'Unvollständig' : 'Unvollständig' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aufgaben-Tabelle -->
+  <div class="tasks-section">
+    <h2>DEINE OFFENEN AUFGABEN</h2>
+
+    <!-- Filter -->
+    <div class="filter-section">
+      <button
+        class="filter-btn"
+        [class.active]="currentFilter === 'all'"
+        (click)="applyFilter('all')">
+        Alle
+      </button>
+      <button
+        class="filter-btn"
+        [class.active]="currentFilter === 'urgent'"
+        (click)="applyFilter('urgent')">
+        Dringend
+      </button>
+      <button
+        class="filter-btn"
+        [class.active]="currentFilter === 'waiting'"
+        (click)="applyFilter('waiting')">
+        Warten
+      </button>
+    </div>
+
+    <!-- Tabelle -->
+    <div class="tasks-table" *ngIf="!loading && filteredTasks.length > 0">
+      <table mat-table [dataSource]="filteredTasks" class="user-tasks-table">
+        <!-- Status Spalte -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>STATUS</th>
+          <td mat-cell *matCellDef="let task" [class]="task.statusClass">
+            <div class="status-cell">
+              <mat-icon>{{ task.statusIcon }}</mat-icon>
+              <div class="status-info">
+                <div class="status-text">{{ task.statusText }}</div>
+                <div class="status-reason" *ngIf="task.reason">{{ task.reason }}</div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Lieferant Spalte -->
+        <ng-container matColumnDef="supplier">
+          <th mat-header-cell *matHeaderCellDef>LIEFERANT</th>
+          <td mat-cell *matCellDef="let task">
+            <div class="supplier-cell">
+              <div class="supplier-name">{{ task.supplierName }}</div>
+              <div class="supplier-detail" *ngIf="task.reason">{{ task.reason }}</div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Betrag Spalte -->
+        <ng-container matColumnDef="amount">
+          <th mat-header-cell *matHeaderCellDef>BETRAG</th>
+          <td mat-cell *matCellDef="let task">{{ task.amount }}</td>
+        </ng-container>
+
+        <!-- Fällig Spalte -->
+        <ng-container matColumnDef="dueDate">
+          <th mat-header-cell *matHeaderCellDef>FÄLLIG</th>
+          <td mat-cell *matCellDef="let task" [class.overdue]="task.status === 'urgent'">
+            {{ task.dueDate }}
+          </td>
+        </ng-container>
+
+        <!-- Aktion Spalte -->
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef>AKTION</th>
+          <td mat-cell *matCellDef="let task">
+            <button
+              mat-button
+              [class]="task.actionClass"
+              (click)="onTaskAction(task)">
+              {{ task.actionText }}
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+
+    <!-- Leer State -->
+    <div class="empty-state" *ngIf="!loading && filteredTasks.length === 0">
+      <mat-icon>task_alt</mat-icon>
+      <h3>Keine Aufgaben gefunden</h3>
+      <p *ngIf="currentFilter !== 'all'">Versuche einen anderen Filter oder wähle "Alle" aus.</p>
+      <p *ngIf="currentFilter === 'all'">Du hast aktuell keine offenen Aufgaben.</p>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Lade deine Aufgaben...</p>
+    </div>
+  </div>
+</div>

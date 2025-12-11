@@ -1,0 +1,136 @@
+<!-- Accounting Dashboard: "Cockpit" - Datenorientiert -->
+<div class="accounting-dashboard">
+  <!-- Header -->
+  <div class="header-section">
+    <h1>FINANZÜBERSICHT ({{ getCurrentMonth() }})</h1>
+  </div>
+
+  <!-- Übersichts-Kacheln -->
+  <div class="overview-cards">
+    <div class="overview-card rejected" (click)="onResolveRejected()">
+      <div class="card-icon">❌</div>
+      <div class="card-content">
+        <div class="card-title">ABGELEHNT / KO</div>
+        <div class="card-count">{{ overview.rejectedCount }} Rechnungen</div>
+        <div class="card-amount">{{ formatAmount(overview.rejectedAmount) }}</div>
+        <div class="card-action">[Klären >]</div>
+      </div>
+    </div>
+
+    <div class="overview-card ready" (click)="onInitiatePayment()">
+      <div class="card-icon">✅</div>
+      <div class="card-content">
+        <div class="card-title">ZAHLUNGSBEREIT</div>
+        <div class="card-count">{{ overview.readyForPaymentCount }} Rechnungen</div>
+        <div class="card-amount">{{ formatAmount(overview.readyForPaymentAmount) }}</div>
+        <div class="card-action">[Jetzt zahlen >]</div>
+      </div>
+    </div>
+
+    <div class="overview-card volume">
+      <div class="card-icon">💰</div>
+      <div class="card-content">
+        <div class="card-title">OFFENES VOLUMEN</div>
+        <div class="card-amount large">{{ formatAmount(overview.openVolumeAmount) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rechnungsübersicht -->
+  <div class="invoices-section">
+    <h2>ALLE RECHNUNGEN IM PROZESS</h2>
+
+    <!-- Filter und Suche -->
+    <div class="controls-section">
+      <mat-form-field class="search-field">
+        <mat-label>Suche: R-Nr, Lieferant...</mat-label>
+        <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field class="status-filter">
+        <mat-label>Status</mat-label>
+        <mat-select [(value)]="selectedStatus" (selectionChange)="onStatusChange()">
+          <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+            {{ status.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-button class="export-btn" (click)="onExportData()">
+        <mat-icon>download</mat-icon>
+        Export
+      </button>
+    </div>
+
+    <!-- Tabelle -->
+    <div class="invoices-table" *ngIf="!loading && filteredInvoices.length > 0">
+      <table mat-table [dataSource]="filteredInvoices" class="accounting-table">
+        <!-- ID Spalte -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matCellDef="let invoice" (click)="onInvoiceClick(invoice)" class="clickable">
+            <div class="id-cell">
+              <div class="invoice-number">{{ invoice.invoiceNumber }}</div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Lieferant Spalte -->
+        <ng-container matColumnDef="supplier">
+          <th mat-header-cell *matHeaderCellDef>LIEFERANT</th>
+          <td mat-cell *matCellDef="let invoice" (click)="onInvoiceClick(invoice)" class="clickable">
+            <div class="supplier-cell">
+              <div class="supplier-name">{{ invoice.supplierName }}</div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Status Spalte -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>STATUS</th>
+          <td mat-cell *matCellDef="let invoice" [class]="invoice.statusClass">
+            <div class="status-cell">
+              <div class="status-display">{{ invoice.statusDisplay }}</div>
+              <div class="status-reason" *ngIf="invoice.reason">{{ invoice.reason }}</div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Zuständig Spalte -->
+        <ng-container matColumnDef="assignedTo">
+          <th mat-header-cell *matHeaderCellDef>ZUSTÄNDIG</th>
+          <td mat-cell *matCellDef="let invoice">
+            <div class="assigned-cell">{{ invoice.assignedTo }}</div>
+          </td>
+        </ng-container>
+
+        <!-- Betrag Spalte -->
+        <ng-container matColumnDef="amount">
+          <th mat-header-cell *matHeaderCellDef>BETRAG</th>
+          <td mat-cell *matCellDef="let invoice" class="amount-cell">
+            {{ invoice.amount }}
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+            [class.clickable-row]="true"></tr>
+      </table>
+    </div>
+
+    <!-- Leer State -->
+    <div class="empty-state" *ngIf="!loading && filteredInvoices.length === 0">
+      <mat-icon>inbox</mat-icon>
+      <h3>Keine Rechnungen gefunden</h3>
+      <p *ngIf="searchTerm || selectedStatus !== 'all'">Versuche andere Filter oder lösche die Suche.</p>
+      <p *ngIf="!searchTerm && selectedStatus === 'all'">Aktuell sind keine Rechnungen im System.</p>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Lade Rechnungsübersicht...</p>
+    </div>
+  </div>
+</div>

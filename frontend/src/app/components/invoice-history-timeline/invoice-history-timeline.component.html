@@ -1,7 +1,7 @@
 <!-- Invoice History Timeline Header -->
 <div class="timeline-header">
   <h2 class="timeline-title">
-    Rechnung {{invoiceNumber}} - Historie & Aktivitäten
+    Rechnung {{invoiceNumber || 'DEBUG'}} - Historie & Aktivitäten
   </h2>
   <div class="timeline-actions">
     <button mat-raised-button color="primary" (click)="onExportPdf()" [disabled]="isLoading">

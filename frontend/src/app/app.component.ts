@@ -6,8 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from './core/services/auth.service';
+import { RoleService, UserRole, DashboardRoute } from './core/services/role.service';
 import { AuthState } from './core/models/auth.models';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -26,12 +27,21 @@ import { Observable } from 'rxjs';
 export class AppComponent implements OnInit {
   title = 'Rechnungsfreigabe';
   authState$: Observable<AuthState>;
+  availableRoutes$: Observable<DashboardRoute[]>;
+  currentRole$: Observable<string>;
+  currentRoleTitle$: Observable<string>;
 
   constructor(
     private authService: AuthService,
+    private roleService: RoleService,
     private router: Router
   ) {
     this.authState$ = this.authService.authState$;
+    this.availableRoutes$ = this.roleService.getAvailableNavigationRoutes();
+    this.currentRole$ = this.roleService.getCurrentUserRole().pipe(
+      map(role => role.toString())
+    );
+    this.currentRoleTitle$ = this.roleService.getCurrentDashboardTitle();
   }
 
   ngOnInit(): void {

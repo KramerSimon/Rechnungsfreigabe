@@ -214,18 +214,25 @@ CREATE TABLE approval_workflows (
 CREATE TABLE invoice_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     invoice_id INT NOT NULL,
-    action VARCHAR(50) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    action_type VARCHAR(50) NOT NULL DEFAULT 'Manual',
+    action_source VARCHAR(50) NOT NULL DEFAULT 'User',
     old_status VARCHAR(20),
     new_status VARCHAR(20),
     field_changes JSON, -- JSON mit geänderten Feldern
     comments TEXT,
-    changed_by INT NOT NULL,
+    policy_reference VARCHAR(100),
+    system_reason VARCHAR(255),
+    import_channel VARCHAR(50),
+    changed_by INT,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
     FOREIGN KEY (changed_by) REFERENCES users(id),
     
     INDEX idx_invoice_id (invoice_id),
-    INDEX idx_changed_at (changed_at)
+    INDEX idx_changed_at (changed_at),
+    INDEX idx_action_type (action_type),
+    INDEX idx_action_source (action_source)
 );
 
 -- 9. Benachrichtigungen

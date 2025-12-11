@@ -183,6 +183,26 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(ih => ih.ChangedBy)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Configure InvoiceHistory column mappings
+        modelBuilder.Entity<InvoiceHistory>(entity =>
+        {
+            entity.ToTable("invoice_history");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.InvoiceId).HasColumnName("invoice_id");
+            entity.Property(e => e.Action).HasColumnName("action");
+            entity.Property(e => e.ActionType).HasColumnName("action_type");
+            entity.Property(e => e.ActionSource).HasColumnName("action_source");
+            entity.Property(e => e.OldStatus).HasColumnName("old_status");
+            entity.Property(e => e.NewStatus).HasColumnName("new_status");
+            entity.Property(e => e.FieldChanges).HasColumnName("field_changes");
+            entity.Property(e => e.Comments).HasColumnName("comments");
+            entity.Property(e => e.PolicyReference).HasColumnName("policy_reference");
+            entity.Property(e => e.SystemReason).HasColumnName("system_reason");
+            entity.Property(e => e.ImportChannel).HasColumnName("import_channel");
+            entity.Property(e => e.ChangedBy).HasColumnName("changed_by");
+            entity.Property(e => e.ChangedAt).HasColumnName("changed_at");
+        });
+
         modelBuilder.Entity<Notification>()
             .HasOne(n => n.User)
             .WithMany(u => u.Notifications)

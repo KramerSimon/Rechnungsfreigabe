@@ -1,0 +1,362 @@
+/* Accounting Dashboard - Datenorientiertes Design */
+.accounting-dashboard {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Header */
+.header-section {
+  margin-bottom: 2rem;
+
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Overview Cards */
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.overview-card {
+  display: flex;
+  align-items: center;
+  padding: 2rem;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: default;
+
+  &.rejected, &.ready {
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  &.rejected {
+    border-left: 4px solid #f44336;
+
+    &:hover {
+      background: linear-gradient(135deg, #fff5f5 0%, #ffeaea 100%);
+    }
+  }
+
+  &.ready {
+    border-left: 4px solid #4caf50;
+
+    &:hover {
+      background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+    }
+  }
+
+  &.volume {
+    border-left: 4px solid #1976d2;
+  }
+
+  .card-icon {
+    font-size: 3rem;
+    margin-right: 1.5rem;
+    opacity: 0.8;
+  }
+
+  .card-content {
+    flex: 1;
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #666;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-count {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin-bottom: 0.25rem;
+    }
+
+    .card-amount {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #1976d2;
+      margin-bottom: 0.5rem;
+
+      &.large {
+        font-size: 1.6rem;
+        color: #1976d2;
+        margin-bottom: 0;
+      }
+    }
+
+    .card-action {
+      font-size: 0.9rem;
+      color: #1976d2;
+      font-weight: 500;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  &.rejected .card-amount {
+    color: #f44336;
+  }
+
+  &.ready .card-amount {
+    color: #4caf50;
+  }
+}
+
+/* Invoices Section */
+.invoices-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 1.5rem 0;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Controls */
+.controls-section {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  .search-field {
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .status-filter {
+    min-width: 150px;
+  }
+
+  .export-btn {
+    background: #1976d2;
+    color: white;
+
+    &:hover {
+      background: #1565c0;
+    }
+  }
+}
+
+/* Accounting Table */
+.accounting-table {
+  width: 100%;
+  margin: 0;
+
+  .mat-mdc-header-cell {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #666;
+    letter-spacing: 0.5px;
+    padding: 1rem 0.8rem;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .mat-mdc-cell {
+    padding: 1rem 0.8rem;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 0.9rem;
+
+    &.clickable {
+      cursor: pointer;
+    }
+  }
+
+  .mat-mdc-row {
+    transition: background-color 0.3s ease;
+
+    &.clickable-row:hover {
+      background-color: #f8f9fa;
+    }
+  }
+}
+
+/* Table Cells */
+.id-cell {
+  .invoice-number {
+    font-weight: 600;
+    color: #1976d2;
+    font-family: monospace;
+  }
+}
+
+.supplier-cell {
+  .supplier-name {
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+}
+
+.status-cell {
+  .status-display {
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+  }
+
+  .status-reason {
+    font-size: 0.8rem;
+    color: #666;
+  }
+}
+
+.assigned-cell {
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.amount-cell {
+  font-weight: 600;
+  text-align: right;
+  color: #1a1a1a;
+  font-family: monospace;
+}
+
+/* Status Colors */
+.status-rejected .status-display {
+  color: #f44336;
+}
+
+.status-approved .status-display {
+  color: #4caf50;
+}
+
+.status-auto .status-display {
+  color: #9c27b0;
+}
+
+.status-pending .status-display {
+  color: #ff9800;
+}
+
+.status-draft .status-display {
+  color: #666;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #666;
+
+  .mat-icon {
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+    color: #ccc;
+  }
+
+  h3 {
+    font-size: 1.2rem;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #666;
+
+  .mat-spinner {
+    margin: 0 auto 1rem auto;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .accounting-dashboard {
+    padding: 1rem;
+  }
+
+  .overview-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .overview-card {
+    padding: 1.5rem;
+
+    .card-icon {
+      font-size: 2.5rem;
+      margin-right: 1rem;
+    }
+  }
+
+  .invoices-section {
+    padding: 1.5rem;
+  }
+
+  .controls-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+
+    .search-field,
+    .status-filter,
+    .export-btn {
+      width: 100%;
+      min-width: auto;
+    }
+  }
+
+  .accounting-table {
+    .mat-mdc-header-cell,
+    .mat-mdc-cell {
+      padding: 0.8rem 0.5rem;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .overview-card {
+    flex-direction: column;
+    text-align: center;
+
+    .card-icon {
+      margin-right: 0;
+      margin-bottom: 1rem;
+    }
+  }
+}

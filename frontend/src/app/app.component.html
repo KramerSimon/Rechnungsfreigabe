@@ -1,10 +1,32 @@
 <div *ngIf="authState$ | async as authState">
   <nav class="navbar" *ngIf="authState.isAuthenticated">
     <img src="/images.jpeg" alt="App Logo" class="app-logo">
-    <button mat-button routerLink="/dashboard">Dashboard</button>
-    <button mat-button routerLink="/admin/rules">Admin & Rules</button>
-    <button mat-button routerLink="/history">History</button>
-    <button mat-icon-button [matMenuTriggerFor]="accountMenu" class="account-button"><mat-icon>account_circle</mat-icon></button>
+
+    <!-- Rollenbasierte Navigation -->
+    <div class="nav-links" *ngIf="availableRoutes$ | async as routes">
+      <button mat-button
+              *ngFor="let route of routes"
+              [routerLink]="route.path"
+              routerLinkActive="active"
+              class="nav-link">
+        {{ route.title }}
+      </button>
+    </div>
+
+    <!-- Legacy Admin Link (falls vorhanden) -->
+    <button mat-button
+            *ngIf="(currentRole$ | async) === 'admin'"
+            routerLink="/admin/rules"
+            class="nav-link">
+      Regeln
+    </button>
+
+    <!-- User Profile Dropdown -->
+    <button mat-icon-button
+            [matMenuTriggerFor]="accountMenu"
+            class="account-button">
+      <mat-icon>account_circle</mat-icon>
+    </button>
 
     <mat-menu #accountMenu="matMenu" class="account-menu">
       <div class="user-profile-header" (click)="$event.stopPropagation()">
@@ -12,17 +34,49 @@
         <div class="user-info">
           <div class="user-name">{{ authState.user?.fullName || authState.user?.username }}</div>
           <div class="user-email">{{ authState.user?.email }}</div>
-          <div class="user-role" *ngIf="authState.user && authState.user.roles && authState.user.roles.length > 0">
-            Rolle: <strong>{{ authState.user.roles[0].name }}</strong>
+          <div class="user-role" *ngIf="currentRoleTitle$ | async as roleTitle">
+            Dashboard: <strong>{{ roleTitle }}</strong>
           </div>
         </div>
       </div>
 
       <mat-divider></mat-divider>
 
+      <!-- Dashboard-Wechsel für Admins -->
+      <div *ngIf="(currentRole$ | async) === 'admin'" class="dashboard-switcher">
+        <div class="menu-section-title">Dashboard wechseln:</div>
+        <button mat-menu-item routerLink="/dashboard/admin" routerLinkActive="active">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <span>Konfiguration</span>
+        </button>
+        <button mat-menu-item routerLink="/dashboard/accounting" routerLinkActive="active">
+          <mat-icon>account_balance</mat-icon>
+          <span>Cockpit</span>
+        </button>
+        <button mat-menu-item routerLink="/dashboard/user" routerLinkActive="active">
+          <mat-icon>task</mat-icon>
+          <span>Meine Aufgaben</span>
+        </button>
+        <mat-divider></mat-divider>
+      </div>
+
+      <!-- Dashboard-Wechsel für Buchhaltung -->
+      <div *ngIf="(currentRole$ | async) === 'accounting'" class="dashboard-switcher">
+        <div class="menu-section-title">Dashboard wechseln:</div>
+        <button mat-menu-item routerLink="/dashboard/accounting" routerLinkActive="active">
+          <mat-icon>account_balance</mat-icon>
+          <span>Cockpit</span>
+        </button>
+        <button mat-menu-item routerLink="/dashboard/user" routerLinkActive="active">
+          <mat-icon>task</mat-icon>
+          <span>Meine Aufgaben</span>
+        </button>
+        <mat-divider></mat-divider>
+      </div>
+
       <button mat-menu-item routerLink="/account">
         <mat-icon>settings</mat-icon>
-        <span>Einstellungen (Mein Profil)</span>
+        <span>Einstellungen</span>
       </button>
       <button mat-menu-item routerLink="/notifications">
         <mat-icon>notifications</mat-icon>
