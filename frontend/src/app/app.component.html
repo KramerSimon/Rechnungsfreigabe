@@ -1,42 +1,46 @@
-<nav class="navbar">
-  <img src="/images.jpeg" alt="App Logo" class="app-logo">
-  <button mat-button routerLink="/dashboard">Dashboard</button>
-  <button mat-button routerLink="/admin/rules">Admin & Rules</button>
-  <button mat-button routerLink="/history">History</button>
-  <button mat-icon-button [matMenuTriggerFor]="accountMenu" class="account-button"><mat-icon>account_circle</mat-icon></button>
-</nav>
+<div *ngIf="authState$ | async as authState">
+  <nav class="navbar" *ngIf="authState.isAuthenticated">
+    <img src="/images.jpeg" alt="App Logo" class="app-logo">
+    <button mat-button routerLink="/dashboard">Dashboard</button>
+    <button mat-button routerLink="/admin/rules">Admin & Rules</button>
+    <button mat-button routerLink="/history">History</button>
+    <button mat-icon-button [matMenuTriggerFor]="accountMenu" class="account-button"><mat-icon>account_circle</mat-icon></button>
 
-<mat-menu #accountMenu="matMenu" class="account-menu">
-  <div class="user-profile-header" (click)="$event.stopPropagation()">
-    <mat-icon class="user-avatar">account_circle</mat-icon>
-    <div class="user-info">
-      <div class="user-name">Max Mustermann</div>
-      <div class="user-email">max.mustermann&#64;firma.de</div>
-      <div class="user-role">Rolle: <strong>Freigeber</strong> / Buchhaltung</div>
-    </div>
-  </div>
+    <mat-menu #accountMenu="matMenu" class="account-menu">
+      <div class="user-profile-header" (click)="$event.stopPropagation()">
+        <mat-icon class="user-avatar">account_circle</mat-icon>
+        <div class="user-info">
+          <div class="user-name">{{ authState.user?.fullName || authState.user?.username }}</div>
+          <div class="user-email">{{ authState.user?.email }}</div>
+          <div class="user-role" *ngIf="authState.user && authState.user.roles && authState.user.roles.length > 0">
+            Rolle: <strong>{{ authState.user.roles[0].name }}</strong>
+          </div>
+        </div>
+      </div>
 
-  <mat-divider></mat-divider>
+      <mat-divider></mat-divider>
 
-  <button mat-menu-item routerLink="/account">
-    <mat-icon>settings</mat-icon>
-    <span>Einstellungen (Mein Profil)</span>
-  </button>
-  <button mat-menu-item routerLink="/notifications">
-    <mat-icon>notifications</mat-icon>
-    <span>Benachrichtigungen</span>
-  </button>
-  <button mat-menu-item routerLink="/help">
-    <mat-icon>help_outline</mat-icon>
-    <span>Hilfe & Support</span>
-  </button>
+      <button mat-menu-item routerLink="/account">
+        <mat-icon>settings</mat-icon>
+        <span>Einstellungen (Mein Profil)</span>
+      </button>
+      <button mat-menu-item routerLink="/notifications">
+        <mat-icon>notifications</mat-icon>
+        <span>Benachrichtigungen</span>
+      </button>
+      <button mat-menu-item routerLink="/help">
+        <mat-icon>help_outline</mat-icon>
+        <span>Hilfe & Support</span>
+      </button>
 
-  <mat-divider></mat-divider>
+      <mat-divider></mat-divider>
 
-  <button mat-menu-item routerLink="/logout">
-    <mat-icon>logout</mat-icon>
-    <span>Abmelden</span>
-  </button>
-</mat-menu>
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>Abmelden</span>
+      </button>
+    </mat-menu>
+  </nav>
+</div>
 
 <router-outlet></router-outlet>

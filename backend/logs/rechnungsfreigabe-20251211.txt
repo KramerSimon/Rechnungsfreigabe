@@ -1,0 +1,35 @@
+2025-12-11 18:17:30.611 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:17:30.637 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:17:30.657 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:17:30.665 +01:00 [INF] Creating key {01a4f0e6-7879-47d6-9b7d-df47030c8e61} with creation date 2025-12-11 17:17:30Z, activation date 2025-12-11 17:17:30Z, and expiration date 2026-03-11 17:17:30Z.
+2025-12-11 18:17:30.674 +01:00 [INF] Writing data to file 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys\key-01a4f0e6-7879-47d6-9b7d-df47030c8e61.xml'.
+2025-12-11 18:17:30.714 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:17:30.716 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:17:30.716 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:17:30.717 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:17:52.020 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/ - null null
+2025-12-11 18:17:52.037 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-12-11 18:17:52.092 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/ - 404 0 null 72.9247ms
+2025-12-11 18:17:52.096 +01:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5000/, Response status code: 404
+2025-12-11 18:18:17.162 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/invoices - null null
+2025-12-11 18:18:17.171 +01:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user.
+2025-12-11 18:18:17.174 +01:00 [INF] AuthenticationScheme: Bearer was challenged.
+2025-12-11 18:18:17.176 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/invoices - 401 0 null 13.3811ms
+2025-12-11 18:19:55.527 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-11 18:19:55.550 +01:00 [INF] Database connection established successfully.
+2025-12-11 18:19:55.561 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-11 18:19:55.589 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-11 18:19:55.591 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-11 18:19:55.591 +01:00 [INF] Hosting environment: Production
+2025-12-11 18:19:55.592 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-11 18:20:13.545 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/?id=6da9eabc-5b95-425f-983a-16f11502ef87&vscodeBrowserReqId=1765473613521 - null null
+2025-12-11 18:20:13.557 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-12-11 18:20:13.584 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/?id=6da9eabc-5b95-425f-983a-16f11502ef87&vscodeBrowserReqId=1765473613521 - 404 0 null 39.6209ms
+2025-12-11 18:20:13.588 +01:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5000/, Response status code: 404

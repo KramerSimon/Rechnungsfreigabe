@@ -1,0 +1,144 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace RechnungsfreigabeAPI.Models;
+
+public class User
+{
+    public int Id { get; set; }
+
+    [Required]
+    [StringLength(50)]
+    public string Username { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(255)]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100)]
+    public string LastName { get; set; } = string.Empty;
+
+    [StringLength(255)]
+    public string? ActiveDirectorySid { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+    public virtual ICollection<CostCenter> ManagedCostCenters { get; set; } = new List<CostCenter>();
+    public virtual ICollection<Project> ManagedProjects { get; set; } = new List<Project>();
+    public virtual ICollection<Invoice> CreatedInvoices { get; set; } = new List<Invoice>();
+    public virtual ICollection<Invoice> ProcessedInvoices { get; set; } = new List<Invoice>();
+    public virtual ICollection<ApprovalWorkflow> ApprovalWorkflows { get; set; } = new List<ApprovalWorkflow>();
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+}
+
+public class Role
+{
+    public int Id { get; set; }
+
+    [Required]
+    [StringLength(50)]
+    public string Name { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
+
+    [Column(TypeName = "json")]
+    public string Permissions { get; set; } = "[]";
+
+    // Navigation properties
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+}
+
+public class UserRole
+{
+    [Key, Column(Order = 0)]
+    public int UserId { get; set; }
+
+    [Key, Column(Order = 1)]
+    public int RoleId { get; set; }
+
+    public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual User User { get; set; } = null!;
+    public virtual Role Role { get; set; } = null!;
+}
+
+public class CostCenter
+{
+    [StringLength(20)]
+    public string Id { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
+
+    public int? ManagerId { get; set; }
+
+    [Column(TypeName = "decimal(12,2)")]
+    public decimal Budget { get; set; } = 0;
+
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual User? Manager { get; set; }
+    public virtual ICollection<Project> Projects { get; set; } = new List<Project>();
+    public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
+}
+
+public class Project
+{
+    [StringLength(20)]
+    public string Id { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
+
+    [Required]
+    [StringLength(20)]
+    public string CostCenterId { get; set; } = string.Empty;
+
+    [Column(TypeName = "decimal(12,2)")]
+    public decimal Budget { get; set; } = 0;
+
+    [Column(TypeName = "decimal(12,2)")]
+    public decimal SpentAmount { get; set; } = 0;
+
+    public ProjectStatus Status { get; set; } = ProjectStatus.Geplant;
+
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public int? ProjectManagerId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual CostCenter CostCenter { get; set; } = null!;
+    public virtual User? ProjectManager { get; set; }
+    public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
+}
+
+public enum ProjectStatus
+{
+    Geplant,
+    Aktiv,
+    Pausiert,
+    Abgeschlossen
+}
