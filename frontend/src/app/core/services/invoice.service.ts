@@ -48,6 +48,7 @@ export interface Invoice {
   updatedAt: string;
   isOverdue: boolean;
   daysOverdue: number;
+  pendingApprovals?: any[]; // Array of pending approval workflows
 }
 
 export interface PagedResult<T> {

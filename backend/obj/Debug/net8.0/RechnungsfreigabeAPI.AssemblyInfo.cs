@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RechnungsfreigabeAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5e61f963fb84cc68594d3feef0b188de16a2b252")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+279fd8e3fff8916fd209872fd803cd5c41b935a3")]
 [assembly: System.Reflection.AssemblyProductAttribute("RechnungsfreigabeAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RechnungsfreigabeAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

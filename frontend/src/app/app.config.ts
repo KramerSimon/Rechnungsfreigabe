@@ -1,12 +1,17 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, LOCALE_ID } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { inject } from '@angular/core';
 import { HttpRequest, HttpHandlerFn } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import localeDe from '@angular/common/locales/de';
 
 import { routes } from './app.routes';
 import { AuthService } from './core/services/auth.service';
+
+// Register German locale
+registerLocaleData(localeDe);
 
 // Functional interceptor for the new Angular standalone approach
 function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn) {
@@ -28,6 +33,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
-    provideAnimationsAsync()
+    provideAnimationsAsync(),
+    { provide: LOCALE_ID, useValue: 'de' }
   ]
 };

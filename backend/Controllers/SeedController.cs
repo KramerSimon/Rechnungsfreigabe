@@ -21,8 +21,9 @@ public class SeedController : ControllerBase
     {
         try
         {
-            // Clear existing data to refresh
+            // Clear existing data to refresh (in correct order for foreign keys)
             _context.ApprovalWorkflows.RemoveRange(_context.ApprovalWorkflows);
+            _context.Notifications.RemoveRange(_context.Notifications);
             _context.Invoices.RemoveRange(_context.Invoices);
             _context.Suppliers.RemoveRange(_context.Suppliers);
             await _context.SaveChangesAsync();

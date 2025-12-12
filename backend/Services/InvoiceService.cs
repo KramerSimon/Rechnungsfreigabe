@@ -376,10 +376,54 @@ public class InvoiceService : IInvoiceService
 
             if (invoice == null) return false;
 
+            // Check if user has permission to approve
+            var userPermissions = await _userService.GetUserPermissionsAsync(approverId);
+            var isAdmin = userPermissions.Contains("all");
+
             var pendingWorkflow = invoice.ApprovalWorkflows
                 .FirstOrDefault(aw => aw.ApproverId == approverId && aw.Status == ApprovalStatus.Pending);
 
-            if (pendingWorkflow == null) return false;
+            // If user is admin and no workflow exists for them, allow approval anyway
+            if (pendingWorkflow == null && !isAdmin) return false;
+
+            // If admin approves but has no workflow, use the first pending workflow
+            if (pendingWorkflow == null && isAdmin)
+            {
+                pendingWorkflow = invoice.ApprovalWorkflows
+                    .FirstOrDefault(aw => aw.Status == ApprovalStatus.Pending);
+                
+                // If no pending workflows exist at all, allow admin to approve/reject directly (e.g., for overdue invoices)
+                if (pendingWorkflow == null)
+                {
+                    // Admin override - directly approve or reject invoice without workflow
+                    if (!approveDto.Approved)
+                    {
+                        invoice.Status = InvoiceStatus.Abgelehnt;
+                        invoice.ProcessedBy = approverId;
+                        invoice.UpdatedAt = DateTime.UtcNow;
+
+                        await _historyService.CreateApprovalActionAsync(invoiceId, false, approverId, approveDto.Comments);
+                    }
+                    else
+                    {
+                        invoice.Status = InvoiceStatus.Freigegeben;
+                        invoice.ProcessedBy = approverId;
+                        invoice.UpdatedAt = DateTime.UtcNow;
+
+                        await _historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, approveDto.Approved);
+
+                    _logger.LogInformation("Invoice {InvoiceId} {Action} by admin override (no workflows) - user {UserId}", 
+                        invoiceId, approveDto.Approved ? "approved" : "rejected", approverId);
+
+                    return true;
+                }
+            }
 
             // Update workflow status
             pendingWorkflow.Status = approveDto.Approved ? ApprovalStatus.Approved : ApprovalStatus.Rejected;

@@ -104,7 +104,12 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   }
 
   private processTasksData(invoices: Invoice[]): void {
-    this.tasks = invoices.map(invoice => this.mapInvoiceToTask(invoice));
+    // Filter nur Rechnungen die Freigabe benötigen UND pending approvals haben
+    const pendingInvoices = invoices.filter(inv =>
+      (inv.status === 'Freigabe_Erforderlich' || inv.status === 'Eingegangen') &&
+      inv.pendingApprovals && inv.pendingApprovals.length > 0
+    );
+    this.tasks = pendingInvoices.map(invoice => this.mapInvoiceToTask(invoice));
     this.calculateCounts();
     this.applyFilter(this.currentFilter);
   }
@@ -160,12 +165,12 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
       actionClass,
       reason
     };
+  }
 
   // Manual refresh method that can be called from UI
   refreshTasks(): void {
     console.log('Manual refresh triggered');
     this.loadUserTasks();
-  }
   }
 
   private formatDueDate(dueDate: string): string {
@@ -208,7 +213,11 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
 
   onTaskAction(task: UserTask): void {
     // Weiterleitung zur Bearbeitung der Rechnung
-    this.router.navigate(['/invoice', task.id]);
+    console.log('Navigating to invoice:', task.id);
+    this.router.navigate(['/invoice', task.id]).then(
+      success => console.log('Navigation successful:', success),
+      error => console.error('Navigation failed:', error)
+    );
   }
 
   getGreeting(): string {

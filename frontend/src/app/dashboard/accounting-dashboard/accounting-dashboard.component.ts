@@ -115,19 +115,24 @@ export class AccountingDashboardComponent implements OnInit {
     let assignedTo: string;
     let reason: string | undefined;
 
-    switch (invoice.status.toLowerCase()) {
+    const status = invoice.status.toLowerCase();
+
+    switch (status) {
+      case 'abgelehnt':
       case 'rejected':
         statusDisplay = '❌ Abgelehnt (KO)';
         statusClass = 'status-rejected';
         assignedTo = '--';
         reason = 'Falsche KST';
         break;
+      case 'freigegeben':
       case 'approved':
         statusDisplay = '✅ Freigegeben';
         statusClass = 'status-approved';
         assignedTo = 'Buchhaltung';
         reason = 'Wartet auf Zahlung';
         break;
+      case 'freigabe_erforderlich':
       case 'pending':
         if (invoice.autoApproved) {
           statusDisplay = '🤖 Auto-Freigabe';
@@ -139,6 +144,19 @@ export class AccountingDashboardComponent implements OnInit {
           statusClass = 'status-pending';
           assignedTo = invoice.processor ? `${invoice.processor.firstName} ${invoice.processor.lastName}` : 'Unzugewiesen';
         }
+        break;
+      case 'eingegangen':
+      case 'draft':
+        statusDisplay = '📋 Erfasst';
+        statusClass = 'status-draft';
+        assignedTo = 'Buchhaltung';
+        break;
+      case 'ueberfaellig':
+      case 'overdue':
+        statusDisplay = '⚠️ Überfällig';
+        statusClass = 'status-overdue';
+        assignedTo = invoice.processor ? `${invoice.processor.firstName} ${invoice.processor.lastName}` : 'Unzugewiesen';
+        reason = 'Frist überschritten';
         break;
       default:
         statusDisplay = '📋 Erfasst';
@@ -162,8 +180,14 @@ export class AccountingDashboardComponent implements OnInit {
   }
 
   private calculateOverview(): void {
-    const rejectedInvoices = this.invoices.filter(inv => inv.status === 'rejected');
-    const approvedInvoices = this.invoices.filter(inv => inv.status === 'approved');
+    const rejectedInvoices = this.invoices.filter(inv => {
+      const status = inv.status.toLowerCase();
+      return status === 'rejected' || status === 'abgelehnt';
+    });
+    const approvedInvoices = this.invoices.filter(inv => {
+      const status = inv.status.toLowerCase();
+      return status === 'approved' || status === 'freigegeben';
+    });
 
     this.overview = {
       rejectedCount: rejectedInvoices.length,
@@ -180,11 +204,12 @@ export class AccountingDashboardComponent implements OnInit {
     // Status Filter
     if (this.selectedStatus !== 'all') {
       filtered = filtered.filter(invoice => {
+        const status = invoice.status.toLowerCase();
         switch (this.selectedStatus) {
-          case 'rejected': return invoice.status === 'rejected';
-          case 'approved': return invoice.status === 'approved';
+          case 'rejected': return status === 'rejected' || status === 'abgelehnt';
+          case 'approved': return status === 'approved' || status === 'freigegeben';
           case 'auto_approved': return invoice.originalInvoice.autoApproved;
-          case 'in_approval': return invoice.status === 'pending' && !invoice.originalInvoice.autoApproved;
+          case 'in_approval': return (status === 'pending' || status === 'freigabe_erforderlich') && !invoice.originalInvoice.autoApproved;
           default: return true;
         }
       });
