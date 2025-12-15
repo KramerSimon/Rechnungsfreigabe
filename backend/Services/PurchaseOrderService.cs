@@ -1,0 +1,109 @@
+using Microsoft.EntityFrameworkCore;
+using RechnungsfreigabeAPI.Data;
+using RechnungsfreigabeAPI.DTOs;
+using RechnungsfreigabeAPI.Models;
+
+namespace RechnungsfreigabeAPI.Services;
+
+public interface IPurchaseOrderService
+{
+    Task<IEnumerable<PurchaseOrderDto>> GetAllPurchaseOrdersAsync();
+    Task<PurchaseOrderDto?> GetPurchaseOrderByIdAsync(string id);
+    Task<PurchaseOrderDto> CreatePurchaseOrderAsync(CreatePurchaseOrderDto createDto, int createdBy);
+}
+
+public class PurchaseOrderService : IPurchaseOrderService
+{
+    private readonly ApplicationDbContext _context;
+    private readonly ILogger<PurchaseOrderService> _logger;
+
+    public PurchaseOrderService(ApplicationDbContext context, ILogger<PurchaseOrderService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+
+    public async Task<IEnumerable<PurchaseOrderDto>> GetAllPurchaseOrdersAsync()
+    {
+        var purchaseOrders = await _context.PurchaseOrders
+            .Include(po => po.CostCenter)
+            .Include(po => po.Project)
+            .Include(po => po.Creator)
+            .Include(po => po.Approver)
+            .Where(po => po.Status != PurchaseOrderStatus.Storniert)
+            .OrderByDescending(po => po.CreatedAt)
+            .ToListAsync();
+
+        return purchaseOrders.Select(MapToDto);
+    }
+
+    public async Task<PurchaseOrderDto?> GetPurchaseOrderByIdAsync(string id)
+    {
+        var purchaseOrder = await _context.PurchaseOrders
+            .Include(po => po.CostCenter)
+            .Include(po => po.Project)
+            .Include(po => po.Creator)
+            .Include(po => po.Approver)
+            .FirstOrDefaultAsync(po => po.Id == id);
+
+        return purchaseOrder != null ? MapToDto(purchaseOrder) : null;
+    }
+
+    public async Task<PurchaseOrderDto> CreatePurchaseOrderAsync(CreatePurchaseOrderDto createDto, int createdBy)
+    {
+        var purchaseOrder = new PurchaseOrder
+        {
+            Id = createDto.Id,
+            Title = createDto.Title,
+            Description = createDto.Description,
+            CostCenterId = createDto.CostCenterId,
+            ProjectId = createDto.ProjectId,
+            TotalAmount = createDto.TotalAmount,
+            Currency = createDto.Currency,
+            Status = PurchaseOrderStatus.Offen,
+            CreatedBy = createdBy,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.PurchaseOrders.Add(purchaseOrder);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Purchase order created successfully: {PurchaseOrderId}", purchaseOrder.Id);
+
+        return await GetPurchaseOrderByIdAsync(purchaseOrder.Id) 
+            ?? throw new InvalidOperationException("Failed to retrieve created purchase order");
+    }
+
+    private static PurchaseOrderDto MapToDto(PurchaseOrder po)
+    {
+        return new PurchaseOrderDto
+        {
+            Id = po.Id,
+            Title = po.Title,
+            Description = po.Description,
+            CostCenterId = po.CostCenterId,
+            CostCenterName = po.CostCenter?.Name,
+            ProjectId = po.ProjectId,
+            ProjectName = po.Project?.Name,
+            TotalAmount = po.TotalAmount,
+            Currency = po.Currency,
+            Status = po.Status.ToString(),
+            Creator = po.Creator != null ? new UserDto
+            {
+                Id = po.Creator.Id,
+                Username = po.Creator.Username,
+                FirstName = po.Creator.FirstName,
+                LastName = po.Creator.LastName
+            } : null,
+            Approver = po.Approver != null ? new UserDto
+            {
+                Id = po.Approver.Id,
+                Username = po.Approver.Username,
+                FirstName = po.Approver.FirstName,
+                LastName = po.Approver.LastName
+            } : null,
+            CreatedAt = po.CreatedAt,
+            ApprovedAt = po.ApprovedAt
+        };
+    }
+}

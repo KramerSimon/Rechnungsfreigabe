@@ -13,6 +13,8 @@ public interface ICostCenterService
     Task<CostCenterDto?> UpdateCostCenterAsync(string id, CreateCostCenterDto updateCostCenterDto);
     Task<bool> DeleteCostCenterAsync(string id);
     Task<IEnumerable<ProjectDto>> GetCostCenterProjectsAsync(string costCenterId);
+    Task<IEnumerable<ProjectDto>> GetAllProjectsAsync();
+    Task<ProjectDto> CreateProjectAsync(CreateProjectDto createProjectDto);
 }
 
 public class CostCenterService : ICostCenterService
@@ -155,6 +157,53 @@ public class CostCenterService : ICostCenterService
             .ToListAsync();
 
         return projects.Select(MapProjectToDto);
+    }
+
+    public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync()
+    {
+        var projects = await _context.Projects
+            .Include(p => p.CostCenter)
+            .Include(p => p.ProjectManager)
+            .OrderBy(p => p.Name)
+            .ToListAsync();
+
+        return projects.Select(MapProjectToDto);
+    }
+
+    public async Task<ProjectDto> CreateProjectAsync(CreateProjectDto createProjectDto)
+    {
+        try
+        {
+            var project = new Project
+            {
+                Id = createProjectDto.Id,
+                Name = createProjectDto.Name,
+                Description = createProjectDto.Description,
+                CostCenterId = createProjectDto.CostCenterId,
+                Budget = createProjectDto.Budget,
+                Status = Enum.Parse<ProjectStatus>(createProjectDto.Status),
+                StartDate = createProjectDto.StartDate,
+                EndDate = createProjectDto.EndDate,
+                ProjectManagerId = createProjectDto.ProjectManagerId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Projects.Add(project);
+            await _context.SaveChangesAsync();
+
+            // Reload with includes
+            var createdProject = await _context.Projects
+                .Include(p => p.CostCenter)
+                .Include(p => p.ProjectManager)
+                .FirstOrDefaultAsync(p => p.Id == project.Id);
+
+            return MapProjectToDto(createdProject!);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating project: {ProjectName}", createProjectDto.Name);
+            throw;
+        }
     }
 
     private static CostCenterDto MapToDto(CostCenter costCenter)

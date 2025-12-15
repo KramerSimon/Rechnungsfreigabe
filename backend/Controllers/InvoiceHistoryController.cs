@@ -31,78 +31,8 @@ public class HistoryController : ControllerBase
         {
             _logger.LogInformation("Getting history timeline for invoice {InvoiceId}", invoiceId);
             
-            // Temporarily return mock data until database is updated
-            var mockTimeline = new List<InvoiceHistoryTimelineDto>
-            {
-                new InvoiceHistoryTimelineDto
-                {
-                    Date = "2024-12-11",
-                    Entries = new List<InvoiceHistoryDto>
-                    {
-                        new InvoiceHistoryDto
-                        {
-                            Id = 1,
-                            InvoiceId = invoiceId,
-                            Action = "Rechnung eingereicht",
-                            ActionType = "Submitted",
-                            ActionSource = "User",
-                            ChangedAt = DateTime.Parse("2024-12-11T09:00:00Z"),
-                            ChangedByUser = new DTOs.UserDto 
-                            { 
-                                Id = 1, 
-                                Username = "mmustermann", 
-                                FirstName = "Max", 
-                                LastName = "Mustermann"
-                            },
-                            Comments = "Rechnung wurde vom Lieferanten eingereicht",
-                            DisplayIcon = "description",
-                            DisplayColor = "primary"
-                        },
-                        new InvoiceHistoryDto
-                        {
-                            Id = 2,
-                            InvoiceId = invoiceId,
-                            Action = "Kostenstelle zugewiesen",
-                            ActionType = "FieldChange",
-                            ActionSource = "User",
-                            ChangedAt = DateTime.Parse("2024-12-11T10:30:00Z"),
-                            ChangedByUser = new DTOs.UserDto 
-                            { 
-                                Id = 2, 
-                                Username = "aschmidt", 
-                                FirstName = "Anna", 
-                                LastName = "Schmidt"
-                            },
-                            FieldChanges = new Dictionary<string, object> 
-                            { 
-                                { "costCenter", new { oldValue = (string?)null, newValue = "4020 - IT" } } 
-                            },
-                            DisplayIcon = "edit",
-                            DisplayColor = "accent"
-                        },
-                        new InvoiceHistoryDto
-                        {
-                            Id = 3,
-                            InvoiceId = invoiceId,
-                            Action = "Automatische Eskalation",
-                            ActionType = "Escalation",
-                            ActionSource = "System",
-                            ChangedAt = DateTime.Parse("2024-12-11T14:00:00Z"),
-                            Comments = "Rechnung automatisch an nächste Freigabeebene weitergeleitet",
-                            PolicyReference = "POLICY_ESCALATION_24H",
-                            SystemReason = "24h Freigabefrist überschritten",
-                            DisplayIcon = "trending_up",
-                            DisplayColor = "warn"
-                        }
-                    }
-                }
-            };
-            
-            return Ok(mockTimeline);
-            
-            // TODO: Uncomment this when database is updated
-            // var timeline = await _historyService.GetInvoiceHistoryTimelineAsync(invoiceId);
-            // return Ok(timeline);
+            var timeline = await _historyService.GetInvoiceHistoryTimelineAsync(invoiceId);
+            return Ok(timeline);
         }
         catch (Exception ex)
         {

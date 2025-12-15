@@ -17,6 +17,14 @@ public interface IInvoiceService
     Task<IEnumerable<InvoiceDto>> GetPendingApprovalsAsync(int userId);
     Task<bool> ApproveInvoiceAsync(int invoiceId, int approverId, ApproveInvoiceDto approveDto);
     Task<InvoiceDto?> UpdateInvoiceStatusAsync(int id, InvoiceStatus status, int updatedBy);
+
+    // Neue Statistik-Methoden für Dashboard
+    Task<double> GetAutoApprovalRateAsync();
+    Task<int> GetInvoiceCountThisMonthAsync();
+    Task<double> GetAverageProcessingTimeAsync();
+    Task<(int Count, decimal Amount)> GetRejectedInvoiceStatsAsync();
+    Task<(int Count, decimal Amount)> GetReadyForPaymentStatsAsync();
+    Task<decimal> GetOpenVolumeAmountAsync();
 }
 
 public class InvoiceService : IInvoiceService
@@ -230,6 +238,24 @@ public class InvoiceService : IInvoiceService
                 invoice.NetAmount = updateInvoiceDto.NetAmount.Value;
             }
 
+            if (!string.IsNullOrEmpty(updateInvoiceDto.CostCenterId) && invoice.CostCenterId != updateInvoiceDto.CostCenterId)
+            {
+                changes.Add($"CostCenterId: {invoice.CostCenterId} -> {updateInvoiceDto.CostCenterId}");
+                invoice.CostCenterId = updateInvoiceDto.CostCenterId;
+            }
+
+            if (!string.IsNullOrEmpty(updateInvoiceDto.ProjectId) && invoice.ProjectId != updateInvoiceDto.ProjectId)
+            {
+                changes.Add($"ProjectId: {invoice.ProjectId} -> {updateInvoiceDto.ProjectId}");
+                invoice.ProjectId = updateInvoiceDto.ProjectId;
+            }
+
+            if (!string.IsNullOrEmpty(updateInvoiceDto.PurchaseOrderId) && invoice.PurchaseOrderId != updateInvoiceDto.PurchaseOrderId)
+            {
+                changes.Add($"PurchaseOrderId: {invoice.PurchaseOrderId} -> {updateInvoiceDto.PurchaseOrderId}");
+                invoice.PurchaseOrderId = updateInvoiceDto.PurchaseOrderId;
+            }
+
             if (updateInvoiceDto.TaxAmount.HasValue && invoice.TaxAmount != updateInvoiceDto.TaxAmount.Value)
             {
                 changes.Add($"TaxAmount: {invoice.TaxAmount} -> {updateInvoiceDto.TaxAmount.Value}");
@@ -252,6 +278,18 @@ public class InvoiceService : IInvoiceService
             {
                 changes.Add($"DueDate: {invoice.DueDate} -> {updateInvoiceDto.DueDate.Value}");
                 invoice.DueDate = updateInvoiceDto.DueDate.Value;
+            }
+
+            if (!string.IsNullOrEmpty(updateInvoiceDto.Description) && invoice.Description != updateInvoiceDto.Description)
+            {
+                changes.Add($"Description: {invoice.Description} -> {updateInvoiceDto.Description}");
+                invoice.Description = updateInvoiceDto.Description;
+            }
+
+            if (!string.IsNullOrEmpty(updateInvoiceDto.InternalNotes) && invoice.InternalNotes != updateInvoiceDto.InternalNotes)
+            {
+                changes.Add($"InternalNotes: {invoice.InternalNotes} -> {updateInvoiceDto.InternalNotes}");
+                invoice.InternalNotes = updateInvoiceDto.InternalNotes;
             }
 
             if (!string.IsNullOrEmpty(updateInvoiceDto.Status) && invoice.Status.ToString() != updateInvoiceDto.Status)
@@ -386,44 +424,89 @@ public class InvoiceService : IInvoiceService
             // If user is admin and no workflow exists for them, allow approval anyway
             if (pendingWorkflow == null && !isAdmin) return false;
 
-            // If admin approves but has no workflow, use the first pending workflow
-            if (pendingWorkflow == null && isAdmin)
+            // If admin approves, mark ALL pending workflows as approved/rejected
+            if (isAdmin && approveDto.Approved)
             {
-                pendingWorkflow = invoice.ApprovalWorkflows
-                    .FirstOrDefault(aw => aw.Status == ApprovalStatus.Pending);
-                
-                // If no pending workflows exist at all, allow admin to approve/reject directly (e.g., for overdue invoices)
-                if (pendingWorkflow == null)
+                var allPendingWorkflows = invoice.ApprovalWorkflows
+                    .Where(aw => aw.Status == ApprovalStatus.Pending)
+                    .ToList();
+
+                if (allPendingWorkflows.Any())
                 {
-                    // Admin override - directly approve or reject invoice without workflow
-                    if (!approveDto.Approved)
+                    // Admin approves all pending workflows at once
+                    foreach (var workflow in allPendingWorkflows)
                     {
-                        invoice.Status = InvoiceStatus.Abgelehnt;
-                        invoice.ProcessedBy = approverId;
-                        invoice.UpdatedAt = DateTime.UtcNow;
-
-                        await _historyService.CreateApprovalActionAsync(invoiceId, false, approverId, approveDto.Comments);
+                        workflow.Status = ApprovalStatus.Approved;
+                        workflow.Comments = $"Admin-Freigabe: {approveDto.Comments}";
+                        workflow.ApprovedAt = DateTime.UtcNow;
                     }
-                    else
-                    {
-                        invoice.Status = InvoiceStatus.Freigegeben;
-                        invoice.ProcessedBy = approverId;
-                        invoice.UpdatedAt = DateTime.UtcNow;
 
-                        await _historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
-                    }
+                    invoice.Status = InvoiceStatus.Freigegeben;
+                    invoice.ProcessedBy = approverId;
+                    invoice.UpdatedAt = DateTime.UtcNow;
+
+                    await _historyService.CreateApprovalActionAsync(invoiceId, true, approverId, 
+                        $"Admin hat alle ausstehenden Freigaben erteilt: {approveDto.Comments}");
 
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, approveDto.Approved);
+                    await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, true);
 
-                    _logger.LogInformation("Invoice {InvoiceId} {Action} by admin override (no workflows) - user {UserId}", 
-                        invoiceId, approveDto.Approved ? "approved" : "rejected", approverId);
+                    _logger.LogInformation("Invoice {InvoiceId} approved by admin (all workflows) - user {UserId}", 
+                        invoiceId, approverId);
+
+                    return true;
+                }
+                else
+                {
+                    // No pending workflows - admin override
+                    invoice.Status = InvoiceStatus.Freigegeben;
+                    invoice.ProcessedBy = approverId;
+                    invoice.UpdatedAt = DateTime.UtcNow;
+
+                    await _historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, true);
+
+                    _logger.LogInformation("Invoice {InvoiceId} approved by admin override (no workflows) - user {UserId}", 
+                        invoiceId, approverId);
 
                     return true;
                 }
             }
+
+            // Admin rejection
+            if (isAdmin && !approveDto.Approved)
+            {
+                var allPendingWorkflows = invoice.ApprovalWorkflows
+                    .Where(aw => aw.Status == ApprovalStatus.Pending)
+                    .ToList();
+
+                foreach (var workflow in allPendingWorkflows)
+                {
+                    workflow.Status = ApprovalStatus.Rejected;
+                    workflow.Comments = $"Admin-Ablehnung: {approveDto.Comments}";
+                    workflow.ApprovedAt = DateTime.UtcNow;
+                }
+
+                invoice.Status = InvoiceStatus.Abgelehnt;
+                invoice.ProcessedBy = approverId;
+                invoice.UpdatedAt = DateTime.UtcNow;
+
+                await _historyService.CreateApprovalActionAsync(invoiceId, false, approverId, approveDto.Comments);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, false);
+
+                _logger.LogInformation("Invoice {InvoiceId} rejected by admin - user {UserId}", invoiceId, approverId);
+
+                return true;
+            }
+
+            // Regular user workflow
+            if (pendingWorkflow == null) return false;
 
             // Update workflow status
             pendingWorkflow.Status = approveDto.Approved ? ApprovalStatus.Approved : ApprovalStatus.Rejected;
@@ -657,6 +740,86 @@ public class InvoiceService : IInvoiceService
         };
     }
 
+    // Implementierung der neuen Statistik-Methoden für Dashboard
+    public async Task<double> GetAutoApprovalRateAsync()
+    {
+        var totalInvoices = await _context.Invoices
+            .Where(i => i.CreatedAt >= DateTime.Now.AddMonths(-3)) // Letzten 3 Monate
+            .CountAsync();
+
+        if (totalInvoices == 0) return 0;
+
+        var autoApprovedCount = await _context.Invoices
+            .Where(i => i.CreatedAt >= DateTime.Now.AddMonths(-3) && i.AutoApproved)
+            .CountAsync();
+
+        return (double)autoApprovedCount / totalInvoices * 100;
+    }
+
+    public async Task<int> GetInvoiceCountThisMonthAsync()
+    {
+        var startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        return await _context.Invoices
+            .Where(i => i.CreatedAt >= startOfMonth)
+            .CountAsync();
+    }
+
+    public async Task<double> GetAverageProcessingTimeAsync()
+    {
+        var processedInvoices = await _context.Invoices
+            .Where(i => i.Status != InvoiceStatus.Eingegangen && 
+                       i.Status != InvoiceStatus.In_Pruefung &&
+                       i.CreatedAt >= DateTime.Now.AddMonths(-3))
+            .Select(i => new { 
+                CreatedAt = i.CreatedAt, 
+                UpdatedAt = i.UpdatedAt 
+            })
+            .ToListAsync();
+
+        if (!processedInvoices.Any()) return 0;
+
+        // Filtere nur Rechnungen, die tatsächlich verarbeitet wurden (UpdatedAt > CreatedAt)
+        var validInvoices = processedInvoices
+            .Where(i => i.UpdatedAt > i.CreatedAt)
+            .ToList();
+
+        if (!validInvoices.Any()) return 0;
+
+        var avgDays = validInvoices
+            .Average(i => (i.UpdatedAt - i.CreatedAt).TotalDays);
+
+        return avgDays;
+    }
+
+    public async Task<(int Count, decimal Amount)> GetRejectedInvoiceStatsAsync()
+    {
+        var rejectedInvoices = await _context.Invoices
+            .Where(i => i.Status == InvoiceStatus.Abgelehnt)
+            .Select(i => i.TotalAmount)
+            .ToListAsync();
+
+        return (rejectedInvoices.Count, rejectedInvoices.Sum());
+    }
+
+    public async Task<(int Count, decimal Amount)> GetReadyForPaymentStatsAsync()
+    {
+        var readyInvoices = await _context.Invoices
+            .Where(i => i.Status == InvoiceStatus.Freigegeben)
+            .Select(i => i.TotalAmount)
+            .ToListAsync();
+
+        return (readyInvoices.Count, readyInvoices.Sum());
+    }
+
+    public async Task<decimal> GetOpenVolumeAmountAsync()
+    {
+        return await _context.Invoices
+            .Where(i => i.Status == InvoiceStatus.In_Pruefung || 
+                       i.Status == InvoiceStatus.Eingegangen ||
+                       i.Status == InvoiceStatus.Freigabe_Erforderlich)
+            .SumAsync(i => i.TotalAmount);
+    }
+
     private static string GetFieldDisplayName(string fieldName)
     {
         return fieldName switch
@@ -671,6 +834,7 @@ public class InvoiceService : IInvoiceService
             "InvoiceDate" => "Rechnungsdatum",
             "Description" => "Beschreibung",
             "InternalNotes" => "Interne Notizen",
+            "PurchaseOrderId" => "Bestellung",
             _ => fieldName
         };
     }

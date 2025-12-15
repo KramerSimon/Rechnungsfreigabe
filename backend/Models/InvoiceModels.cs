@@ -84,32 +84,46 @@ public class Supplier
 
 public class PurchaseOrder
 {
+    [Column("id")]
     [StringLength(20)]
     public string Id { get; set; } = string.Empty;
 
+    [Column("title")]
     [Required]
     [StringLength(100)]
     public string Title { get; set; } = string.Empty;
 
+    [Column("description")]
     public string? Description { get; set; }
 
+    [Column("cost_center_id")]
     [StringLength(20)]
     public string? CostCenterId { get; set; }
 
+    [Column("project_id")]
     [StringLength(20)]
     public string? ProjectId { get; set; }
 
-    [Column(TypeName = "decimal(12,2)")]
+    [Column("total_amount", TypeName = "decimal(12,2)")]
     public decimal TotalAmount { get; set; }
 
+    [Column("currency")]
     [StringLength(3)]
     public string Currency { get; set; } = "EUR";
 
+    [Column("status")]
     public PurchaseOrderStatus Status { get; set; } = PurchaseOrderStatus.Offen;
 
+    [Column("created_by")]
     public int CreatedBy { get; set; }
+    
+    [Column("approved_by")]
     public int? ApprovedBy { get; set; }
+    
+    [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    [Column("approved_at")]
     public DateTime? ApprovedAt { get; set; }
 
     // Navigation properties

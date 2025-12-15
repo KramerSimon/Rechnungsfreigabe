@@ -190,8 +190,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.InvoiceId).HasColumnName("invoice_id");
             entity.Property(e => e.Action).HasColumnName("action");
-            entity.Property(e => e.ActionType).HasColumnName("action_type");
-            entity.Property(e => e.ActionSource).HasColumnName("action_source");
+            entity.Property(e => e.ActionType).HasColumnName("action_type").HasConversion<string>();
+            entity.Property(e => e.ActionSource).HasColumnName("action_source").HasConversion<string>();
             entity.Property(e => e.OldStatus).HasColumnName("old_status");
             entity.Property(e => e.NewStatus).HasColumnName("new_status");
             entity.Property(e => e.FieldChanges).HasColumnName("field_changes");

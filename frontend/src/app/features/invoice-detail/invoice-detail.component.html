@@ -1,0 +1,155 @@
+<div class="invoice-detail-container">
+  <div class="header">
+    <button mat-button routerLink="/dashboard" class="back-button">
+      <mat-icon>arrow_back</mat-icon>
+      Zurück zur Übersicht
+    </button>
+    <h2>Rechnung #{{ invoice.invoiceNumber }} von {{ invoice.supplier.name }}</h2>
+  </div>
+
+  <!-- Tab Navigation -->
+  <mat-tab-group class="invoice-tabs" animationDuration="200ms">
+
+    <!-- Rechnungsdetails Tab -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">description</mat-icon>
+        Rechnungsdetails
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="content-layout">
+    <!-- PDF Vorschau -->
+    <div class="pdf-preview">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>PDF VORSCHAU DER RECHNUNG</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="pdf-mock">
+            <div class="pdf-header">
+              <strong>{{ invoice.supplier.name }} GmbH</strong>
+              <div>Rechnung</div>
+            </div>
+            <div class="pdf-content">
+              <p><strong>Betrag: {{ invoice.totalAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</strong></p>
+              <p>Rechnungsnummer: {{ invoice.invoiceNumber }}</p>
+              <p>Datum: 01.12.2023</p>
+              <p>Fälligkeitsdatum: 15.12.2023</p>
+              <div class="pdf-spacer"></div>
+              <p>Positionen:</p>
+              <p>• Webentwicklung - 40 Stunden</p>
+              <p>• Design - 20 Stunden</p>
+              <p>• Testing - 10 Stunden</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Daten & Aktionen -->
+    <div class="data-actions">
+      <mat-card class="data-section">
+        <mat-card-header>
+          <mat-card-title>1. DATEN VERVOLLSTÄNDIGEN</mat-card-title>
+          <mat-card-subtitle>(Grüne Boxen im Diagramm)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Projekt</mat-label>
+            <mat-select [(ngModel)]="invoice.projectId">
+              <mat-option *ngFor="let project of projects" [value]="project.id">
+                {{ project.id }} — {{ project.name }}
+              </mat-option>
+              <mat-option *ngIf="projects.length === 0" [disabled]="true">Keine Projekte gefunden</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Kostenstelle</mat-label>
+            <mat-select [(ngModel)]="invoice.costCenterId" (selectionChange)="onCostCenterChange($event.value)">
+              <mat-option *ngFor="let center of costCenters" [value]="center.id">
+                {{ center.name }}
+              </mat-option>
+              <mat-option *ngIf="costCenters.length === 0" [disabled]="true">Kostenstellen werden geladen...</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Bestellung</mat-label>
+            <mat-select [(ngModel)]="invoice.purchaseOrderId">
+              <mat-option *ngFor="let po of purchaseOrders" [value]="po.id">
+                {{ po.id }} — {{ po.title }}
+              </mat-option>
+              <mat-option *ngIf="purchaseOrders.length === 0" [disabled]="true">Keine Bestellungen gefunden</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="actions-row">
+            <button mat-stroked-button color="primary" (click)="saveData()" [disabled]="saving || loading">
+              <mat-icon>save</mat-icon>
+              Speichern
+            </button>
+
+            <div class="save-status" *ngIf="saveStatus === 'success'">
+              <mat-icon color="primary">check_circle</mat-icon>
+              <span>{{ saveMessage }}<ng-container *ngIf="lastSavedAt"> ({{ lastSavedAt | date:'shortTime' }})</ng-container></span>
+            </div>
+            <div class="save-status error" *ngIf="saveStatus === 'error'">
+              <mat-icon color="warn">error</mat-icon>
+              <span>{{ saveMessage }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="decision-section">
+        <mat-card-header>
+          <mat-card-title>2. ENTSCHEIDUNG</mat-card-title>
+          <mat-card-subtitle>(Blaue/Rote Boxen im Diagramm)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notiz hinzufügen (Optional)</mat-label>
+            <textarea matInput [(ngModel)]="note" rows="3" placeholder="Ihre Anmerkungen..."></textarea>
+          </mat-form-field>
+
+          <div class="action-buttons">
+            <button mat-raised-button color="warn" class="reject-button" (click)="onReject()">
+              <mat-icon>close</mat-icon>
+              ABLEHNEN
+            </button>
+            <button mat-raised-button color="primary" class="approve-button"
+                    (click)="onApprove()" [disabled]="!canApprove()">
+              <mat-icon>check</mat-icon>
+              FREIGEBEN
+            </button>
+          </div>
+
+          <div class="status-info">
+            <strong>Status:</strong> {{ invoice.status }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Historie & Aktivitäten Tab -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">history</mat-icon>
+        Historie & Aktivitäten
+      </ng-template>
+
+      <div class="tab-content history-tab-content">
+        <app-invoice-history-timeline
+          [invoiceId]="invoiceId"
+          [invoiceNumber]="invoice.invoiceNumber">
+        </app-invoice-history-timeline>
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

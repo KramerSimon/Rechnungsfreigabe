@@ -168,6 +168,9 @@ public class UpdateInvoiceDto
     [StringLength(20)]
     public string? ProjectId { get; set; }
 
+    [StringLength(20)]
+    public string? PurchaseOrderId { get; set; }
+
     [Range(0.01, double.MaxValue)]
     public decimal? NetAmount { get; set; }
 

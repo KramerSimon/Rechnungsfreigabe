@@ -2,54 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-
-export interface Supplier {
-  id: number;
-  name: string;
-  legalName?: string;
-  email?: string;
-  phone?: string;
-  isActive: boolean;
-}
-
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-}
-
-export interface Invoice {
-  id: number;
-  invoiceNumber: string;
-  supplier: Supplier;
-  purchaseOrderId?: string;
-  costCenterId?: string;
-  costCenterName?: string;
-  projectId?: string;
-  projectName?: string;
-  netAmount: number;
-  taxAmount: number;
-  totalAmount: number;
-  currency: string;
-  invoiceDate: string;
-  dueDate: string;
-  receivedDate: string;
-  status: string;
-  requiresApproval: boolean;
-  approvalLevel: number;
-  autoApproved: boolean;
-  description?: string;
-  internalNotes?: string;
-  creator?: User;
-  processor?: User;
-  createdAt: string;
-  updatedAt: string;
-  isOverdue: boolean;
-  daysOverdue: number;
-  pendingApprovals?: any[]; // Array of pending approval workflows
-}
+import { Supplier, User, Invoice } from '../models';
 
 export interface PagedResult<T> {
   items: T[];

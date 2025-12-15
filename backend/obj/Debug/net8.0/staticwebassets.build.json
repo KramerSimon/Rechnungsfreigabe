@@ -1,1 +1,11 @@
-{"Version":1,"Hash":"Hbg/S+nu2K8XNbncwBU4ZvqrTpxsvkS1lUeHBy/9QXg=","Source":"RechnungsfreigabeAPI","BasePath":"_content/RechnungsfreigabeAPI","Mode":"Default","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}
+{
+  "Version": 1,
+  "Hash": "K/LNIpa+mOXuncOROX3gv+Fc1+n7UYVP1ZX4W+1H+HA=",
+  "Source": "RechnungsfreigabeAPI",
+  "BasePath": "_content/RechnungsfreigabeAPI",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

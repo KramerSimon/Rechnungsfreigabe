@@ -1,0 +1,342 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCardModule } from '@angular/material/card';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatTabsModule } from '@angular/material/tabs';
+import { FormsModule } from '@angular/forms';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { InvoiceHistoryTimelineComponent } from '../invoice-history/invoice-history-timeline.component';
+import { InvoiceService, PagedResult } from '../../core/services/invoice.service';
+import { Invoice, InvoiceDetail, Supplier } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
+import { CostCenterService, CostCenter, Project } from '../../core/services/cost-center.service';
+import { PurchaseOrderService, PurchaseOrder } from '../../core/services/purchase-order.service';
+import { environment } from '../../../environments/environment';
+
+@Component({
+  selector: 'app-invoice-detail',
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatCardModule,
+    MatDialogModule,
+    MatTabsModule,
+    FormsModule,
+    MatSnackBarModule,
+    InvoiceHistoryTimelineComponent
+  ],
+  templateUrl: './invoice-detail.component.html',
+  styleUrl: './invoice-detail.component.scss'
+})
+export class InvoiceDetailComponent implements OnInit {
+  invoiceId: number = 0;
+  invoiceNumber: string = '';
+  loading = false;
+
+  invoice: InvoiceDetail = {
+    id: 1, // This would come from route parameters in real implementation
+    invoiceNumber: 'TS-554',
+    supplier: { id: 1, name: 'TechSolutions', legalName: 'TechSolutions GmbH', isActive: true },
+    totalAmount: 2300,
+    netAmount: 1932.77,
+    taxAmount: 367.23,
+    currency: 'EUR',
+    invoiceDate: '2024-01-15',
+    dueDate: '2024-02-15',
+    receivedDate: '2024-01-16',
+    projectId: 'IT-NEU-001',
+    projectName: 'Website Relaunch',
+    costCenterId: 'IT',
+    costCenterName: 'IT',
+    purchaseOrderId: 'PO-99231',
+    status: 'Wartet auf User-Freigabe',
+    requiresApproval: true,
+    approvalLevel: 1,
+    autoApproved: false,
+    description: 'Website Relaunch Projekt',
+    createdAt: '2024-01-16T08:00:00Z',
+    updatedAt: '2024-01-16T08:00:00Z',
+    isOverdue: false,
+    daysOverdue: 0,
+    attachments: [],
+    approvalHistory: [],
+    comments: []
+  };
+
+  costCenters: CostCenter[] = [];
+  projects: Project[] = [];
+  purchaseOrders: PurchaseOrder[] = [];
+
+  note: string = '';
+  saving = false;
+  saveStatus: 'success' | 'error' | null = null;
+  saveMessage = '';
+  lastSavedAt: Date | null = null;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar,
+    private invoiceService: InvoiceService,
+    private authService: AuthService,
+    private costCenterService: CostCenterService,
+    private purchaseOrderService: PurchaseOrderService
+  ) {}
+
+  ngOnInit() {
+    this.invoiceId = parseInt(this.route.snapshot.params['id']) || 1;
+    this.loadCostCenters();
+    this.loadInvoice();
+  }
+
+  private loadInvoice(): void {
+    this.loading = true;
+    this.invoiceService.getInvoiceById(this.invoiceId).subscribe({
+      next: (invoice) => {
+        this.invoice = invoice;
+        this.loading = false;
+        this.loadProjects(this.invoice.costCenterId);
+        this.loadPurchaseOrders();
+      },
+      error: (error) => {
+        console.error('Error loading invoice:', error);
+        this.loading = false;
+        // Fallback zu Demo-Daten wenn API fehlt
+        this.invoice = {
+          id: this.invoiceId,
+          invoiceNumber: 'MS-2024-001',
+          supplier: { id: 1, name: 'Microsoft Deutschland', legalName: 'Microsoft Deutschland GmbH', isActive: true },
+          totalAmount: 1000,
+          netAmount: 840.34,
+          taxAmount: 159.66,
+          currency: 'EUR',
+          invoiceDate: '2024-01-15',
+          dueDate: '2024-02-15',
+          receivedDate: '2024-01-16',
+          status: 'Freigabe_Erforderlich',
+          costCenterId: 'IT',
+          requiresApproval: true,
+          approvalLevel: 1,
+          autoApproved: false,
+          createdAt: '2024-01-16T08:00:00Z',
+          updatedAt: '2024-01-16T08:00:00Z',
+          isOverdue: false,
+          daysOverdue: 0,
+          attachments: [],
+          approvalHistory: [],
+          comments: []
+        };
+        this.loadProjects(this.invoice.costCenterId);
+        this.loadPurchaseOrders();
+      }
+    });
+  }
+
+  private loadCostCenters() {
+    this.costCenterService.getAllCostCenters().subscribe({
+        next: (centers) => {
+          this.costCenters = centers;
+        },
+        error: (error) => {
+          console.error('Error loading cost centers', error);
+        }
+      });
+  }
+
+  onCostCenterChange(costCenterId?: string) {
+    this.invoice.costCenterId = costCenterId;
+    this.invoice.projectId = undefined;
+    this.loadProjects(costCenterId);
+  }
+
+  private loadProjects(costCenterId?: string) {
+    if (!costCenterId) {
+      this.projects = [];
+      return;
+    }
+
+    this.costCenterService.getProjectsForCostCenter(costCenterId).subscribe({
+        next: (projects) => {
+          this.projects = projects;
+
+          // Falls bereits eine Projekt-ID gesetzt ist, aber nicht in der Liste enthalten, füge sie als Fallback hinzu
+          const currentProjectId = this.invoice.projectId;
+          if (currentProjectId && !this.projects.some(p => p.id === currentProjectId)) {
+            this.projects = [
+              { id: currentProjectId, name: '(vorhanden)', costCenterId, costCenterName: '', budget: 0, spentAmount: 0, status: 'Aktiv' },
+              ...this.projects
+            ];
+          }
+        },
+        error: (error) => {
+          console.error('Error loading projects for cost center', costCenterId, error);
+          // Falls Liste nicht ladbar ist, aber bereits eine Projekt-ID existiert, wenigstens diese anzeigen
+          if (this.invoice.projectId) {
+            this.projects = [{ id: this.invoice.projectId, name: '(vorhanden)', costCenterId, costCenterName: '', budget: 0, spentAmount: 0, status: 'Aktiv' }];
+          } else {
+            this.projects = [];
+          }
+        }
+      });
+  }
+
+  private loadPurchaseOrders() {
+    this.purchaseOrderService.getAllPurchaseOrders().subscribe({
+        next: (orders) => {
+          this.purchaseOrders = orders;
+
+          // Falls bereits eine PO-ID gesetzt ist, aber nicht in der Liste, als Fallback hinzufügen
+          const currentPurchaseOrderId = this.invoice.purchaseOrderId;
+          if (currentPurchaseOrderId && !this.purchaseOrders.some(po => po.id === currentPurchaseOrderId)) {
+            this.purchaseOrders = [
+              { id: currentPurchaseOrderId, title: '(vorhanden)', totalAmount: 0, currency: 'EUR', status: 'Offen', createdAt: '' },
+              ...this.purchaseOrders
+            ];
+          }
+        },
+        error: (error) => {
+          console.error('Error loading purchase orders', error);
+          // Falls API fehlschlägt, aber bereits eine PO-ID existiert, diese anzeigen
+          if (this.invoice.purchaseOrderId) {
+            this.purchaseOrders = [{ id: this.invoice.purchaseOrderId, title: '(vorhanden)', totalAmount: 0, currency: 'EUR', status: 'Offen', createdAt: '' }];
+          } else {
+            this.purchaseOrders = [];
+          }
+        }
+      });
+  }
+
+  saveData() {
+    if (!this.invoice || this.saving) return;
+
+    if (!this.invoice.costCenterId) {
+      this.saveStatus = 'error';
+      this.saveMessage = 'Bitte Kostenstelle auswählen';
+      this.snackBar.open(this.saveMessage, 'OK', { duration: 3000 });
+      return;
+    }
+
+    if (!this.invoice.projectId) {
+      this.saveStatus = 'error';
+      this.saveMessage = 'Bitte ein Projekt auswählen';
+      this.snackBar.open(this.saveMessage, 'OK', { duration: 3000 });
+      return;
+    }
+
+    this.saving = true;
+    const payload = {
+      projectId: this.invoice.projectId?.trim() || undefined,
+      costCenterId: this.invoice.costCenterId || undefined,
+      purchaseOrderId: this.invoice.purchaseOrderId || undefined,
+      description: this.invoice.description || undefined,
+      internalNotes: this.invoice.internalNotes || undefined
+    };
+
+    // Debug-Ausgabe zur Kontrolle, was gesendet wird
+    console.log('Saving invoice payload', payload);
+
+    this.invoiceService.updateInvoice(this.invoice.id, payload).subscribe({
+      next: (updated) => {
+        this.invoice = {
+          ...this.invoice,
+          ...updated
+        };
+        this.saving = false;
+        this.saveStatus = 'success';
+        this.lastSavedAt = new Date();
+        this.saveMessage = `Daten gespeichert (Projekt: ${this.invoice.projectId || '—'})`;
+        this.snackBar.open('Daten gespeichert', 'OK', { duration: 3000 });
+
+        // Direkt nachladen, um gespeicherte Werte aus dem Backend zu holen
+        this.loadInvoice();
+      },
+      error: (error) => {
+        console.error('Error saving invoice data:', error);
+        this.saving = false;
+        this.saveStatus = 'error';
+        this.saveMessage = this.getErrorMessage(error) || 'Speichern fehlgeschlagen';
+        this.snackBar.open(this.saveMessage, 'OK', { duration: 4000 });
+      }
+    });
+  }
+
+  private getErrorMessage(error: any): string {
+    if (!error) return '';
+    if (error.error?.message) return error.error.message;
+    if (error.message) return error.message;
+    return '';
+  }
+
+  canApprove(): boolean {
+    return this.invoice !== null && !this.loading;
+  }
+
+  onApprove() {
+    if (!this.invoice || !this.canApprove()) {
+      this.snackBar.open('Rechnung kann nicht freigegeben werden', 'OK', { duration: 3000 });
+      return;
+    }
+
+    if (confirm('Möchten Sie diese Rechnung wirklich freigeben?')) {
+      this.loading = true;
+
+      this.invoiceService.approveInvoice(this.invoice.id, {
+        approved: true,
+        comments: this.note || 'Freigabe erteilt'
+      }).subscribe({
+        next: (response) => {
+          this.snackBar.open('Rechnung wurde erfolgreich freigegeben!', 'OK', { duration: 5000 });
+          this.loading = false;
+          // Zurück zum Dashboard
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error) => {
+          console.error('Error approving invoice:', error);
+          this.snackBar.open('Fehler bei der Freigabe', 'OK', { duration: 5000 });
+          this.loading = false;
+        }
+      });
+    }
+  }
+
+  onReject() {
+    if (!this.invoice) return;
+
+    const reason = prompt('Bitte geben Sie den Grund für die Ablehnung an:');
+
+    if (reason && reason.trim()) {
+      this.loading = true;
+
+      this.invoiceService.approveInvoice(this.invoice.id, {
+        approved: false,
+        comments: reason.trim()
+      }).subscribe({
+        next: (response) => {
+          this.snackBar.open('Rechnung wurde abgelehnt', 'OK', { duration: 5000 });
+          this.loading = false;
+          // Zurück zum Dashboard
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error) => {
+          console.error('Error rejecting invoice:', error);
+          this.snackBar.open('Fehler bei der Ablehnung', 'OK', { duration: 5000 });
+          this.loading = false;
+        }
+      });
+    } else if (reason !== null) {
+      this.snackBar.open('Grund für Ablehnung ist ein Pflichtfeld', 'OK', { duration: 3000 });
+    }
+  }
+}

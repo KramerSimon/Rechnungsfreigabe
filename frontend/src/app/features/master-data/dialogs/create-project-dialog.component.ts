@@ -1,0 +1,203 @@
+import { Component, Inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { CreateProjectData, CostCenter } from '../../../core/models/master-data.models';
+
+@Component({
+  selector: 'app-create-project-dialog',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatSelectModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    ReactiveFormsModule
+  ],
+  template: `
+    <div class="dialog-container">
+      <h2 mat-dialog-title>Neues Projekt</h2>
+
+      <form [formGroup]="projectForm" mat-dialog-content>
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Projekt-ID *</mat-label>
+            <input matInput formControlName="id" placeholder="z.B. PROJ-2024-001">
+            <mat-error *ngIf="projectForm.get('id')?.hasError('required')">
+              ID ist erforderlich
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Projektname *</mat-label>
+            <input matInput formControlName="name" placeholder="z.B. Website Relaunch">
+            <mat-error *ngIf="projectForm.get('name')?.hasError('required')">
+              Name ist erforderlich
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Beschreibung</mat-label>
+            <textarea matInput formControlName="description" rows="3"
+                      placeholder="Projektbeschreibung..."></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Kostenstelle *</mat-label>
+            <mat-select formControlName="costCenterId">
+              <mat-option *ngFor="let cc of costCenters" [value]="cc.id">
+                {{cc.id}} - {{cc.name}}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="projectForm.get('costCenterId')?.hasError('required')">
+              Kostenstelle ist erforderlich
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="Geplant">Geplant</mat-option>
+              <mat-option value="Aktiv">Aktiv</mat-option>
+              <mat-option value="Pausiert">Pausiert</mat-option>
+              <mat-option value="Abgeschlossen">Abgeschlossen</mat-option>
+              <mat-option value="Abgebrochen">Abgebrochen</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Budget (€)</mat-label>
+            <input matInput type="number" formControlName="budget"
+                   placeholder="0.00" step="0.01" min="0">
+            <mat-error *ngIf="projectForm.get('budget')?.hasError('min')">
+              Budget muss mindestens 0 sein
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Projektmanager ID</mat-label>
+            <input matInput type="number" formControlName="projectManagerId"
+                   placeholder="Optional">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Startdatum</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+            <mat-hint>MM/TT/JJJJ</mat-hint>
+            <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Enddatum</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+            <mat-hint>MM/TT/JJJJ</mat-hint>
+            <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+      </form>
+
+      <div mat-dialog-actions class="dialog-actions">
+        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-raised-button color="primary"
+                (click)="onSave()"
+                [disabled]="projectForm.invalid">
+          Erstellen
+        </button>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .dialog-container {
+      width: 600px;
+      max-width: 90vw;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .form-row mat-form-field {
+      flex: 1;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 0;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+  `]
+})
+export class CreateProjectDialogComponent {
+  projectForm: FormGroup;
+  costCenters: CostCenter[] = [];
+
+  constructor(
+    private dialogRef: MatDialogRef<CreateProjectDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { project: CreateProjectData, costCenters: CostCenter[] },
+    private fb: FormBuilder
+  ) {
+    this.costCenters = data.costCenters;
+
+    this.projectForm = this.fb.group({
+      id: [data.project.id || '', [Validators.required, Validators.maxLength(20)]],
+      name: [data.project.name || '', [Validators.required, Validators.maxLength(100)]],
+      description: [data.project.description || ''],
+      costCenterId: [data.project.costCenterId || '', [Validators.required]],
+      budget: [data.project.budget || 0, [Validators.min(0)]],
+      status: [data.project.status || 'Geplant'],
+      startDate: [data.project.startDate || null],
+      endDate: [data.project.endDate || null],
+      projectManagerId: [data.project.projectManagerId || null]
+    });
+  }
+
+  onCancel(): void {
+    this.dialogRef.close();
+  }
+
+  onSave(): void {
+    if (this.projectForm.valid) {
+      // Format dates properly
+      const formValue = { ...this.projectForm.value };
+      if (formValue.startDate) {
+        formValue.startDate = new Date(formValue.startDate).toISOString().split('T')[0];
+      }
+      if (formValue.endDate) {
+        formValue.endDate = new Date(formValue.endDate).toISOString().split('T')[0];
+      }
+      this.dialogRef.close(formValue);
+    }
+  }
+}
