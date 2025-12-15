@@ -54,8 +54,8 @@ public class SeedController : ControllerBase
                     NetAmount = 840.34m,
                     TaxAmount = 159.66m,
                     TotalAmount = 1000.00m,
-                    InvoiceDate = new DateTime(2024, 11, 15),
-                    DueDate = new DateTime(2024, 12, 15),
+                    InvoiceDate = new DateTime(2025, 12, 10),
+                    DueDate = new DateTime(2026, 1, 10),
                     Description = "Microsoft Office 365 Lizenzen für 12 Monate",
                     Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 2,
@@ -71,8 +71,8 @@ public class SeedController : ControllerBase
                     NetAmount = 42.02m,
                     TaxAmount = 7.98m,
                     TotalAmount = 50.00m,
-                    InvoiceDate = new DateTime(2024, 11, 20),
-                    DueDate = new DateTime(2024, 12, 4),
+                    InvoiceDate = new DateTime(2025, 12, 12),
+                    DueDate = new DateTime(2025, 12, 26),
                     Description = "Büromaterial: Druckerpapier, Stifte, Ordner",
                     Status = InvoiceStatus.Eingegangen,
                     CreatedBy = 3,
@@ -87,8 +87,8 @@ public class SeedController : ControllerBase
                     NetAmount = 25.21m,
                     TaxAmount = 4.79m,
                     TotalAmount = 30.00m,
-                    InvoiceDate = new DateTime(2024, 11, 18),
-                    DueDate = new DateTime(2024, 12, 18),
+                    InvoiceDate = new DateTime(2025, 12, 8),
+                    DueDate = new DateTime(2026, 1, 7),
                     Description = "Reinigungsmittel für Büroküche",
                     Status = InvoiceStatus.Freigegeben,
                     CreatedBy = 1,
@@ -104,8 +104,8 @@ public class SeedController : ControllerBase
                     NetAmount = 4201.68m,
                     TaxAmount = 798.32m,
                     TotalAmount = 5000.00m,
-                    InvoiceDate = new DateTime(2024, 11, 10),
-                    DueDate = new DateTime(2024, 12, 10),
+                    InvoiceDate = new DateTime(2025, 12, 9),
+                    DueDate = new DateTime(2026, 1, 8),
                     Description = "Webentwicklung und Design Services",
                     Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 4,
@@ -121,8 +121,8 @@ public class SeedController : ControllerBase
                     NetAmount = 168.07m,
                     TaxAmount = 31.93m,
                     TotalAmount = 200.00m,
-                    InvoiceDate = new DateTime(2024, 11, 22),
-                    DueDate = new DateTime(2024, 12, 13),
+                    InvoiceDate = new DateTime(2025, 12, 11),
+                    DueDate = new DateTime(2025, 12, 25),
                     Description = "Bürostühle für neue Mitarbeiter",
                     Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 3,
@@ -137,8 +137,8 @@ public class SeedController : ControllerBase
                     NetAmount = 8403.36m,
                     TaxAmount = 1596.64m,
                     TotalAmount = 10000.00m,
-                    InvoiceDate = new DateTime(2024, 12, 1),
-                    DueDate = new DateTime(2024, 12, 31),
+                    InvoiceDate = new DateTime(2025, 12, 5),
+                    DueDate = new DateTime(2026, 1, 4),
                     Description = "Enterprise Software Lizenzen - Jahresvertrag",
                     Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 2,
@@ -154,8 +154,8 @@ public class SeedController : ControllerBase
                     NetAmount = 12605.04m,
                     TaxAmount = 2394.96m,
                     TotalAmount = 15000.00m,
-                    InvoiceDate = new DateTime(2024, 12, 5),
-                    DueDate = new DateTime(2024, 12, 20),
+                    InvoiceDate = new DateTime(2025, 12, 13),
+                    DueDate = new DateTime(2025, 12, 27),
                     Description = "Kritisches Security Update & Performance Optimization",
                     Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 4,
@@ -170,12 +170,80 @@ public class SeedController : ControllerBase
                     NetAmount = 2521.01m,
                     TaxAmount = 478.99m,
                     TotalAmount = 3000.00m,
-                    InvoiceDate = new DateTime(2024, 12, 8),
-                    DueDate = new DateTime(2024, 12, 25),
+                    InvoiceDate = new DateTime(2025, 12, 7),
+                    DueDate = new DateTime(2026, 1, 6),
                     Description = "Premium Office Equipment & Furniture",
                     Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 3,
                     CreatedAt = DateTime.UtcNow
+                },
+                new Invoice
+                {
+                    Id = 9,
+                    InvoiceNumber = "TRAVEL-2024-001",
+                    SupplierId = 1,
+                    CostCenterId = "ADMIN",
+                    ProjectId = "CONF001",
+                    NetAmount = 3386.55m,
+                    TaxAmount = 643.45m,
+                    TotalAmount = 4030.00m,
+                    InvoiceDate = new DateTime(2025, 12, 14),
+                    DueDate = new DateTime(2026, 1, 13),
+                    Description = "Geschäftsreise: Flugtickets für Konferenz Berlin",
+                    Status = InvoiceStatus.Freigabe_Erforderlich,
+                    CreatedBy = 1,
+                    CreatedAt = DateTime.UtcNow.AddHours(-2)
+                },
+                new Invoice
+                {
+                    Id = 10,
+                    InvoiceNumber = "MAINT-2024-012",
+                    SupplierId = 3,
+                    CostCenterId = "IT",
+                    ProjectId = "INF001",
+                    NetAmount = 1680.67m,
+                    TaxAmount = 319.33m,
+                    TotalAmount = 2000.00m,
+                    InvoiceDate = new DateTime(2025, 12, 15),
+                    DueDate = new DateTime(2026, 1, 14),
+                    Description = "Wartung und Support: Server-Infrastruktur (Q4)",
+                    Status = InvoiceStatus.Eingegangen,
+                    CreatedBy = 1,
+                    CreatedAt = DateTime.UtcNow.AddHours(-12)
+                },
+                new Invoice
+                {
+                    Id = 11,
+                    InvoiceNumber = "TRAINING-2024-003",
+                    SupplierId = 4,
+                    CostCenterId = "HR",
+                    ProjectId = "DEV001",
+                    NetAmount = 5042.02m,
+                    TaxAmount = 957.98m,
+                    TotalAmount = 6000.00m,
+                    InvoiceDate = new DateTime(2025, 12, 6),
+                    DueDate = new DateTime(2026, 1, 5),
+                    Description = "Schulung: Advanced .NET Development für Team",
+                    Status = InvoiceStatus.Freigabe_Erforderlich,
+                    CreatedBy = 1,
+                    CreatedAt = DateTime.UtcNow.AddHours(-6)
+                },
+                new Invoice
+                {
+                    Id = 12,
+                    InvoiceNumber = "SOFT-2024-789",
+                    SupplierId = 5,
+                    CostCenterId = "IT",
+                    ProjectId = "TOOL001",
+                    NetAmount = 8050.42m,
+                    TaxAmount = 1529.58m,
+                    TotalAmount = 9580.00m,
+                    InvoiceDate = new DateTime(2025, 12, 3),
+                    DueDate = new DateTime(2026, 1, 2),
+                    Description = "Lizenzen: Development Tools & IDE (Annual)",
+                    Status = InvoiceStatus.Freigabe_Erforderlich,
+                    CreatedBy = 1,
+                    CreatedAt = DateTime.UtcNow.AddHours(-1)
                 }
             };
 
@@ -242,6 +310,46 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval
                     ApprovalLevel = 1,
+                    Status = ApprovalStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new ApprovalWorkflow
+                {
+                    InvoiceId = 9,
+                    RuleId = 3,
+                    StepNumber = 1,
+                    ApproverId = 1, // Admin approval for travel expenses
+                    ApprovalLevel = 1,
+                    Status = ApprovalStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new ApprovalWorkflow
+                {
+                    InvoiceId = 10,
+                    RuleId = 2,
+                    StepNumber = 1,
+                    ApproverId = 1, // Admin approval for maintenance
+                    ApprovalLevel = 1,
+                    Status = ApprovalStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new ApprovalWorkflow
+                {
+                    InvoiceId = 11,
+                    RuleId = 2,
+                    StepNumber = 1,
+                    ApproverId = 1, // Admin approval for training
+                    ApprovalLevel = 1,
+                    Status = ApprovalStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new ApprovalWorkflow
+                {
+                    InvoiceId = 12,
+                    RuleId = 2,
+                    StepNumber = 1,
+                    ApproverId = 1, // Admin approval for software licenses
+                    ApprovalLevel = 2,
                     Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 }
