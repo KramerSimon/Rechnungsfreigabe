@@ -2,26 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Supplier, User, Invoice } from '../models';
+import { Supplier, User, Invoice, PagedResult, PageRequest } from '../models';
 
-export interface PagedResult<T> {
-  items: T[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
-
-export interface PageRequest {
-  pageNumber?: number;
-  pageSize?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  searchTerm?: string;
-  status?: string;
-}
+// Re-export for backward compatibility
+export type { PagedResult, PageRequest };
 
 @Injectable({
   providedIn: 'root'

@@ -13,24 +13,10 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterModule } from '@angular/router';
-import { RuleDialogComponent, type RuleDialogData, type ApprovalRule, type RuleCondition, type RuleAction } from './rule-dialog.component';
+import { RuleDialogComponent } from './rule-dialog.component';
+import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData, CostCenter, Project } from '../../core/models';
 
 export type { ApprovalRule, RuleCondition, RuleAction };
-
-export interface CostCenter {
-  id: string;
-  name: string;
-  description: string;
-  manager: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  costCenter: string;
-  budget: number;
-  status: string;
-}
 
 @Component({
   selector: 'app-admin-rules',
@@ -105,19 +91,19 @@ export class AdminRulesComponent implements OnInit {
 
   // Kostenstellen
   costCenters: CostCenter[] = [
-    { id: 'IT', name: 'IT-Abteilung', description: 'Informationstechnologie', manager: 'Hans Schmidt' },
-    { id: 'HR', name: 'Personalabteilung', description: 'Human Resources', manager: 'Maria Müller' },
-    { id: 'SALES', name: 'Vertrieb', description: 'Verkauf und Marketing', manager: 'Tom Wagner' },
-    { id: 'FINANCE', name: 'Finanzen', description: 'Buchhaltung und Controlling', manager: 'Lisa Klein' },
-    { id: 'OFFICE', name: 'Büromaterial', description: 'Allgemeine Büroausstattung', manager: 'Admin' }
+    { id: 'IT', name: 'IT-Abteilung', description: 'Informationstechnologie', manager: 'Hans Schmidt', isActive: true },
+    { id: 'HR', name: 'Personalabteilung', description: 'Human Resources', manager: 'Maria Müller', isActive: true },
+    { id: 'SALES', name: 'Vertrieb', description: 'Verkauf und Marketing', manager: 'Tom Wagner', isActive: true },
+    { id: 'FINANCE', name: 'Finanzen', description: 'Buchhaltung und Controlling', manager: 'Lisa Klein', isActive: true },
+    { id: 'OFFICE', name: 'Büromaterial', description: 'Allgemeine Büroausstattung', manager: 'Admin', isActive: true }
   ];
 
   // Projekte
   projects: Project[] = [
-    { id: 'WEB001', name: 'Website Relaunch', costCenter: 'IT', budget: 25000, status: 'Aktiv' },
-    { id: 'HR002', name: 'Mitarbeiter-Portal', costCenter: 'HR', budget: 15000, status: 'Geplant' },
-    { id: 'SALES003', name: 'CRM System', costCenter: 'SALES', budget: 40000, status: 'Aktiv' },
-    { id: 'OFF004', name: 'Büroausstattung 2024', costCenter: 'OFFICE', budget: 5000, status: 'Aktiv' }
+    { id: 'WEB001', name: 'Website Relaunch', costCenter: 'IT', costCenterId: 'IT', budget: 25000, status: 'Aktiv' },
+    { id: 'HR002', name: 'Mitarbeiter-Portal', costCenter: 'HR', costCenterId: 'HR', budget: 15000, status: 'Geplant' },
+    { id: 'SALES003', name: 'CRM System', costCenter: 'SALES', costCenterId: 'SALES', budget: 40000, status: 'Aktiv' },
+    { id: 'OFF004', name: 'Büroausstattung 2024', costCenter: 'OFFICE', costCenterId: 'OFFICE', budget: 5000, status: 'Aktiv' }
   ];
 
   // Formular für neue Regel

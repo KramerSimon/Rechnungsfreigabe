@@ -2,28 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { CostCenter, Project } from '../models';
 
-export interface CostCenter {
-  id: string;
-  name: string;
-  description?: string;
-  budget: number;
-  isActive: boolean;
-  managerName?: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  costCenterId: string;
-  costCenterName: string;
-  budget: number;
-  spentAmount: number;
-  status: string;
-  startDate?: string;
-  endDate?: string;
-}
+// Re-export for backward compatibility
+export type { CostCenter, Project };
 
 @Injectable({
   providedIn: 'root'

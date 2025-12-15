@@ -2,20 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { PurchaseOrder } from '../models';
 
-export interface PurchaseOrder {
-  id: string;
-  title: string;
-  description?: string;
-  costCenterId?: string;
-  costCenterName?: string;
-  projectId?: string;
-  projectName?: string;
-  totalAmount: number;
-  currency: string;
-  status: string;
-  createdAt: string;
-}
+// Re-export for backward compatibility
+export type { PurchaseOrder };
 
 @Injectable({
   providedIn: 'root'

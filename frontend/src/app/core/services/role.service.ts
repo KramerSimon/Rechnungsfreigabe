@@ -1,19 +1,16 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { User } from '../models/auth.models';
+import { DashboardRoute } from '../models';
 import { map, Observable } from 'rxjs';
+
+// Re-export for backward compatibility
+export type { DashboardRoute };
 
 export enum UserRole {
   ADMIN = 'admin',
   ACCOUNTING = 'accounting',
   USER = 'user'
-}
-
-export interface DashboardRoute {
-  path: string;
-  component: string;
-  role: UserRole;
-  title: string;
 }
 
 @Injectable({

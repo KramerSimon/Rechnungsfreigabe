@@ -234,7 +234,7 @@
               <mat-card-header>
                 <mat-card-title>{{ project.name }} ({{ project.id }})</mat-card-title>
                 <mat-card-subtitle>
-                  Kostenstelle: {{ getCostCenterName(project.costCenter) }}
+                  Kostenstelle: {{ getCostCenterName(project.costCenter || '') }}
                 </mat-card-subtitle>
                 <div class="item-actions">
                   <button mat-icon-button color="warn" (click)="onDeleteProject(project.id)">

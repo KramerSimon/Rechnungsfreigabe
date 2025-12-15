@@ -3,30 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { map, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { UserTaskSummary, AccountingOverview, SystemStatus } from '../models';
 
-export interface UserTaskSummary {
-  totalTasks: number;
-  urgentCount: number;
-  incompleteCount: number;
-  overdueCount: number;
-}
-
-export interface AccountingOverview {
-  rejectedCount: number;
-  rejectedAmount: number;
-  readyForPaymentCount: number;
-  readyForPaymentAmount: number;
-  openVolumeAmount: number;
-  autoApprovalRate: number;
-}
-
-export interface SystemStatus {
-  servicesActive: boolean;
-  autoApprovalRate: number;
-  lastUpdate: string;
-  totalInvoicesThisMonth: number;
-  averageProcessingTime: number;
-}
+// Re-export for backward compatibility
+export type { UserTaskSummary, AccountingOverview, SystemStatus };
 
 @Injectable({
   providedIn: 'root'

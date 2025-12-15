@@ -14,18 +14,21 @@ export interface CostCenter {
   name: string;
   description?: string;
   budget?: number;
-  isActive: boolean;
+  isActive?: boolean;
   managerName?: string;
+  manager?: string;
 }
 
 export interface Project {
   id: string;
   name: string;
   description?: string;
-  costCenterId: string;
+  costCenterId?: string;
   costCenterName?: string;
+  costCenter?: string;
   budget?: number;
-  status: string;
+  spentAmount?: number;
+  status?: string;
   startDate?: string;
   endDate?: string;
 }

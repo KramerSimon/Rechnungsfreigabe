@@ -96,7 +96,7 @@ export class AccountingDashboardComponent implements OnInit {
     this.invoiceService.getInvoices({ pageNumber: 0, pageSize: 100 }).pipe(
       catchError(error => {
         console.error('Fehler beim Laden der Buchhaltungsdaten:', error);
-        return of({ items: [], totalCount: 0, pageNumber: 0, pageSize: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false });
+        return of({ items: [], totalItems: 0, totalCount: 0, currentPage: 0, pageNumber: 0, pageSize: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false });
       }),
       finalize(() => this.loading = false)
     ).subscribe((response: PagedResult<Invoice>) => {
