@@ -1,6 +1,5 @@
 // Barrel export for all core models
 export * from './user.models';
-export * from './master-data.models';
 export * from './dashboard.models';
 export * from './invoice.models';
 export * from './history.models';

@@ -49,7 +49,7 @@ export class InvoiceDetailComponent implements OnInit {
   invoice: InvoiceDetail = {
     id: 1, // This would come from route parameters in real implementation
     invoiceNumber: 'TS-554',
-    supplier: { id: 1, name: 'TechSolutions', legalName: 'TechSolutions GmbH', isActive: true },
+    supplier: { id: 1, name: 'TechSolutions', legal_name: 'TechSolutions GmbH' },
     totalAmount: 2300,
     netAmount: 1932.77,
     taxAmount: 367.23,
@@ -119,7 +119,7 @@ export class InvoiceDetailComponent implements OnInit {
         this.invoice = {
           id: this.invoiceId,
           invoiceNumber: 'MS-2024-001',
-          supplier: { id: 1, name: 'Microsoft Deutschland', legalName: 'Microsoft Deutschland GmbH', isActive: true },
+          supplier: { id: 1, name: 'Microsoft Deutschland', legal_name: 'Microsoft Deutschland GmbH' },
           totalAmount: 1000,
           netAmount: 840.34,
           taxAmount: 159.66,
