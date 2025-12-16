@@ -1553,3 +1553,14 @@ ORDER BY `c`.`name`
 2025-12-16 11:40:16.103 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.CostCentersController.GetCostCenters (RechnungsfreigabeAPI)'
 2025-12-16 11:40:16.104 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/costcenters - 200 null application/json; charset=utf-8 26.9009ms
 2025-12-16 11:41:14.214 +01:00 [INF] Application is shutting down...
+2025-12-16 15:12:06.446 +01:00 [INF] Executed DbCommand (9ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-16 15:12:06.486 +01:00 [INF] Database connection established successfully.
+2025-12-16 15:12:06.506 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-16 15:12:06.595 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-16 15:12:06.598 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-16 15:12:06.600 +01:00 [INF] Hosting environment: Production
+2025-12-16 15:12:06.601 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-16 15:12:08.715 +01:00 [INF] Application is shutting down...

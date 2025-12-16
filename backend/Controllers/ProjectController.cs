@@ -1,10 +1,21 @@
-public class ProjectsController : ControllerBase
+using Microsoft.AspNetCore.Mvc;
+using backend.DTOs;
+using backend.Services;
+
+namespace backend.Controllers
 {
-  public CostProjectController(IProjectService projectService, ILogger<ProjectController> logger)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ProjectsController : ControllerBase
     {
-        _projectService = costProjectService;
-        _logger = logger;
-    }
+        private readonly IProjectService _projectService;
+        private readonly ILogger<ProjectsController> _logger;
+
+        public ProjectsController(IProjectService projectService, ILogger<ProjectsController> logger)
+        {
+            _projectService = projectService;
+            _logger = logger;
+        }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
@@ -58,7 +69,7 @@ public class ProjectsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating project: {ProjectId}", createProjectDto.Id);
+            _logger.LogError(ex, "Error creating project");
             return StatusCode(500, new { message = "An error occurred while creating the project" });
         }
     }
@@ -80,7 +91,7 @@ public class ProjectsController : ControllerBase
                 return NotFound(new { message = $"Proejct with ID {id} not found" });
             }
 
-            return Ok(Project);
+            return Ok(project);
         }
         catch (Exception ex)
         {
@@ -109,4 +120,5 @@ public class ProjectsController : ControllerBase
             return StatusCode(500, new { message = "An error occurred while deleting the project" });
         }
     }
+}
 }

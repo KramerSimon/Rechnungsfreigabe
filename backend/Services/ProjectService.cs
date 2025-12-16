@@ -1,6 +1,13 @@
-public interface IProjectService
+using Microsoft.EntityFrameworkCore;
+using RechnungsfreigabeAPI.Data;
+using RechnungsfreigabeAPI.Models;
+using backend.DTOs;
+
+namespace backend.Services
 {
-    Task<IEnumerable<ProjectDto>> GetAllCostCentersAsync();
+    public interface IProjectService
+    {
+        Task<IEnumerable<ProjectDto>> GetAllProjectsAsync();
     Task<ProjectDto?> GetProjectByIdAsync(string id);
     Task<ProjectDto> CreateProjectAsync(CreateProjectDto createProjectDto);
     Task<ProjectDto?> UpdateProjectAsync(string id, CreateProjectDto updateProjectDto);
@@ -22,7 +29,6 @@ public class ProjectService : IProjectService
     {
         var projects = await _context.Projects
             .Include(p => p.CostCenter)
-            .Where(p => p.IsActive)
             .OrderBy(p => p.Name)
             .ToListAsync();
 
@@ -44,12 +50,11 @@ public class ProjectService : IProjectService
         {
             var project = new Project
             {
-                Id = createProjectDto.Id,
+                Id = Guid.NewGuid().ToString().Substring(0, 20),
                 Name = createProjectDto.Name,
                 Description = createProjectDto.Description,
-                Budget = createProjectDto.Budget,
-                CostCenterId = createProjectDto.CostCenterId,
-                IsActive = true,
+                CostCenterId = "CC-DEFAULT",
+                Budget = 0,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -78,9 +83,6 @@ public class ProjectService : IProjectService
 
         project.Name = updateProjectDto.Name;
         project.Description = updateProjectDto.Description;
-        project.Budget = updateProjectDto.Budget;
-        project.CostCenterId = updateProjectDto.CostCenterId;
-        project.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -89,7 +91,7 @@ public class ProjectService : IProjectService
         return MapToDto(project);
     }
 
-    private async Task<bool> DeleteProjectAsync(string id)
+    public async Task<bool> DeleteProjectAsync(string id)
     {
         var project = await _context.Projects.FindAsync(id);
         if (project == null)
@@ -98,8 +100,7 @@ public class ProjectService : IProjectService
             return false;
         }
 
-        project.IsActive = false;
-        project.UpdatedAt = DateTime.UtcNow;
+        _context.Projects.Remove(project);
 
         await _context.SaveChangesAsync();
 
@@ -107,4 +108,15 @@ public class ProjectService : IProjectService
 
         return true;
     }
+
+    private static ProjectDto MapToDto(Project project)
+    {
+        return new ProjectDto
+        {
+            Id = project.Id.GetHashCode(),
+            Name = project.Name,
+            Description = project.Description ?? string.Empty
+        };
+    }
+}
 }
