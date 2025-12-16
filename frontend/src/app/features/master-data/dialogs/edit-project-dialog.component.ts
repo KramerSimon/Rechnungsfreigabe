@@ -8,19 +8,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CostCenter } from '../../../core/models/master-data.models';
+import { CostCenter } from '../../../core/models/cost-center.model';
+import { Project } from '../../../core/models/project.model';
 
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  costCenterId: string;
-  costCenterName?: string;
-  budget?: number;
-  status: string;
-  startDate?: string;
-  endDate?: string;
-}
 
 @Component({
   selector: 'app-edit-project-dialog',

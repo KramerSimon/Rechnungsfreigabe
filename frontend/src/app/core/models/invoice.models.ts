@@ -1,5 +1,5 @@
 // Invoice related models
-import { Supplier } from './master-data.models';
+import { Supplier } from './supplier.model';
 import { User } from './user.models';
 
 export interface Invoice {

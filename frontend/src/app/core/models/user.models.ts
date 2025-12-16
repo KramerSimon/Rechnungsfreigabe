@@ -33,20 +33,3 @@ export interface UserRole {
   email: string;
   roles: string[];
 }
-
-// DTOs for creating/updating users
-export interface CreateUserData {
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role?: string;
-  roleIds: string[];
-  isActive?: boolean;
-  temporaryPassword?: string;
-  activeDirectorySid?: string;
-}
-
-export interface UpdateUserData extends Partial<CreateUserData> {
-  id: string;
-}

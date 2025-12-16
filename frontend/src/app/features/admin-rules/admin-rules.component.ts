@@ -1,3 +1,4 @@
+import { CostCenterService } from './../../core/services/cost-center.service';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +15,10 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterModule } from '@angular/router';
 import { RuleDialogComponent } from './rule-dialog.component';
-import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData, CostCenter, Project } from '../../core/models';
+import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData } from '../../core/models';
+import { ProjectService } from '../../core/services/project.service';
+import { CostCenter } from '../../core/models/cost-center.model';
+import { Project } from '../../core/models/project.model';
 
 export type { ApprovalRule, RuleCondition, RuleAction };
 
@@ -90,21 +94,10 @@ export class AdminRulesComponent implements OnInit {
   ];
 
   // Kostenstellen
-  costCenters: CostCenter[] = [
-    { id: 'IT', name: 'IT-Abteilung', description: 'Informationstechnologie', manager: 'Hans Schmidt', isActive: true },
-    { id: 'HR', name: 'Personalabteilung', description: 'Human Resources', manager: 'Maria Müller', isActive: true },
-    { id: 'SALES', name: 'Vertrieb', description: 'Verkauf und Marketing', manager: 'Tom Wagner', isActive: true },
-    { id: 'FINANCE', name: 'Finanzen', description: 'Buchhaltung und Controlling', manager: 'Lisa Klein', isActive: true },
-    { id: 'OFFICE', name: 'Büromaterial', description: 'Allgemeine Büroausstattung', manager: 'Admin', isActive: true }
-  ];
+  costCenters: CostCenter[] = [];
 
   // Projekte
-  projects: Project[] = [
-    { id: 'WEB001', name: 'Website Relaunch', costCenter: 'IT', costCenterId: 'IT', budget: 25000, status: 'Aktiv' },
-    { id: 'HR002', name: 'Mitarbeiter-Portal', costCenter: 'HR', costCenterId: 'HR', budget: 15000, status: 'Geplant' },
-    { id: 'SALES003', name: 'CRM System', costCenter: 'SALES', costCenterId: 'SALES', budget: 40000, status: 'Aktiv' },
-    { id: 'OFF004', name: 'Büroausstattung 2024', costCenter: 'OFFICE', costCenterId: 'OFFICE', budget: 5000, status: 'Aktiv' }
-  ];
+  projects: Project[] = [];
 
   // Formular für neue Regel
   newRule: Partial<ApprovalRule> = {
@@ -163,10 +156,15 @@ export class AdminRulesComponent implements OnInit {
     { value: 'assign_to', label: 'Zuweisen an' }
   ];
 
-  constructor(private dialog: MatDialog) {}
+  constructor(private dialog: MatDialog, private costCenterService: CostCenterService, private projectService: ProjectService) {}
 
   ngOnInit() {
-    // Lade Daten beim Initialisieren
+    this.costCenterService.getCostCenters().subscribe((centers) => {
+      this.costCenters = centers;
+    });
+    this.projectService.getProjects().subscribe((projects) => {
+      this.projects = projects;
+    });
   }
 
   // Regel-Management
@@ -218,39 +216,26 @@ export class AdminRulesComponent implements OnInit {
   // Kostenstellen-Management
   onAddCostCenter() {
     if (this.newCostCenter.id && this.newCostCenter.name) {
-      this.costCenters.push({
-        id: this.newCostCenter.id,
-        name: this.newCostCenter.name,
-        description: this.newCostCenter.description || '',
-        manager: this.newCostCenter.manager || ''
-      });
-      this.newCostCenter = { id: '', name: '', description: '', manager: '' };
+      this.costCenterService.addCostCenter(this.newCostCenter as CostCenter).subscribe(() => {});
     }
   }
 
   onDeleteCostCenter(id: string) {
     if (confirm('Kostenstelle wirklich löschen?')) {
-      this.costCenters = this.costCenters.filter(center => center.id !== id);
+      this.costCenterService.deleteCostCenter(id).subscribe(() => {});
     }
   }
 
   // Projekt-Management
   onAddProject() {
     if (this.newProject.id && this.newProject.name && this.newProject.costCenter) {
-      this.projects.push({
-        id: this.newProject.id,
-        name: this.newProject.name,
-        costCenter: this.newProject.costCenter,
-        budget: this.newProject.budget || 0,
-        status: this.newProject.status || 'Geplant'
-      });
-      this.newProject = { id: '', name: '', costCenter: '', budget: 0, status: 'Geplant' };
+      this.projectService.addProject(this.newProject as Project).subscribe(() => {});
     }
   }
 
   onDeleteProject(id: string) {
     if (confirm('Projekt wirklich löschen?')) {
-      this.projects = this.projects.filter(project => project.id !== id);
+      this.projectService.deleteProject(id).subscribe(() => {});
     }
   }
 

@@ -9,13 +9,13 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatBadgeModule } from '@angular/material/badge';
-import { DashboardService, SystemStatus } from '../../../core/services/dashboard.service';
+import { DashboardService, SystemStatus } from '../../../../core/services/dashboard.service';
 // Zentrale Modelle
 import {
   AutoApprovalRule,
   AssignmentRule,
   MasterDataSection
-} from '../../../core/models/dashboard.models';
+} from '../../../../core/models/dashboard.models';
 
 @Component({
   selector: 'app-admin-dashboard',

@@ -5,7 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CostCenter } from '../../../core/models/master-data.models';
+import { CostCenter } from '../../../core/models/cost-center.model';
 
 @Component({
   selector: 'app-edit-cost-center-dialog',

@@ -12,18 +12,15 @@ public static class PasswordHashGenerator
         string password = "password123";
         
         // Generiere mehrere Hashes für verschiedene Benutzer
-        Console.WriteLine("=== Passwort-Hashes für Testbenutzer ===");
-        Console.WriteLine($"Passwort: {password}");
-        Console.WriteLine();
+        // ...existing code...
         
         for (int i = 1; i <= 5; i++)
         {
             string hash = BC.HashPassword(password, 11);
-            Console.WriteLine($"Hash {i}: {hash}");
+            // ...existing code...
         }
         
-        Console.WriteLine();
-        Console.WriteLine("=== SQL Update Statements ===");
+        // ...existing code...
         
         // Generiere SQL Updates für alle Testbenutzer
         string[] usernames = { "admin", "max.mustermann", "maria.mueller", "hans.schmidt", "lisa.klein" };
@@ -31,7 +28,7 @@ public static class PasswordHashGenerator
         foreach (string username in usernames)
         {
             string hash = BC.HashPassword(password, 11);
-            Console.WriteLine($"UPDATE users SET password_hash = '{hash}' WHERE username = '{username}';");
+            // ...existing code...
         }
     }
 }

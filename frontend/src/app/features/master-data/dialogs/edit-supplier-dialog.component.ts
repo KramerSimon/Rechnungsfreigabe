@@ -216,8 +216,19 @@ export class EditSupplierDialogComponent {
   }
 
   onSave(): void {
+
     if (this.supplierForm.valid) {
       this.dialogRef.close(this.supplierForm.value);
+    } else {
+      // Mark all controls as touched to show validation errors
+      this.supplierForm.markAllAsTouched();
+      // Show an alert with missing required fields
+      const missingFields = [];
+      if (this.supplierForm.get('name')?.invalid) missingFields.push('Name');
+      if (this.supplierForm.get('country')?.invalid) missingFields.push('Land');
+      if (missingFields.length > 0) {
+        alert('Bitte füllen Sie die folgenden Pflichtfelder aus: ' + missingFields.join(', '));
+      }
     }
   }
 }

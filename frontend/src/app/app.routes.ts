@@ -1,14 +1,15 @@
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
-import { SmartDashboardComponent } from './features/dashboard/smart-dashboard.component';
-import { UserDashboardComponent } from './features/dashboard/user-dashboard/user-dashboard.component';
-import { AccountingDashboardComponent } from './features/dashboard/accounting-dashboard/accounting-dashboard.component';
-import { AdminDashboardComponent } from './features/dashboard/admin-dashboard/admin-dashboard.component';
+import { DashboardComponent } from './features/smart-dashboard/dashboard/dashboard.component';
+import { SmartDashboardComponent } from './features/smart-dashboard/smart-dashboard.component';
+import { UserDashboardComponent } from './features/smart-dashboard/dashboard/user-dashboard/user-dashboard.component';
+import { AccountingDashboardComponent } from './features/smart-dashboard/dashboard/accounting-dashboard/accounting-dashboard.component';
+import { AdminDashboardComponent } from './features/smart-dashboard/dashboard/admin-dashboard/admin-dashboard.component';
 import { InvoiceDetailComponent } from './features/invoice-detail/invoice-detail.component';
 import { AdminRulesComponent } from './features/admin-rules/admin-rules.component';
 import { LoginComponent } from './features/login/login.component';
 import { MasterDataComponent } from './features/master-data/master-data.component';
 import { authGuard } from './core/guards/auth.guard';
+import { PdfUploadDashboardComponent } from './features/smart-dashboard/dashboard/pdf-upload-dashboard/pdf-upload-dashboard.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -20,6 +21,7 @@ export const routes: Routes = [
   { path: 'dashboard/user', component: UserDashboardComponent, canActivate: [authGuard] },
   { path: 'dashboard/accounting', component: AccountingDashboardComponent, canActivate: [authGuard] },
   { path: 'dashboard/admin', component: AdminDashboardComponent, canActivate: [authGuard] },
+  { path: 'dashboard/pdf-upload', component: PdfUploadDashboardComponent, canActivate: [authGuard] },
 
   { path: 'admin/users', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'users' } },
   { path: 'admin/cost-centers', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'costcenters' } },

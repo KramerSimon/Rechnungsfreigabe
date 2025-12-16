@@ -10,7 +10,8 @@ export type { DashboardRoute };
 export enum UserRole {
   ADMIN = 'admin',
   ACCOUNTING = 'accounting',
-  USER = 'user'
+  USER = 'user',
+  PDF_UPLOADER = 'pdf_uploader'
 }
 
 @Injectable({
@@ -36,6 +37,12 @@ export class RoleService {
       component: 'AdminDashboard',
       role: UserRole.ADMIN,
       title: 'Konfiguration'
+    },
+    {
+      path: '/dashboard/pdf-upload',
+      component: 'PdfUploadDashboard',
+      role: UserRole.PDF_UPLOADER,
+      title: 'PDF Upload'
     }
   ];
 

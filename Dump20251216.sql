@@ -48,7 +48,7 @@ CREATE TABLE `approval_rules` (
 
 LOCK TABLES `approval_rules` WRITE;
 /*!40000 ALTER TABLE `approval_rules` DISABLE KEYS */;
-INSERT INTO `approval_rules` VALUES (1,'Kleinstbeträge Auto-Freigabe','Automatische Freigabe für Beträge unter 50 EUR bei Büromaterial','automatic',1,1,'[{\"field\": \"total_amount\", \"value\": 50, \"operator\": \"<\"}, {\"field\": \"cost_center_id\", \"value\": \"OFFICE\", \"operator\": \"=\", \"logicalOperator\": \"AND\"}]','[{\"type\": \"auto_approve\", \"value\": \"approved\", \"description\": \"Automatisch freigeben und als bezahlt markieren\"}]',1,'2025-12-11 17:02:47','2025-12-11 17:02:47'),(2,'IT-Investitionen Freigabe','Manuelle Freigabe für IT-Kostenstelle oder Beträge über 500 EUR','manual',2,1,'[{\"field\": \"cost_center_id\", \"value\": \"IT\", \"operator\": \"=\"}, {\"field\": \"total_amount\", \"value\": 500, \"operator\": \">\", \"logicalOperator\": \"OR\"}]','[{\"type\": \"require_approval\", \"value\": \"manager\", \"description\": \"Freigabe durch Kostenstellen-Manager erforderlich\"}]',1,'2025-12-11 17:02:47','2025-12-11 17:02:47'),(3,'Hohe Beträge Doppel-Freigabe','Doppelte Freigabe für Beträge über 5000 EUR','manual',3,1,'[{\"field\": \"total_amount\", \"value\": 5000, \"operator\": \">\"}]','[{\"type\": \"require_approval\", \"value\": \"double\", \"description\": \"Freigabe durch Manager und Geschäftsführung erforderlich\"}]',1,'2025-12-11 17:02:47','2025-12-11 17:02:47'),(4,'Standard Freigabeprozess','Standard-Workflow für alle anderen Rechnungen','manual',999,1,'[]','[{\"type\": \"require_approval\", \"value\": \"standard\", \"description\": \"Standard-Freigabeprozess durch zuständigen Manager\"}]',1,'2025-12-11 17:02:47','2025-12-11 17:02:47');
+INSERT INTO `approval_rules` VALUES (1,'Kleinstbeträge Auto-Freigabe','Automatische Freigabe für Beträge unter 50 EUR bei Büromaterial','automatic',1,1,'[{\"field\": \"total_amount\", \"value\": 50, \"operator\": \"<\"}, {\"field\": \"cost_center_id\", \"value\": \"OFFICE\", \"operator\": \"=\", \"logicalOperator\": \"AND\"}]','[{\"type\": \"auto_approve\", \"value\": \"approved\", \"description\": \"Automatisch freigeben und als bezahlt markieren\"}]',1,'2025-12-12 09:31:17','2025-12-12 09:31:17'),(2,'IT-Investitionen Freigabe','Manuelle Freigabe für IT-Kostenstelle oder Beträge über 500 EUR','manual',2,1,'[{\"field\": \"cost_center_id\", \"value\": \"IT\", \"operator\": \"=\"}, {\"field\": \"total_amount\", \"value\": 500, \"operator\": \">\", \"logicalOperator\": \"OR\"}]','[{\"type\": \"require_approval\", \"value\": \"manager\", \"description\": \"Freigabe durch Kostenstellen-Manager erforderlich\"}]',1,'2025-12-12 09:31:17','2025-12-12 09:31:17'),(3,'Hohe Beträge Doppel-Freigabe','Doppelte Freigabe für Beträge über 5000 EUR','manual',3,1,'[{\"field\": \"total_amount\", \"value\": 5000, \"operator\": \">\"}]','[{\"type\": \"require_approval\", \"value\": \"double\", \"description\": \"Freigabe durch Manager und Geschäftsführung erforderlich\"}]',1,'2025-12-12 09:31:17','2025-12-12 09:31:17'),(4,'Standard Freigabeprozess','Standard-Workflow für alle anderen Rechnungen','manual',999,1,'[]','[{\"type\": \"require_approval\", \"value\": \"standard\", \"description\": \"Standard-Freigabeprozess durch zuständigen Manager\"}]',1,'2025-12-12 09:31:17','2025-12-12 09:31:17');
 /*!40000 ALTER TABLE `approval_rules` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -78,7 +78,7 @@ CREATE TABLE `approval_workflows` (
   CONSTRAINT `approval_workflows_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `approval_workflows_ibfk_2` FOREIGN KEY (`rule_id`) REFERENCES `approval_rules` (`id`),
   CONSTRAINT `approval_workflows_ibfk_3` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -87,7 +87,6 @@ CREATE TABLE `approval_workflows` (
 
 LOCK TABLES `approval_workflows` WRITE;
 /*!40000 ALTER TABLE `approval_workflows` DISABLE KEYS */;
-INSERT INTO `approval_workflows` VALUES (10,13,NULL,1,1,1,'Approved','Freigabe erteilt','2025-12-15 13:38:31','2025-12-15 13:47:40'),(11,14,NULL,1,1,1,'Rejected','Kacke','2025-12-15 13:47:22','2025-12-15 13:47:40'),(12,15,NULL,1,1,1,'Approved','Freigabe erteilt','2025-12-15 13:47:47','2025-12-15 13:47:40'),(13,16,NULL,1,1,1,'Approved','Admin-Freigabe: Freigabe erteilt','2025-12-15 17:06:52','2025-12-15 13:47:40');
 /*!40000 ALTER TABLE `approval_workflows` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -118,7 +117,7 @@ CREATE TABLE `cost_centers` (
 
 LOCK TABLES `cost_centers` WRITE;
 /*!40000 ALTER TABLE `cost_centers` DISABLE KEYS */;
-INSERT INTO `cost_centers` VALUES ('ADMIN','Administration',NULL,NULL,150000.00,1,'2025-12-15 12:20:12'),('FACILITY','Facility Management','Gebäude, Reinigung, Sicherheit',NULL,80000.00,1,'2025-12-11 17:02:47'),('FINANCE','Finanzen','Buchhaltung, Controlling und Finanzen',5,100000.00,1,'2025-12-11 17:02:47'),('HR','Personalabteilung','Human Resources und Personalentwicklung',3,150000.00,1,'2025-12-11 17:02:47'),('IT','IT-Abteilung','Informationstechnologie und Digitalisierung',4,250000.00,1,'2025-12-11 17:02:47'),('OFFICE','Büromaterial','Allgemeine Büroausstattung und Verbrauchsmaterial',1,25000.00,1,'2025-12-11 17:02:47'),('SALES','Vertrieb','Verkauf und Marketing',2,300000.00,1,'2025-12-11 17:02:47');
+INSERT INTO `cost_centers` VALUES ('FACILITY','Facility Management','Gebäude, Reinigung, Sicherheit',NULL,80000.00,1,'2025-12-12 09:31:16'),('FINANCE','Finanzen','Buchhaltung, Controlling und Finanzen',5,100000.00,1,'2025-12-12 09:31:16'),('HR','Personalabteilung','Human Resources und Personalentwicklung',3,150000.00,1,'2025-12-12 09:31:16'),('IT','IT-Abteilung','Informationstechnologie und Digitalisierung',4,250000.00,1,'2025-12-12 09:31:16'),('OFFICE','Büromaterial','Allgemeine Büroausstattung und Verbrauchsmaterial',1,25000.00,1,'2025-12-12 09:31:16'),('SALES','Vertrieb','Verkauf und Marketing',2,300000.00,1,'2025-12-12 09:31:16');
 /*!40000 ALTER TABLE `cost_centers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -152,7 +151,7 @@ CREATE TABLE `invoice_history` (
   KEY `idx_action_source` (`action_source`),
   CONSTRAINT `invoice_history_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `invoice_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -161,7 +160,6 @@ CREATE TABLE `invoice_history` (
 
 LOCK TABLES `invoice_history` WRITE;
 /*!40000 ALTER TABLE `invoice_history` DISABLE KEYS */;
-INSERT INTO `invoice_history` VALUES (5,13,'Daten vervollständigt','8','0',NULL,NULL,'{\"ProjectId\": {\"NewValue\": \"WEB001\", \"OldValue\": \"\", \"DisplayName\": \"Projekt\"}, \"PurchaseOrderId\": {\"NewValue\": \"PO-2024-001\", \"OldValue\": \"\", \"DisplayName\": \"Bestellung\"}}',NULL,NULL,NULL,NULL,1,'2025-12-15 13:36:44'),(6,14,'Daten vervollständigt','8','0',NULL,NULL,'{\"ProjectId\": {\"NewValue\": \"OFF004\", \"OldValue\": \"\", \"DisplayName\": \"Projekt\"}, \"PurchaseOrderId\": {\"NewValue\": \"PO-2024-002\", \"OldValue\": \"\", \"DisplayName\": \"Bestellung\"}}',NULL,NULL,NULL,NULL,1,'2025-12-15 13:37:19'),(7,15,'Daten vervollständigt','8','0',NULL,NULL,'{\"ProjectId\": {\"NewValue\": \"WEB001\", \"OldValue\": \"\", \"DisplayName\": \"Projekt\"}, \"PurchaseOrderId\": {\"NewValue\": \"PO-2024-003\", \"OldValue\": \"\", \"DisplayName\": \"Bestellung\"}}',NULL,NULL,NULL,NULL,1,'2025-12-15 13:37:50'),(8,16,'Daten vervollständigt','8','0',NULL,NULL,'{\"ProjectId\": {\"NewValue\": \"OFF004\", \"OldValue\": \"\", \"DisplayName\": \"Projekt\"}, \"PurchaseOrderId\": {\"NewValue\": \"PO-2024-002\", \"OldValue\": \"\", \"DisplayName\": \"Bestellung\"}}',NULL,NULL,NULL,NULL,1,'2025-12-15 13:38:18'),(9,13,'Freigabe erteilt','3','0',NULL,'FREIGEGEBEN',NULL,'Freigabe erteilt (Teilfreigabe - Schritt 1 von 1)',NULL,NULL,NULL,1,'2025-12-15 13:38:31'),(10,14,'Freigabe abgelehnt','4','0',NULL,'ABGELEHNT',NULL,'Kacke',NULL,NULL,NULL,1,'2025-12-15 13:47:22'),(11,15,'Freigabe erteilt','3','0',NULL,'FREIGEGEBEN',NULL,'Freigabe erteilt (Teilfreigabe - Schritt 1 von 1)',NULL,NULL,NULL,1,'2025-12-15 13:47:47'),(12,15,'Freigabe erteilt','3','0',NULL,'FREIGEGEBEN',NULL,'Freigabe erteilt',NULL,NULL,NULL,1,'2025-12-15 13:48:13'),(13,22,'Automatisch freigegeben','Approved','System',NULL,'Freigegeben',NULL,'Rechnung automatisch freigegeben: Büromaterial - automatisch freigegeben (unter 100 EUR)',NULL,NULL,NULL,1,'2025-12-15 14:50:49'),(14,23,'Automatisch freigegeben','Approved','System',NULL,'Freigegeben',NULL,'Rechnung automatisch freigegeben: Wartungsarbeiten - automatisch freigegeben',NULL,NULL,NULL,1,'2025-12-15 14:50:49'),(15,24,'Automatisch freigegeben','Approved','System',NULL,'Freigegeben',NULL,'Rechnung automatisch freigegeben: Express-Lieferung Hardware - automatisch freigegeben',NULL,NULL,NULL,1,'2025-12-15 14:50:49'),(16,25,'Automatisch freigegeben','Approved','System',NULL,'Freigegeben',NULL,'Rechnung automatisch freigegeben: Verbrauchsmaterial Drucker - automatisch freigegeben',NULL,NULL,NULL,1,'2025-12-15 14:50:49'),(17,26,'Automatisch freigegeben','Approved','System',NULL,'Freigegeben',NULL,'Rechnung automatisch freigegeben: Monatliche Wartung - automatisch freigegeben',NULL,NULL,NULL,1,'2025-12-15 14:50:49'),(20,16,'Freigabe erteilt','Approved','User',NULL,'FREIGEGEBEN',NULL,'Admin hat alle ausstehenden Freigaben erteilt: Freigabe erteilt',NULL,NULL,NULL,1,'2025-12-15 17:06:52');
 /*!40000 ALTER TABLE `invoice_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -218,7 +216,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `invoices_ibfk_5` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `invoices_ibfk_6` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -227,7 +225,6 @@ CREATE TABLE `invoices` (
 
 LOCK TABLES `invoices` WRITE;
 /*!40000 ALTER TABLE `invoices` DISABLE KEYS */;
-INSERT INTO `invoices` VALUES (13,'INV-2024-001',1,'PO-2024-001','IT','WEB001',1000.00,190.00,1190.00,'EUR','2024-12-10','2026-01-15','2025-12-15 13:46:19','Freigegeben',1,1,0,NULL,NULL,NULL,'Microsoft software licenses',NULL,1,1,'2025-12-15 13:46:19','2025-12-15 14:45:16'),(14,'INV-2024-002',2,'PO-2024-002','OFFICE','OFF004',2500.00,475.00,2975.00,'EUR','2024-12-12','2026-01-15','2025-12-15 13:46:19','Abgelehnt',1,1,0,NULL,NULL,NULL,'Office supplies and equipment',NULL,1,1,'2025-12-15 13:46:19','2025-12-15 13:47:22'),(15,'INV-2024-003',4,'PO-2024-003','IT','WEB001',750.50,142.60,893.10,'EUR','2024-12-13','2026-01-15','2025-12-15 13:46:19','Freigegeben',1,1,0,NULL,NULL,NULL,'IT consulting services',NULL,2,1,'2025-12-15 13:46:19','2025-12-15 13:48:13'),(16,'INV-2024-004',3,'PO-2024-002','OFFICE','OFF004',350.00,66.50,416.50,'EUR','2024-12-14','2026-01-15','2025-12-15 13:46:19','Freigegeben',1,1,0,NULL,NULL,NULL,'Office furniture and storage',NULL,1,1,'2025-12-15 13:46:19','2025-12-15 17:06:52'),(22,'INV-2025-0020',1,NULL,'IT',NULL,71.43,13.57,85.00,'EUR','2025-01-10','2025-02-10','2025-12-15 14:50:49','Freigegeben',0,1,1,NULL,NULL,NULL,'Büromaterial - automatisch freigegeben (unter 100 EUR)',NULL,1,NULL,'2025-12-15 14:50:49','2025-12-15 14:50:49'),(23,'INV-2025-0021',1,NULL,'IT',NULL,63.45,12.05,75.50,'EUR','2025-01-11','2025-02-11','2025-12-15 14:50:49','Freigegeben',0,1,1,NULL,NULL,NULL,'Wartungsarbeiten - automatisch freigegeben',NULL,1,NULL,'2025-12-15 14:50:49','2025-12-15 14:50:49'),(24,'INV-2025-0022',1,NULL,'IT',NULL,79.83,15.17,95.00,'EUR','2025-01-12','2025-02-12','2025-12-15 14:50:49','Freigegeben',0,1,1,NULL,NULL,NULL,'Express-Lieferung Hardware - automatisch freigegeben',NULL,1,NULL,'2025-12-15 14:50:49','2025-12-15 14:50:49'),(25,'INV-2025-0023',1,NULL,'FINANCE',NULL,54.62,10.38,65.00,'EUR','2025-01-13','2025-02-13','2025-12-15 14:50:49','Freigegeben',0,1,1,NULL,NULL,NULL,'Verbrauchsmaterial Drucker - automatisch freigegeben',NULL,1,NULL,'2025-12-15 14:50:49','2025-12-15 14:50:49'),(26,'INV-2025-0024',1,NULL,'IT',NULL,75.62,14.37,89.99,'EUR','2025-01-14','2025-02-14','2025-12-15 14:50:49','Freigegeben',0,1,1,NULL,NULL,NULL,'Monatliche Wartung - automatisch freigegeben',NULL,1,NULL,'2025-12-15 14:50:49','2025-12-15 14:50:49');
 /*!40000 ALTER TABLE `invoices` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -256,7 +253,7 @@ CREATE TABLE `notifications` (
   KEY `idx_is_read` (`is_read`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -265,7 +262,6 @@ CREATE TABLE `notifications` (
 
 LOCK TABLES `notifications` WRITE;
 /*!40000 ALTER TABLE `notifications` DISABLE KEYS */;
-INSERT INTO `notifications` VALUES (3,1,13,'invoice_approved','Rechnung freigegeben','Rechnung INV-2024-001 von Microsoft Deutschland über 1.190,00 € EUR wurde freigegeben.',0,'normal','/invoices/13','2025-12-15 13:38:31',NULL),(4,3,13,'invoice_approved','Rechnung freigegeben','Rechnung INV-2024-001 von Microsoft Deutschland über 1.190,00 € EUR wurde freigegeben.',0,'normal','/invoices/13','2025-12-15 13:38:31',NULL),(5,1,14,'invoice_rejected','Rechnung abgelehnt','Rechnung INV-2024-002 von Amazon Business über 2.975,00 € EUR wurde abgelehnt.',0,'high','/invoices/14','2025-12-15 13:47:22',NULL),(6,3,14,'invoice_rejected','Rechnung abgelehnt','Rechnung INV-2024-002 von Amazon Business über 2.975,00 € EUR wurde abgelehnt.',0,'high','/invoices/14','2025-12-15 13:47:22',NULL),(7,2,15,'invoice_approved','Rechnung freigegeben','Rechnung INV-2024-003 von IT-Solutions über 893,10 € EUR wurde freigegeben.',0,'normal','/invoices/15','2025-12-15 13:47:47',NULL),(8,3,15,'invoice_approved','Rechnung freigegeben','Rechnung INV-2024-003 von IT-Solutions über 893,10 € EUR wurde freigegeben.',0,'normal','/invoices/15','2025-12-15 13:47:47',NULL),(9,2,15,'invoice_approved','Rechnung freigegeben','Rechnung INV-2024-003 von IT-Solutions über 893,10 € EUR wurde freigegeben.',0,'normal','/invoices/15','2025-12-15 13:48:13',NULL),(10,3,15,'invoice_approved','Rechnung freigegeben','Rechnung INV-2024-003 von IT-Solutions über 893,10 € EUR wurde freigegeben.',0,'normal','/invoices/15','2025-12-15 13:48:13',NULL),(11,1,16,'invoice_approved','Rechnung freigegeben','Rechnung INV-2024-004 von Büroservice Express über 416,50 € EUR wurde freigegeben.',0,'normal','/invoices/16','2025-12-15 17:06:52',NULL),(12,3,16,'invoice_approved','Rechnung freigegeben','Rechnung INV-2024-004 von Büroservice Express über 416,50 € EUR wurde freigegeben.',0,'normal','/invoices/16','2025-12-15 17:06:52',NULL);
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -302,7 +298,7 @@ CREATE TABLE `projects` (
 
 LOCK TABLES `projects` WRITE;
 /*!40000 ALTER TABLE `projects` DISABLE KEYS */;
-INSERT INTO `projects` VALUES ('HR002','Mitarbeiter-Portal','Entwicklung eines Self-Service Portals für Mitarbeiter','HR',15000.00,0.00,'Geplant',NULL,NULL,3,'2025-12-11 17:02:47'),('OFF004','Büroausstattung 2024','Modernisierung der Büroausstattung','OFFICE',5000.00,0.00,'Aktiv',NULL,NULL,1,'2025-12-11 17:02:47'),('SALES003','CRM System','Einführung eines neuen Customer Relationship Management Systems','SALES',40000.00,0.00,'Aktiv',NULL,NULL,2,'2025-12-11 17:02:47'),('WEB001','Website Relaunch','Neugestaltung der Unternehmenswebsite','IT',25000.00,0.00,'Aktiv',NULL,NULL,4,'2025-12-11 17:02:47');
+INSERT INTO `projects` VALUES ('HR002','Mitarbeiter-Portal','Entwicklung eines Self-Service Portals für Mitarbeiter','HR',15000.00,0.00,'Geplant',NULL,NULL,3,'2025-12-12 09:31:17'),('OFF004','Büroausstattung 2024','Modernisierung der Büroausstattung','OFFICE',5000.00,0.00,'Aktiv',NULL,NULL,1,'2025-12-12 09:31:17'),('SALES003','CRM System','Einführung eines neuen Customer Relationship Management Systems','SALES',40000.00,0.00,'Aktiv',NULL,NULL,2,'2025-12-12 09:31:17'),('WEB001','Website Relaunch','Neugestaltung der Unternehmenswebsite','IT',25000.00,0.00,'Aktiv',NULL,NULL,4,'2025-12-12 09:31:17');
 /*!40000 ALTER TABLE `projects` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -344,7 +340,6 @@ CREATE TABLE `purchase_orders` (
 
 LOCK TABLES `purchase_orders` WRITE;
 /*!40000 ALTER TABLE `purchase_orders` DISABLE KEYS */;
-INSERT INTO `purchase_orders` VALUES ('PO-2024-001','Software-Lizenzen Q1','Einkauf Microsoft Lizenzen für Q1 2024','IT','WEB001',5000.00,'EUR','Offen',1,NULL,'2025-12-15 14:21:55',NULL),('PO-2024-002','Büromöbel Erweiterung','Neue Schreibtische und Stühle für Büro 3.OG','OFFICE','OFF004',3500.00,'EUR','Offen',1,NULL,'2025-12-15 14:21:55',NULL),('PO-2024-003','Marketing Kampagne','Online-Werbung für Produktlaunch','SALES','SALES003',10000.00,'EUR','Offen',2,NULL,'2025-12-15 14:21:55',NULL),('PO-2024-004','Schulungsmaßnahmen','Externe Schulungen für Mitarbeiter','HR','HR002',2500.00,'EUR','Offen',3,NULL,'2025-12-15 14:21:55',NULL);
 /*!40000 ALTER TABLE `purchase_orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -413,7 +408,7 @@ CREATE TABLE `suppliers` (
 
 LOCK TABLES `suppliers` WRITE;
 /*!40000 ALTER TABLE `suppliers` DISABLE KEYS */;
-INSERT INTO `suppliers` VALUES (1,'Microsoft Deutschland','Microsoft Deutschland GmbH',NULL,NULL,NULL,NULL,NULL,'München','Deutschland','buchhaltung@microsoft.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 12:43:54','2025-12-15 12:43:54'),(2,'Amazon Business','Amazon EU S.à r.l.',NULL,NULL,NULL,NULL,NULL,'Berlin','Deutschland','business@amazon.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 12:43:54','2025-12-15 12:43:54'),(3,'Büroservice Express','Büroservice Express GmbH',NULL,NULL,NULL,NULL,NULL,'Hamburg','Deutschland','info@bueroservice.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 12:43:54','2025-12-15 12:43:54'),(4,'IT-Solutions','IT-Solutions & Development GmbH',NULL,NULL,NULL,NULL,NULL,'Frankfurt','Deutschland','contact@it-solutions.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 12:43:54','2025-12-15 12:43:54'),(5,'Office World','Office World Handels-GmbH',NULL,NULL,NULL,NULL,NULL,'Köln','Deutschland','service@officeworld.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 12:43:54','2025-12-15 12:43:54');
+INSERT INTO `suppliers` VALUES (1,'Microsoft Deutschland','Microsoft Deutschland GmbH',NULL,NULL,NULL,NULL,NULL,'München','Deutschland','buchhaltung@microsoft.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47'),(2,'Amazon Business','Amazon EU S.à r.l.',NULL,NULL,NULL,NULL,NULL,'Berlin','Deutschland','business@amazon.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47'),(3,'Büroservice Express','Büroservice Express GmbH',NULL,NULL,NULL,NULL,NULL,'Hamburg','Deutschland','info@bueroservice.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47'),(4,'IT-Solutions','IT-Solutions & Development GmbH',NULL,NULL,NULL,NULL,NULL,'Frankfurt','Deutschland','contact@it-solutions.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47'),(5,'Office World','Office World Handels-GmbH',NULL,NULL,NULL,NULL,NULL,'Köln','Deutschland','service@officeworld.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47');
 /*!40000 ALTER TABLE `suppliers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -446,7 +441,7 @@ CREATE TABLE `system_config` (
 
 LOCK TABLES `system_config` WRITE;
 /*!40000 ALTER TABLE `system_config` DISABLE KEYS */;
-INSERT INTO `system_config` VALUES (1,'company_name','Musterfirma GmbH','string','Name der Firma',1,NULL,'2025-12-11 17:02:47'),(2,'default_currency','EUR','string','Standard-Währung',1,NULL,'2025-12-11 17:02:47'),(3,'auto_approval_limit','50','number','Automatische Freigabe-Grenze in EUR',1,NULL,'2025-12-11 17:02:47'),(4,'payment_terms_days','30','number','Standard-Zahlungsziel in Tagen',1,NULL,'2025-12-11 17:02:47'),(5,'notification_email_enabled','true','boolean','E-Mail-Benachrichtigungen aktiviert',1,NULL,'2025-12-11 17:02:47'),(6,'pdf_storage_path','/uploads/invoices/','string','Pfad für PDF-Dateien',1,NULL,'2025-12-11 17:02:47'),(7,'max_file_size_mb','10','number','Maximale Dateigröße in MB',1,NULL,'2025-12-11 17:02:47'),(8,'ad_integration_enabled','true','boolean','Active Directory Integration aktiviert',1,NULL,'2025-12-11 17:02:47'),(9,'backup_retention_days','365','number','Aufbewahrungszeit für Backups in Tagen',1,NULL,'2025-12-11 17:02:47');
+INSERT INTO `system_config` VALUES (1,'company_name','Musterfirma GmbH','string','Name der Firma',1,NULL,'2025-12-12 09:31:17'),(2,'default_currency','EUR','string','Standard-Währung',1,NULL,'2025-12-12 09:31:17'),(3,'auto_approval_limit','50','number','Automatische Freigabe-Grenze in EUR',1,NULL,'2025-12-12 09:31:17'),(4,'payment_terms_days','30','number','Standard-Zahlungsziel in Tagen',1,NULL,'2025-12-12 09:31:17'),(5,'notification_email_enabled','true','boolean','E-Mail-Benachrichtigungen aktiviert',1,NULL,'2025-12-12 09:31:17'),(6,'pdf_storage_path','/uploads/invoices/','string','Pfad für PDF-Dateien',1,NULL,'2025-12-12 09:31:17'),(7,'max_file_size_mb','10','number','Maximale Dateigröße in MB',1,NULL,'2025-12-12 09:31:17'),(8,'ad_integration_enabled','true','boolean','Active Directory Integration aktiviert',1,NULL,'2025-12-12 09:31:17'),(9,'backup_retention_days','365','number','Aufbewahrungszeit für Backups in Tagen',1,NULL,'2025-12-12 09:31:17');
 /*!40000 ALTER TABLE `system_config` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -474,7 +469,7 @@ CREATE TABLE `user_roles` (
 
 LOCK TABLES `user_roles` WRITE;
 /*!40000 ALTER TABLE `user_roles` DISABLE KEYS */;
-INSERT INTO `user_roles` VALUES (1,1,'2025-12-11 17:02:47'),(2,2,'2025-12-11 17:02:47'),(3,3,'2025-12-11 17:02:47'),(4,6,'2025-12-11 17:02:47'),(5,5,'2025-12-11 17:02:47');
+INSERT INTO `user_roles` VALUES (1,1,'2025-12-12 09:31:16'),(2,2,'2025-12-12 09:31:16'),(3,3,'2025-12-12 09:31:16'),(4,6,'2025-12-12 09:31:16'),(5,5,'2025-12-12 09:31:16');
 /*!40000 ALTER TABLE `user_roles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -512,7 +507,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2a$11$FNf.BJrxp6VE2zqNE3gFj.5ab4EW.usgVjxudFDZaywRcmO7sd0yi','admin@firma.de','System','Administrator',NULL,'2025-12-11 16:53:28',0,NULL,1,'2025-12-11 17:02:47','2025-12-15 17:16:08'),(2,'max.mustermann','$2a$11$RMfe8rKXC5JFJbcuATyBr.XceGHthHyAVVySps6ZHEVVab8hEcceG','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-11 17:41:13',0,NULL,1,'2025-12-11 17:02:47','2025-12-11 19:13:29'),(3,'maria.mueller','$2a$11$LaNU.tjQsm1Cx8269R/bgu/JhP3rTWrnkA1m1TfuWFatVOGW8WUYW','maria.mueller@firma.de','Maria','Müller',NULL,'2025-12-11 17:41:13',0,NULL,1,'2025-12-11 17:02:47','2025-12-11 19:13:29'),(4,'hans.schmidt','$2a$11$q7x7BBVoRceMPThywy8L9.tr3tzJR/GyveC5KfqrnGP4dl/8ejLce','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-11 17:41:13',0,NULL,1,'2025-12-11 17:02:47','2025-12-11 19:13:29'),(5,'lisa.klein','$2a$11$W3lIRzqp5sotjnismJSlc.sU33d86IwiLLoPeOHqFOvUkAh/2yERG','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-11 17:41:13',0,NULL,1,'2025-12-11 17:02:47','2025-12-11 19:13:30');
+INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','admin@firma.de','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-16 09:38:56'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','Müller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:49');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -607,4 +602,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-15 19:43:22
+-- Dump completed on 2025-12-16 14:31:45

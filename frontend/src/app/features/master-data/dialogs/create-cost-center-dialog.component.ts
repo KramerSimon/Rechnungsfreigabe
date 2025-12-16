@@ -5,7 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CreateCostCenterData } from '../../../core/models/master-data.models';
+import { CostCenter } from '../../../core/models/cost-center.model';
 
 @Component({
   selector: 'app-create-cost-center-dialog',
@@ -118,7 +118,7 @@ export class CreateCostCenterDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<CreateCostCenterDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: CreateCostCenterData,
+    @Inject(MAT_DIALOG_DATA) public data: CostCenter,
     private fb: FormBuilder
   ) {
     this.costCenterForm = this.fb.group({
@@ -126,7 +126,7 @@ export class CreateCostCenterDialogComponent {
       name: [data.name || '', [Validators.required, Validators.maxLength(100)]],
       description: [data.description || ''],
       budget: [data.budget || 0, [Validators.min(0)]],
-      managerId: [data.managerId || null]
+      manager: [data.manager || null]
     });
   }
 

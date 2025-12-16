@@ -1,0 +1,31 @@
+<div class="smart-dashboard-container">
+  <!-- User Dashboard -->
+  @if ((currentRole$ | async) === userRoleEnum.USER) {
+    <app-user-dashboard></app-user-dashboard>
+  }
+
+  <!-- Accounting Dashboard -->
+  @if ((currentRole$ | async) === userRoleEnum.ACCOUNTING) {
+    <app-accounting-dashboard></app-accounting-dashboard>
+  }
+
+  <!-- Admin Dashboard -->
+  @if ((currentRole$ | async) === userRoleEnum.ADMIN) {
+    <app-admin-dashboard></app-admin-dashboard>
+  }
+
+  <!-- PDF Upload Dashboard -->
+  @if ((currentRole$ | async) === userRoleEnum.PDF_UPLOADER) {
+    <app-pdf-upload-dashboard></app-pdf-upload-dashboard>
+  }
+
+  <!-- Loading State -->
+  @if (!(currentRole$ | async)) {
+    <div class="loading-container">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Lade Dashboard...</p>
+      </div>
+    </div>
+  }
+</div>

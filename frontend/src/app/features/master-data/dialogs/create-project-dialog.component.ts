@@ -8,7 +8,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CreateProjectData, CostCenter } from '../../../core/models/master-data.models';
+import { CostCenter } from '../../../core/models/cost-center.model';
+import { Project } from '../../../core/models/project.model';
 
 @Component({
   selector: 'app-create-project-dialog',
@@ -165,7 +166,7 @@ export class CreateProjectDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<CreateProjectDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { project: CreateProjectData, costCenters: CostCenter[] },
+    @Inject(MAT_DIALOG_DATA) public data: { project: Project, costCenters: CostCenter[] },
     private fb: FormBuilder
   ) {
     this.costCenters = data.costCenters;
@@ -179,7 +180,6 @@ export class CreateProjectDialogComponent {
       status: [data.project.status || 'Geplant'],
       startDate: [data.project.startDate || null],
       endDate: [data.project.endDate || null],
-      projectManagerId: [data.project.projectManagerId || null]
     });
   }
 

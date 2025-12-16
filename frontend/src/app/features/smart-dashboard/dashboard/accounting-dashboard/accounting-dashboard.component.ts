@@ -11,8 +11,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
-import { InvoiceService, PagedResult } from '../../../core/services/invoice.service';
-import { Invoice } from '../../../core/models';
+import { InvoiceService, PagedResult } from '../../../../core/services/invoice.service';
+import { Invoice } from '../../../../core/models';
 import { catchError, finalize, of } from 'rxjs';
 
 interface AccountingOverview {

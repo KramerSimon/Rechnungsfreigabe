@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CreateUserData } from '../../../core/models/user.models';
+import { User } from '../../../core';
 
 interface Role {
   id: number;
@@ -143,7 +143,7 @@ export class CreateUserDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<CreateUserDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: CreateUserData,
+    @Inject(MAT_DIALOG_DATA) public data: User,
     private fb: FormBuilder
   ) {
     this.userForm = this.fb.group({
@@ -151,8 +151,7 @@ export class CreateUserDialogComponent {
       email: [data.email || '', [Validators.required, Validators.email, Validators.maxLength(255)]],
       firstName: [data.firstName || '', [Validators.required, Validators.maxLength(100)]],
       lastName: [data.lastName || '', [Validators.required, Validators.maxLength(100)]],
-      activeDirectorySid: [data.activeDirectorySid || '', [Validators.maxLength(255)]],
-      roleIds: [data.roleIds || [], []]
+      roleIds: [data.roles || [], []]
     });
   }
 

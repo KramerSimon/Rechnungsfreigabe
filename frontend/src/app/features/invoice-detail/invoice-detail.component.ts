@@ -13,11 +13,13 @@ import { FormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { InvoiceHistoryTimelineComponent } from '../invoice-history/invoice-history-timeline.component';
 import { InvoiceService, PagedResult } from '../../core/services/invoice.service';
-import { Invoice, InvoiceDetail, Supplier } from '../../core/models';
+import { Invoice, InvoiceDetail } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
-import { CostCenterService, CostCenter, Project } from '../../core/services/cost-center.service';
-import { PurchaseOrderService, PurchaseOrder } from '../../core/services/purchase-order.service';
-import { environment } from '../../../environments/environment';
+import { CostCenterService } from '../../core/services/cost-center.service';
+import { PurchaseOrderService } from '../../core/services/purchase-order.service';
+import { CostCenter } from '../../core/models/cost-center.model';
+import { Project } from '../../core/models/project.model';
+import { PurchaseOrder } from '../../core/models/purchaseOrder.model';
 
 @Component({
   selector: 'app-invoice-detail',
@@ -145,7 +147,7 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   private loadCostCenters() {
-    this.costCenterService.getAllCostCenters().subscribe({
+    this.costCenterService.getCostCenters().subscribe({
         next: (centers) => {
           this.costCenters = centers;
         },
@@ -193,7 +195,7 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   private loadPurchaseOrders() {
-    this.purchaseOrderService.getAllPurchaseOrders().subscribe({
+    this.purchaseOrderService.getPurchaseOrders().subscribe({
         next: (orders) => {
           this.purchaseOrders = orders;
 

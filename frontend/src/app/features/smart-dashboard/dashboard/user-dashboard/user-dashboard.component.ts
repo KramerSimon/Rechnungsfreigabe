@@ -9,10 +9,10 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatBadgeModule } from '@angular/material/badge';
-import { AuthService } from '../../../core/services/auth.service';
-import { AuthState } from '../../../core/models/auth.models';
-import { InvoiceService, PagedResult } from '../../../core/services/invoice.service';
-import { Invoice } from '../../../core/models';
+import { AuthService } from '../../../../core/services/auth.service';
+import { AuthState } from '../../../../core/models/auth.models';
+import { InvoiceService, PagedResult } from '../../../../core/services/invoice.service';
+import { Invoice } from '../../../../core/models';
 import { catchError, finalize, of, filter, Subscription } from 'rxjs';
 
 interface UserTask {

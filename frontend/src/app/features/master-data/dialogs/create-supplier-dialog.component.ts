@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CreateSupplierData } from '../../../core/models/master-data.models';
+import { Supplier } from '../../../core/models/supplier.model';
 
 @Component({
   selector: 'app-create-supplier-dialog',
@@ -170,25 +170,13 @@ export class CreateSupplierDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<CreateSupplierDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: CreateSupplierData,
+    @Inject(MAT_DIALOG_DATA) public data: Supplier,
     private fb: FormBuilder
   ) {
     this.supplierForm = this.fb.group({
       name: [data.name || '', [Validators.required, Validators.maxLength(100)]],
-      legalName: [data.legalName || '', [Validators.maxLength(150)]],
-      taxNumber: [data.taxNumber || '', [Validators.maxLength(30)]],
-      vatNumber: [data.vatNumber || '', [Validators.maxLength(30)]],
-      addressLine1: [data.addressLine1 || '', [Validators.maxLength(100)]],
-      addressLine2: [data.addressLine2 || '', [Validators.maxLength(100)]],
-      postalCode: [data.postalCode || '', [Validators.maxLength(10)]],
-      city: [data.city || '', [Validators.maxLength(50)]],
-      country: [data.country || 'Deutschland', [Validators.required, Validators.maxLength(50)]],
       email: [data.email || '', [Validators.email, Validators.maxLength(255)]],
       phone: [data.phone || '', [Validators.maxLength(30)]],
-      bankName: [data.bankName || '', [Validators.maxLength(100)]],
-      iban: [data.iban || '', [Validators.maxLength(34)]],
-      bic: [data.bic || '', [Validators.maxLength(11)]],
-      paymentTermsDays: [data.paymentTermsDays || null, [Validators.min(0), Validators.max(365)]]
     });
   }
 
@@ -199,6 +187,14 @@ export class CreateSupplierDialogComponent {
   onSave(): void {
     if (this.supplierForm.valid) {
       this.dialogRef.close(this.supplierForm.value);
+    } else {
+      this.supplierForm.markAllAsTouched();
+      const missingFields = [];
+      if (this.supplierForm.get('name')?.invalid) missingFields.push('Name');
+      if (this.supplierForm.get('country')?.invalid) missingFields.push('Land');
+      if (missingFields.length > 0) {
+        alert('Bitte füllen Sie die folgenden Pflichtfelder aus: ' + missingFields.join(', '));
+      }
     }
   }
 }
