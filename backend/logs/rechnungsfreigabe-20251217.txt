@@ -25446,3 +25446,264 @@ ORDER BY `t`.`created_at` DESC, `t`.`id`, `s`.`id`, `c`.`id`, `p`.`id`, `u`.`id`
 2025-12-17 16:23:06.620 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.InvoicesController.GetInvoices (RechnungsfreigabeAPI)'
 2025-12-17 16:23:06.621 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/invoices?pageSize=100 - 200 null application/json; charset=utf-8 20.3322ms
 2025-12-17 16:23:23.392 +01:00 [INF] Application is shutting down...
+2025-12-17 16:26:29.559 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM information_schema.tables
+WHERE table_type = 'BASE TABLE' AND table_schema = 'rechnungsfreigabe'
+2025-12-17 16:26:29.584 +01:00 [INF] Database connection established successfully.
+2025-12-17 16:26:29.596 +01:00 [INF] User profile is available. Using 'C:\Users\threk\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-12-17 16:26:29.627 +01:00 [INF] Now listening on: http://localhost:5000
+2025-12-17 16:26:29.629 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-12-17 16:26:29.630 +01:00 [INF] Hosting environment: Production
+2025-12-17 16:26:29.630 +01:00 [INF] Content root path: C:\Users\threk\Documents\Rechnungsfreigabe\backend
+2025-12-17 16:26:35.292 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - null null
+2025-12-17 16:26:35.311 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-12-17 16:26:35.313 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:35.317 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/auth/login - 204 null null 25.1428ms
+2025-12-17 16:26:35.320 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:5000/api/auth/login - application/json 45
+2025-12-17 16:26:35.324 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:35.340 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-17 16:26:35.354 +01:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.LoginResponseDto]] Login(RechnungsfreigabeAPI.DTOs.LoginRequestDto) on controller RechnungsfreigabeAPI.Controllers.AuthController (RechnungsfreigabeAPI).
+2025-12-17 16:26:35.629 +01:00 [INF] Executed DbCommand (24ms) [Parameters=[@__username_0='?' (Size = 50)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`id`, `t`.`active_directory_sid`, `t`.`created_at`, `t`.`email`, `t`.`failed_login_attempts`, `t`.`first_name`, `t`.`is_active`, `t`.`last_name`, `t`.`locked_until`, `t`.`password_changed_at`, `t`.`password_hash`, `t`.`updated_at`, `t`.`username`, `t0`.`user_id`, `t0`.`role_id`, `t0`.`assigned_at`, `t0`.`id`, `t0`.`description`, `t0`.`name`, `t0`.`permissions`
+FROM (
+    SELECT `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`
+    FROM `users` AS `u`
+    WHERE (`u`.`username` = @__username_0) AND `u`.`is_active`
+    LIMIT 1
+) AS `t`
+LEFT JOIN (
+    SELECT `u0`.`user_id`, `u0`.`role_id`, `u0`.`assigned_at`, `r`.`id`, `r`.`description`, `r`.`name`, `r`.`permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`role_id` = `r`.`id`
+) AS `t0` ON `t`.`id` = `t0`.`user_id`
+ORDER BY `t`.`id`, `t0`.`user_id`, `t0`.`role_id`
+2025-12-17 16:26:36.170 +01:00 [INF] Executed DbCommand (11ms) [Parameters=[@p1='?' (DbType = Int32), @p0='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SET AUTOCOMMIT = 1;
+UPDATE `users` SET `updated_at` = @p0
+WHERE `id` = @p1;
+SELECT ROW_COUNT();
+2025-12-17 16:26:36.185 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[@__userId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `r`.`permissions`
+FROM `user_roles` AS `u`
+INNER JOIN `roles` AS `r` ON `u`.`role_id` = `r`.`id`
+WHERE `u`.`user_id` = @__userId_0
+2025-12-17 16:26:36.222 +01:00 [INF] Executing OkObjectResult, writing value of type 'RechnungsfreigabeAPI.DTOs.LoginResponseDto'.
+2025-12-17 16:26:36.242 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI) in 884.8362ms
+2025-12-17 16:26:36.243 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.AuthController.Login (RechnungsfreigabeAPI)'
+2025-12-17 16:26:36.247 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:5000/api/auth/login - 200 null application/json; charset=utf-8 926.7953ms
+2025-12-17 16:26:36.297 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/dashboard/admin/status - null null
+2025-12-17 16:26:36.300 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:36.301 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/dashboard/admin/status - 204 null null 3.6541ms
+2025-12-17 16:26:36.307 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/dashboard/admin/status - null null
+2025-12-17 16:26:36.310 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:36.342 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.DashboardController.GetSystemStatus (RechnungsfreigabeAPI)'
+2025-12-17 16:26:36.346 +01:00 [INF] Route matched with {action = "GetSystemStatus", controller = "Dashboard"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.Controllers.SystemStatusDto]] GetSystemStatus() on controller RechnungsfreigabeAPI.Controllers.DashboardController (RechnungsfreigabeAPI).
+2025-12-17 16:26:36.464 +01:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `invoices` AS `i`
+WHERE `i`.`created_at` >= DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL CAST(-3 AS signed) month)
+2025-12-17 16:26:36.470 +01:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `invoices` AS `i`
+WHERE (`i`.`created_at` >= DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL CAST(-3 AS signed) month)) AND `i`.`auto_approved`
+2025-12-17 16:26:36.476 +01:00 [INF] Executed DbCommand (0ms) [Parameters=[@__startOfMonth_0='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `invoices` AS `i`
+WHERE `i`.`created_at` >= @__startOfMonth_0
+2025-12-17 16:26:36.492 +01:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `i`.`created_at` AS `CreatedAt`, `i`.`updated_at` AS `UpdatedAt`
+FROM `invoices` AS `i`
+WHERE `i`.`status` NOT IN ('Eingegangen', 'In_Pruefung') AND (`i`.`created_at` >= DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL CAST(-3 AS signed) month))
+2025-12-17 16:26:36.495 +01:00 [INF] Executing OkObjectResult, writing value of type 'RechnungsfreigabeAPI.Controllers.SystemStatusDto'.
+2025-12-17 16:26:36.501 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.DashboardController.GetSystemStatus (RechnungsfreigabeAPI) in 153.225ms
+2025-12-17 16:26:36.502 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.DashboardController.GetSystemStatus (RechnungsfreigabeAPI)'
+2025-12-17 16:26:36.503 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/dashboard/admin/status - 200 null application/json; charset=utf-8 195.6835ms
+2025-12-17 16:26:48.488 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/suppliers - null null
+2025-12-17 16:26:48.490 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.491 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/suppliers - 204 null null 2.6648ms
+2025-12-17 16:26:48.494 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/costcenters - null null
+2025-12-17 16:26:48.494 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/projects - null null
+2025-12-17 16:26:48.494 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/purchaseorders - null null
+2025-12-17 16:26:48.495 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/invoices - null null
+2025-12-17 16:26:48.495 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/users - null null
+2025-12-17 16:26:48.496 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.496 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/approval/rules - null null
+2025-12-17 16:26:48.498 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.499 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.501 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.502 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.503 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/costcenters - 204 null null 9.3762ms
+2025-12-17 16:26:48.505 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.506 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/projects - 204 null null 12.0841ms
+2025-12-17 16:26:48.507 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/purchaseorders - 204 null null 12.548ms
+2025-12-17 16:26:48.507 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/invoices - 204 null null 11.958ms
+2025-12-17 16:26:48.508 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/users - 204 null null 12.3413ms
+2025-12-17 16:26:48.510 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/approval/workflows - null null
+2025-12-17 16:26:48.510 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/approval/rules - 204 null null 14.2751ms
+2025-12-17 16:26:48.513 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/suppliers - null null
+2025-12-17 16:26:48.515 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/costcenters - null null
+2025-12-17 16:26:48.517 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/projects - null null
+2025-12-17 16:26:48.519 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/purchaseorders - null null
+2025-12-17 16:26:48.521 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.523 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/invoices - null null
+2025-12-17 16:26:48.525 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.526 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.528 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.530 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.530 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/approval/workflows - 204 null null 20.4467ms
+2025-12-17 16:26:48.532 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.535 +01:00 [INF] Executing endpoint 'backend.Controllers.ProjectsController.GetProjects (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.535 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.SuppliersController.GetSuppliers (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.535 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.CostCentersController.GetCostCenters (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.535 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.PurchaseOrdersController.GetPurchaseOrders (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.536 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/users - null null
+2025-12-17 16:26:48.537 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.InvoicesController.GetInvoices (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.540 +01:00 [INF] Route matched with {action = "GetProjects", controller = "Projects"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[backend.DTOs.ProjectDto]]] GetProjects() on controller backend.Controllers.ProjectsController (RechnungsfreigabeAPI).
+2025-12-17 16:26:48.540 +01:00 [INF] Route matched with {action = "GetSuppliers", controller = "Suppliers"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[RechnungsfreigabeAPI.DTOs.SupplierDto]]] GetSuppliers() on controller RechnungsfreigabeAPI.Controllers.SuppliersController (RechnungsfreigabeAPI).
+2025-12-17 16:26:48.541 +01:00 [INF] Route matched with {action = "GetCostCenters", controller = "CostCenters"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[RechnungsfreigabeAPI.DTOs.CostCenterDto]]] GetCostCenters() on controller RechnungsfreigabeAPI.Controllers.CostCentersController (RechnungsfreigabeAPI).
+2025-12-17 16:26:48.542 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.542 +01:00 [INF] Route matched with {action = "GetPurchaseOrders", controller = "PurchaseOrders"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[RechnungsfreigabeAPI.DTOs.PurchaseOrderDto]]] GetPurchaseOrders() on controller RechnungsfreigabeAPI.Controllers.PurchaseOrdersController (RechnungsfreigabeAPI).
+2025-12-17 16:26:48.547 +01:00 [INF] Route matched with {action = "GetInvoices", controller = "Invoices"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[RechnungsfreigabeAPI.DTOs.PagedResult`1[RechnungsfreigabeAPI.DTOs.InvoiceDto]]] GetInvoices(RechnungsfreigabeAPI.DTOs.PageRequest) on controller RechnungsfreigabeAPI.Controllers.InvoicesController (RechnungsfreigabeAPI).
+2025-12-17 16:26:48.548 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.UsersController.GetUsers (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.554 +01:00 [INF] Route matched with {action = "GetUsers", controller = "Users"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[RechnungsfreigabeAPI.DTOs.UserDto]]] GetUsers() on controller RechnungsfreigabeAPI.Controllers.UsersController (RechnungsfreigabeAPI).
+2025-12-17 16:26:48.556 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `s`.`id`, `s`.`address_line1`, `s`.`address_line2`, `s`.`bank_name`, `s`.`bic`, `s`.`city`, `s`.`country`, `s`.`created_at`, `s`.`email`, `s`.`iban`, `s`.`is_active`, `s`.`legal_name`, `s`.`name`, `s`.`payment_terms_days`, `s`.`phone`, `s`.`postal_code`, `s`.`tax_number`, `s`.`updated_at`, `s`.`vat_number`
+FROM `suppliers` AS `s`
+ORDER BY `s`.`name`
+2025-12-17 16:26:48.575 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `c`.`id`, `c`.`budget`, `c`.`created_at`, `c`.`description`, `c`.`is_active`, `c`.`manager_id`, `c`.`name`, `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`
+FROM `cost_centers` AS `c`
+LEFT JOIN `users` AS `u` ON `c`.`manager_id` = `u`.`id`
+WHERE `c`.`is_active`
+ORDER BY `c`.`name`
+2025-12-17 16:26:48.575 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`id`, `p`.`budget`, `p`.`cost_center_id`, `p`.`created_at`, `p`.`description`, `p`.`end_date`, `p`.`name`, `p`.`project_manager_id`, `p`.`spent_amount`, `p`.`start_date`, `p`.`status`, `c`.`id`, `c`.`budget`, `c`.`created_at`, `c`.`description`, `c`.`is_active`, `c`.`manager_id`, `c`.`name`
+FROM `projects` AS `p`
+INNER JOIN `cost_centers` AS `c` ON `p`.`cost_center_id` = `c`.`id`
+ORDER BY `p`.`name`
+2025-12-17 16:26:48.575 +01:00 [INF] Executed DbCommand (0ms) [Parameters=[@__userId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `r`.`permissions`
+FROM `user_roles` AS `u`
+INNER JOIN `roles` AS `r` ON `u`.`role_id` = `r`.`id`
+WHERE `u`.`user_id` = @__userId_0
+2025-12-17 16:26:48.578 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`, `t`.`user_id`, `t`.`role_id`, `t`.`assigned_at`, `t`.`id`, `t`.`description`, `t`.`name`, `t`.`permissions`
+FROM `users` AS `u`
+LEFT JOIN (
+    SELECT `u0`.`user_id`, `u0`.`role_id`, `u0`.`assigned_at`, `r`.`id`, `r`.`description`, `r`.`name`, `r`.`permissions`
+    FROM `user_roles` AS `u0`
+    INNER JOIN `roles` AS `r` ON `u0`.`role_id` = `r`.`id`
+) AS `t` ON `u`.`id` = `t`.`user_id`
+WHERE `u`.`is_active`
+ORDER BY `u`.`id`, `t`.`user_id`, `t`.`role_id`
+2025-12-17 16:26:48.582 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Linq.Enumerable+SelectListIterator`2[[RechnungsfreigabeAPI.Models.Supplier, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[RechnungsfreigabeAPI.DTOs.SupplierDto, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:48.584 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `p`.`id`, `p`.`approved_at`, `p`.`approved_by`, `p`.`cost_center_id`, `p`.`created_at`, `p`.`created_by`, `p`.`currency`, `p`.`description`, `p`.`project_id`, `p`.`status`, `p`.`title`, `p`.`total_amount`, `c`.`id`, `c`.`budget`, `c`.`created_at`, `c`.`description`, `c`.`is_active`, `c`.`manager_id`, `c`.`name`, `p0`.`id`, `p0`.`budget`, `p0`.`cost_center_id`, `p0`.`created_at`, `p0`.`description`, `p0`.`end_date`, `p0`.`name`, `p0`.`project_manager_id`, `p0`.`spent_amount`, `p0`.`start_date`, `p0`.`status`, `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`, `u0`.`id`, `u0`.`active_directory_sid`, `u0`.`created_at`, `u0`.`email`, `u0`.`failed_login_attempts`, `u0`.`first_name`, `u0`.`is_active`, `u0`.`last_name`, `u0`.`locked_until`, `u0`.`password_changed_at`, `u0`.`password_hash`, `u0`.`updated_at`, `u0`.`username`
+FROM `purchase_orders` AS `p`
+LEFT JOIN `cost_centers` AS `c` ON `p`.`cost_center_id` = `c`.`id`
+LEFT JOIN `projects` AS `p0` ON `p`.`project_id` = `p0`.`id`
+INNER JOIN `users` AS `u` ON `p`.`created_by` = `u`.`id`
+LEFT JOIN `users` AS `u0` ON `p`.`approved_by` = `u0`.`id`
+WHERE `p`.`status` <> 'Storniert'
+ORDER BY `p`.`created_at` DESC
+2025-12-17 16:26:48.586 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Linq.Enumerable+SelectListIterator`2[[RechnungsfreigabeAPI.Models.User, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[RechnungsfreigabeAPI.DTOs.UserDto, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:48.589 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Linq.Enumerable+SelectListIterator`2[[RechnungsfreigabeAPI.Models.PurchaseOrder, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[RechnungsfreigabeAPI.DTOs.PurchaseOrderDto, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:48.591 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.UsersController.GetUsers (RechnungsfreigabeAPI) in 35.3777ms
+2025-12-17 16:26:48.591 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM `invoices` AS `i`
+2025-12-17 16:26:48.592 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.UsersController.GetUsers (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.593 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.SuppliersController.GetSuppliers (RechnungsfreigabeAPI) in 47.2438ms
+2025-12-17 16:26:48.595 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/users - 200 null application/json; charset=utf-8 58.73ms
+2025-12-17 16:26:48.596 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.SuppliersController.GetSuppliers (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.597 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Linq.Enumerable+SelectListIterator`2[[RechnungsfreigabeAPI.Models.CostCenter, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[RechnungsfreigabeAPI.DTOs.CostCenterDto, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:48.597 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.PurchaseOrdersController.GetPurchaseOrders (RechnungsfreigabeAPI) in 48.2896ms
+2025-12-17 16:26:48.599 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/approval/rules - null null
+2025-12-17 16:26:48.600 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/suppliers - 200 null application/json; charset=utf-8 87.2888ms
+2025-12-17 16:26:48.603 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.PurchaseOrdersController.GetPurchaseOrders (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.605 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.605 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.CostCentersController.GetCostCenters (RechnungsfreigabeAPI) in 58.5933ms
+2025-12-17 16:26:48.607 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Linq.Enumerable+SelectListIterator`2[[RechnungsfreigabeAPI.Models.Project, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[backend.DTOs.ProjectDto, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:48.608 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/approval/workflows - null null
+2025-12-17 16:26:48.609 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/purchaseorders - 200 null application/json; charset=utf-8 89.7192ms
+2025-12-17 16:26:48.611 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.CostCentersController.GetCostCenters (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.614 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.ApprovalController.GetApprovalRules (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.614 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:48.614 +01:00 [INF] Executed action backend.Controllers.ProjectsController.GetProjects (RechnungsfreigabeAPI) in 69.8095ms
+2025-12-17 16:26:48.618 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/costcenters - 200 null application/json; charset=utf-8 102.8048ms
+2025-12-17 16:26:48.620 +01:00 [INF] Executed endpoint 'backend.Controllers.ProjectsController.GetProjects (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.621 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.ApprovalController.GetApprovalWorkflows (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.621 +01:00 [INF] Route matched with {action = "GetApprovalRules", controller = "Approval"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[RechnungsfreigabeAPI.Models.ApprovalRule]]] GetApprovalRules() on controller RechnungsfreigabeAPI.Controllers.ApprovalController (RechnungsfreigabeAPI).
+2025-12-17 16:26:48.624 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/projects - 200 null application/json; charset=utf-8 107.4254ms
+2025-12-17 16:26:48.628 +01:00 [INF] Route matched with {action = "GetApprovalWorkflows", controller = "Approval"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[RechnungsfreigabeAPI.DTOs.ApprovalWorkflowDto]]] GetApprovalWorkflows() on controller RechnungsfreigabeAPI.Controllers.ApprovalController (RechnungsfreigabeAPI).
+2025-12-17 16:26:48.639 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `a`.`id`, `a`.`actions`, `a`.`conditions`, `a`.`created_at`, `a`.`created_by`, `a`.`description`, `a`.`is_active`, `a`.`name`, `a`.`priority`, `a`.`rule_type`, `a`.`updated_at`
+FROM `approval_rules` AS `a`
+WHERE `a`.`is_active`
+ORDER BY `a`.`priority`
+2025-12-17 16:26:48.641 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `t`.`id`, `t`.`approval_level`, `t`.`auto_approved`, `t`.`cost_center_id`, `t`.`created_at`, `t`.`created_by`, `t`.`currency`, `t`.`description`, `t`.`due_date`, `t`.`internal_notes`, `t`.`invoice_date`, `t`.`invoice_number`, `t`.`net_amount`, `t`.`original_filename`, `t`.`pdf_content`, `t`.`pdf_file_path`, `t`.`pdf_file_size`, `t`.`processed_by`, `t`.`project_id`, `t`.`purchase_order_id`, `t`.`received_date`, `t`.`requires_approval`, `t`.`status`, `t`.`supplier_id`, `t`.`tax_amount`, `t`.`total_amount`, `t`.`updated_at`, `s`.`id`, `s`.`address_line1`, `s`.`address_line2`, `s`.`bank_name`, `s`.`bic`, `s`.`city`, `s`.`country`, `s`.`created_at`, `s`.`email`, `s`.`iban`, `s`.`is_active`, `s`.`legal_name`, `s`.`name`, `s`.`payment_terms_days`, `s`.`phone`, `s`.`postal_code`, `s`.`tax_number`, `s`.`updated_at`, `s`.`vat_number`, `c`.`id`, `c`.`budget`, `c`.`created_at`, `c`.`description`, `c`.`is_active`, `c`.`manager_id`, `c`.`name`, `p`.`id`, `p`.`budget`, `p`.`cost_center_id`, `p`.`created_at`, `p`.`description`, `p`.`end_date`, `p`.`name`, `p`.`project_manager_id`, `p`.`spent_amount`, `p`.`start_date`, `p`.`status`, `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`, `u0`.`id`, `u0`.`active_directory_sid`, `u0`.`created_at`, `u0`.`email`, `u0`.`failed_login_attempts`, `u0`.`first_name`, `u0`.`is_active`, `u0`.`last_name`, `u0`.`locked_until`, `u0`.`password_changed_at`, `u0`.`password_hash`, `u0`.`updated_at`, `u0`.`username`, `t0`.`id`, `t0`.`approval_level`, `t0`.`approved_at`, `t0`.`approver_id`, `t0`.`comments`, `t0`.`created_at`, `t0`.`invoice_id`, `t0`.`rule_id`, `t0`.`status`, `t0`.`step_number`, `t0`.`id0`, `t0`.`active_directory_sid`, `t0`.`created_at0`, `t0`.`email`, `t0`.`failed_login_attempts`, `t0`.`first_name`, `t0`.`is_active`, `t0`.`last_name`, `t0`.`locked_until`, `t0`.`password_changed_at`, `t0`.`password_hash`, `t0`.`updated_at`, `t0`.`username`
+FROM (
+    SELECT `i`.`id`, `i`.`approval_level`, `i`.`auto_approved`, `i`.`cost_center_id`, `i`.`created_at`, `i`.`created_by`, `i`.`currency`, `i`.`description`, `i`.`due_date`, `i`.`internal_notes`, `i`.`invoice_date`, `i`.`invoice_number`, `i`.`net_amount`, `i`.`original_filename`, `i`.`pdf_content`, `i`.`pdf_file_path`, `i`.`pdf_file_size`, `i`.`processed_by`, `i`.`project_id`, `i`.`purchase_order_id`, `i`.`received_date`, `i`.`requires_approval`, `i`.`status`, `i`.`supplier_id`, `i`.`tax_amount`, `i`.`total_amount`, `i`.`updated_at`
+    FROM `invoices` AS `i`
+    ORDER BY `i`.`created_at` DESC
+    LIMIT @__p_1 OFFSET @__p_0
+) AS `t`
+INNER JOIN `suppliers` AS `s` ON `t`.`supplier_id` = `s`.`id`
+LEFT JOIN `cost_centers` AS `c` ON `t`.`cost_center_id` = `c`.`id`
+LEFT JOIN `projects` AS `p` ON `t`.`project_id` = `p`.`id`
+LEFT JOIN `users` AS `u` ON `t`.`created_by` = `u`.`id`
+LEFT JOIN `users` AS `u0` ON `t`.`processed_by` = `u0`.`id`
+LEFT JOIN (
+    SELECT `a`.`id`, `a`.`approval_level`, `a`.`approved_at`, `a`.`approver_id`, `a`.`comments`, `a`.`created_at`, `a`.`invoice_id`, `a`.`rule_id`, `a`.`status`, `a`.`step_number`, `u1`.`id` AS `id0`, `u1`.`active_directory_sid`, `u1`.`created_at` AS `created_at0`, `u1`.`email`, `u1`.`failed_login_attempts`, `u1`.`first_name`, `u1`.`is_active`, `u1`.`last_name`, `u1`.`locked_until`, `u1`.`password_changed_at`, `u1`.`password_hash`, `u1`.`updated_at`, `u1`.`username`
+    FROM `approval_workflows` AS `a`
+    INNER JOIN `users` AS `u1` ON `a`.`approver_id` = `u1`.`id`
+) AS `t0` ON `t`.`id` = `t0`.`invoice_id`
+ORDER BY `t`.`created_at` DESC, `t`.`id`, `s`.`id`, `c`.`id`, `p`.`id`, `u`.`id`, `u0`.`id`, `t0`.`id`
+2025-12-17 16:26:48.651 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT `a`.`id`, `a`.`invoice_id`, `a`.`step_number`, `u`.`first_name`, `u`.`last_name`, `a`.`status`, `a`.`comments`, `a`.`approved_at`, `a`.`created_at`, `a`.`approver_id`, `a`.`approval_level`
+FROM `approval_workflows` AS `a`
+INNER JOIN `users` AS `u` ON `a`.`approver_id` = `u`.`id`
+ORDER BY `a`.`created_at` DESC
+2025-12-17 16:26:48.653 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[RechnungsfreigabeAPI.DTOs.ApprovalWorkflowDto, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:48.657 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[RechnungsfreigabeAPI.Models.ApprovalRule, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:48.657 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.ApprovalController.GetApprovalWorkflows (RechnungsfreigabeAPI) in 26.2801ms
+2025-12-17 16:26:48.659 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.ApprovalController.GetApprovalWorkflows (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.660 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/approval/workflows - 200 null application/json; charset=utf-8 52.39ms
+2025-12-17 16:26:48.682 +01:00 [INF] Executing OkObjectResult, writing value of type 'RechnungsfreigabeAPI.DTOs.PagedResult`1[[RechnungsfreigabeAPI.DTOs.InvoiceDto, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:48.704 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.ApprovalController.GetApprovalRules (RechnungsfreigabeAPI) in 77.0355ms
+2025-12-17 16:26:48.705 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.ApprovalController.GetApprovalRules (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.706 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/approval/rules - 200 null application/json; charset=utf-8 106.8443ms
+2025-12-17 16:26:48.710 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.InvoicesController.GetInvoices (RechnungsfreigabeAPI) in 159.4252ms
+2025-12-17 16:26:48.711 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.InvoicesController.GetInvoices (RechnungsfreigabeAPI)'
+2025-12-17 16:26:48.712 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/invoices - 200 null application/json; charset=utf-8 189.5711ms
+2025-12-17 16:26:55.370 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:5000/api/invoices/pending-approvals - null null
+2025-12-17 16:26:55.372 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:55.373 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:5000/api/invoices/pending-approvals - 204 null null 3.297ms
+2025-12-17 16:26:55.377 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:5000/api/invoices/pending-approvals - null null
+2025-12-17 16:26:55.380 +01:00 [INF] CORS policy execution successful.
+2025-12-17 16:26:55.382 +01:00 [INF] Executing endpoint 'RechnungsfreigabeAPI.Controllers.InvoicesController.GetPendingApprovals (RechnungsfreigabeAPI)'
+2025-12-17 16:26:55.385 +01:00 [INF] Route matched with {action = "GetPendingApprovals", controller = "Invoices"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[System.Collections.Generic.IEnumerable`1[RechnungsfreigabeAPI.DTOs.InvoiceDto]]] GetPendingApprovals() on controller RechnungsfreigabeAPI.Controllers.InvoicesController (RechnungsfreigabeAPI).
+2025-12-17 16:26:55.421 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[@__userId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT `i`.`id`, `i`.`approval_level`, `i`.`auto_approved`, `i`.`cost_center_id`, `i`.`created_at`, `i`.`created_by`, `i`.`currency`, `i`.`description`, `i`.`due_date`, `i`.`internal_notes`, `i`.`invoice_date`, `i`.`invoice_number`, `i`.`net_amount`, `i`.`original_filename`, `i`.`pdf_content`, `i`.`pdf_file_path`, `i`.`pdf_file_size`, `i`.`processed_by`, `i`.`project_id`, `i`.`purchase_order_id`, `i`.`received_date`, `i`.`requires_approval`, `i`.`status`, `i`.`supplier_id`, `i`.`tax_amount`, `i`.`total_amount`, `i`.`updated_at`, `s`.`id`, `s`.`address_line1`, `s`.`address_line2`, `s`.`bank_name`, `s`.`bic`, `s`.`city`, `s`.`country`, `s`.`created_at`, `s`.`email`, `s`.`iban`, `s`.`is_active`, `s`.`legal_name`, `s`.`name`, `s`.`payment_terms_days`, `s`.`phone`, `s`.`postal_code`, `s`.`tax_number`, `s`.`updated_at`, `s`.`vat_number`, `c`.`id`, `c`.`budget`, `c`.`created_at`, `c`.`description`, `c`.`is_active`, `c`.`manager_id`, `c`.`name`, `p`.`id`, `p`.`budget`, `p`.`cost_center_id`, `p`.`created_at`, `p`.`description`, `p`.`end_date`, `p`.`name`, `p`.`project_manager_id`, `p`.`spent_amount`, `p`.`start_date`, `p`.`status`, `u`.`id`, `u`.`active_directory_sid`, `u`.`created_at`, `u`.`email`, `u`.`failed_login_attempts`, `u`.`first_name`, `u`.`is_active`, `u`.`last_name`, `u`.`locked_until`, `u`.`password_changed_at`, `u`.`password_hash`, `u`.`updated_at`, `u`.`username`, `t`.`id`, `t`.`approval_level`, `t`.`approved_at`, `t`.`approver_id`, `t`.`comments`, `t`.`created_at`, `t`.`invoice_id`, `t`.`rule_id`, `t`.`status`, `t`.`step_number`, `t`.`id0`, `t`.`active_directory_sid`, `t`.`created_at0`, `t`.`email`, `t`.`failed_login_attempts`, `t`.`first_name`, `t`.`is_active`, `t`.`last_name`, `t`.`locked_until`, `t`.`password_changed_at`, `t`.`password_hash`, `t`.`updated_at`, `t`.`username`
+FROM `invoices` AS `i`
+INNER JOIN `suppliers` AS `s` ON `i`.`supplier_id` = `s`.`id`
+LEFT JOIN `cost_centers` AS `c` ON `i`.`cost_center_id` = `c`.`id`
+LEFT JOIN `projects` AS `p` ON `i`.`project_id` = `p`.`id`
+LEFT JOIN `users` AS `u` ON `i`.`created_by` = `u`.`id`
+LEFT JOIN (
+    SELECT `a0`.`id`, `a0`.`approval_level`, `a0`.`approved_at`, `a0`.`approver_id`, `a0`.`comments`, `a0`.`created_at`, `a0`.`invoice_id`, `a0`.`rule_id`, `a0`.`status`, `a0`.`step_number`, `u0`.`id` AS `id0`, `u0`.`active_directory_sid`, `u0`.`created_at` AS `created_at0`, `u0`.`email`, `u0`.`failed_login_attempts`, `u0`.`first_name`, `u0`.`is_active`, `u0`.`last_name`, `u0`.`locked_until`, `u0`.`password_changed_at`, `u0`.`password_hash`, `u0`.`updated_at`, `u0`.`username`
+    FROM `approval_workflows` AS `a0`
+    INNER JOIN `users` AS `u0` ON `a0`.`approver_id` = `u0`.`id`
+) AS `t` ON `i`.`id` = `t`.`invoice_id`
+WHERE EXISTS (
+    SELECT 1
+    FROM `approval_workflows` AS `a`
+    WHERE (`i`.`id` = `a`.`invoice_id`) AND ((`a`.`approver_id` = @__userId_0) AND (`a`.`status` = 'Pending')))
+ORDER BY `i`.`id`, `s`.`id`, `c`.`id`, `p`.`id`, `u`.`id`, `t`.`id`
+2025-12-17 16:26:55.424 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Linq.Enumerable+SelectListIterator`2[[RechnungsfreigabeAPI.Models.Invoice, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[RechnungsfreigabeAPI.DTOs.InvoiceDto, RechnungsfreigabeAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-12-17 16:26:55.426 +01:00 [INF] Executed action RechnungsfreigabeAPI.Controllers.InvoicesController.GetPendingApprovals (RechnungsfreigabeAPI) in 39.4015ms
+2025-12-17 16:26:55.427 +01:00 [INF] Executed endpoint 'RechnungsfreigabeAPI.Controllers.InvoicesController.GetPendingApprovals (RechnungsfreigabeAPI)'
+2025-12-17 16:26:55.428 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/api/invoices/pending-approvals - 200 null application/json; charset=utf-8 50.3448ms
+2025-12-17 16:27:48.401 +01:00 [INF] Application is shutting down...

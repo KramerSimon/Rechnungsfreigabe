@@ -26,9 +26,9 @@ DROP TABLE IF EXISTS `approval_rules`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `approval_rules` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `rule_type` enum('automatic','manual') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `rule_type` enum('automatic','manual') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `priority` int NOT NULL DEFAULT '10',
   `is_active` tinyint(1) DEFAULT '1',
   `conditions` json NOT NULL,
@@ -66,8 +66,8 @@ CREATE TABLE `approval_workflows` (
   `step_number` int NOT NULL,
   `approver_id` int NOT NULL,
   `approval_level` int NOT NULL,
-  `status` enum('Pending','Approved','Rejected','Skipped') COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
-  `comments` text COLLATE utf8mb4_unicode_ci,
+  `status` enum('Pending','Approved','Rejected','Skipped') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `approved_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -78,7 +78,7 @@ CREATE TABLE `approval_workflows` (
   CONSTRAINT `approval_workflows_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `approval_workflows_ibfk_2` FOREIGN KEY (`rule_id`) REFERENCES `approval_rules` (`id`),
   CONSTRAINT `approval_workflows_ibfk_3` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -87,7 +87,6 @@ CREATE TABLE `approval_workflows` (
 
 LOCK TABLES `approval_workflows` WRITE;
 /*!40000 ALTER TABLE `approval_workflows` DISABLE KEYS */;
-INSERT INTO `approval_workflows` VALUES (40,20,NULL,1,2,1,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(41,21,3,1,2,1,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(42,21,3,2,3,2,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(43,22,3,1,2,1,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(44,22,3,2,3,2,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(45,22,3,3,1,3,'Pending',NULL,NULL,'2025-12-16 15:24:37');
 /*!40000 ALTER TABLE `approval_workflows` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -99,9 +98,9 @@ DROP TABLE IF EXISTS `cost_centers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cost_centers` (
-  `id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
+  `id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `manager_id` int DEFAULT NULL,
   `budget` decimal(12,2) DEFAULT '0.00',
   `is_active` tinyint(1) DEFAULT '1',
@@ -132,16 +131,16 @@ DROP TABLE IF EXISTS `invoice_history`;
 CREATE TABLE `invoice_history` (
   `id` int NOT NULL AUTO_INCREMENT,
   `invoice_id` int NOT NULL,
-  `action` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `action_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Manual',
-  `action_source` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'User',
-  `old_status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `new_status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `action` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Manual',
+  `action_source` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'User',
+  `old_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `new_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `field_changes` json DEFAULT NULL,
-  `comments` text COLLATE utf8mb4_unicode_ci,
-  `policy_reference` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `system_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `import_channel` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `policy_reference` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `system_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `import_channel` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `changed_by` int DEFAULT NULL,
   `changed_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -152,7 +151,7 @@ CREATE TABLE `invoice_history` (
   KEY `idx_action_source` (`action_source`),
   CONSTRAINT `invoice_history_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `invoice_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -161,7 +160,7 @@ CREATE TABLE `invoice_history` (
 
 LOCK TABLES `invoice_history` WRITE;
 /*!40000 ALTER TABLE `invoice_history` DISABLE KEYS */;
-INSERT INTO `invoice_history` VALUES (10,13,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-16 13:43:18'),(11,14,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-16 13:48:17'),(12,15,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-16 14:00:41');
+INSERT INTO `invoice_history` VALUES (1,31,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-17 14:07:24'),(2,32,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-17 14:08:21'),(3,33,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-17 14:09:16');
 /*!40000 ALTER TABLE `invoice_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -174,28 +173,28 @@ DROP TABLE IF EXISTS `invoices`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `invoices` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `invoice_number` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `invoice_number` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `supplier_id` int NOT NULL,
-  `purchase_order_id` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `cost_center_id` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `project_id` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `purchase_order_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cost_center_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `project_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `net_amount` decimal(12,2) NOT NULL,
   `tax_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
   `total_amount` decimal(12,2) NOT NULL,
-  `currency` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT 'EUR',
+  `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'EUR',
   `invoice_date` date NOT NULL,
   `due_date` date NOT NULL,
   `received_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `status` enum('Eingegangen','In_Pruefung','Freigabe_Erforderlich','Freigegeben','Abgelehnt','Bezahlt','Ueberfaellig','Storniert') COLLATE utf8mb4_unicode_ci DEFAULT 'Eingegangen',
+  `status` enum('Eingegangen','In_Pruefung','Freigabe_Erforderlich','Freigegeben','Abgelehnt','Bezahlt','Ueberfaellig','Storniert') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Eingegangen',
   `requires_approval` tinyint(1) DEFAULT '1',
   `approval_level` int DEFAULT '1',
   `auto_approved` tinyint(1) DEFAULT '0',
-  `pdf_file_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pdf_file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `pdf_content` longblob COMMENT 'PDF-Dateiinhalt als BLOB',
   `pdf_file_size` bigint DEFAULT NULL,
-  `original_filename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `internal_notes` text COLLATE utf8mb4_unicode_ci,
+  `original_filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `internal_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_by` int DEFAULT NULL,
   `processed_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -220,7 +219,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `invoices_ibfk_5` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `invoices_ibfk_6` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -229,7 +228,7 @@ CREATE TABLE `invoices` (
 
 LOCK TABLES `invoices` WRITE;
 /*!40000 ALTER TABLE `invoices` DISABLE KEYS */;
-INSERT INTO `invoices` VALUES (13,'Fattura_Esempio_Azienda_SRL',4,NULL,NULL,NULL,0.00,0.00,0.00,'EUR','2025-12-16','2026-01-15','2025-12-16 13:43:18','Eingegangen',1,1,0,NULL,NULL,NULL,'Fattura_Esempio_Azienda_SRL.pdf','PDF-Upload: Fattura_Esempio_Azienda_SRL.pdf',NULL,1,NULL,'2025-12-16 13:43:18','2025-12-17 10:36:33'),(14,'umero',3,NULL,'OFFICE',NULL,512.61,97.39,610.00,'EUR','2025-01-01','2026-01-15','2025-12-16 13:48:16','Eingegangen',1,1,0,NULL,NULL,NULL,'Fattura_Esempio_Libero_Professionista.pdf','Studio Tecnico Bianchi | Fattura | Numero fattura: 2025/002 | Data: 01/01/2025 | Cliente: Cliente Verdi Luca',NULL,1,NULL,'2025-12-16 13:48:16','2025-12-17 10:36:33'),(15,'umero',4,NULL,'OFFICE',NULL,512.61,97.39,610.00,'EUR','2025-01-01','2026-01-15','2025-12-16 14:00:41','Eingegangen',1,1,0,NULL,NULL,NULL,'Fattura_Esempio_Azienda_SRL.pdf','Azienda Esempio SRL | Fattura | Numero fattura: 2025/001 | Data: 01/01/2025 | Cliente: Cliente Rossi Mario',NULL,1,NULL,'2025-12-16 14:00:41','2025-12-17 10:36:33'),(20,'INV-2025-001',1,NULL,'OFFICE',NULL,1261.34,0.00,1500.00,'EUR','2025-12-16','2026-01-15','2025-12-16 15:24:37','Eingegangen',1,1,0,NULL,NULL,NULL,NULL,NULL,NULL,1,NULL,'2025-12-16 15:24:37','2025-12-16 15:24:37'),(21,'INV-2025-002',2,NULL,'IT',NULL,6306.72,0.00,7500.00,'EUR','2025-12-16','2026-01-15','2025-12-16 15:24:37','Eingegangen',1,1,0,NULL,NULL,NULL,NULL,NULL,NULL,1,NULL,'2025-12-16 15:24:37','2025-12-16 15:24:37'),(22,'INV-2025-003',3,NULL,'FINANCE',NULL,12613.45,0.00,15000.00,'EUR','2025-12-16','2026-01-15','2025-12-16 15:24:37','Eingegangen',1,1,0,NULL,NULL,NULL,NULL,NULL,NULL,1,NULL,'2025-12-16 15:24:37','2025-12-16 15:24:37'),(23,'INV-2025-004',4,NULL,'HR',NULL,252.10,0.00,300.00,'EUR','2025-12-16','2026-01-15','2025-12-16 15:24:37','Freigegeben',1,1,1,NULL,NULL,NULL,NULL,NULL,NULL,1,NULL,'2025-12-16 15:24:37','2025-12-16 15:24:37');
+INSERT INTO `invoices` VALUES (31,'FAT-001-2025',7,NULL,NULL,NULL,409.84,90.16,500.00,'EUR','2025-12-15','2026-01-16','2025-12-17 14:07:24','Eingegangen',1,1,0,'20251217_150723_cff9957b.pdf',_binary '%PDF-1.4\n%“Œ‹ž ReportLab Generated PDF document http://www.reportlab.com\n1 0 obj\n<<\n/F1 2 0 R /F2 3 0 R\n>>\nendobj\n2 0 obj\n<<\n/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font\n>>\nendobj\n3 0 obj\n<<\n/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font\n>>\nendobj\n4 0 obj\n<<\n/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<\n/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]\n>> /Rotate 0 /Trans <<\n\n>> \n  /Type /Page\n>>\nendobj\n5 0 obj\n<<\n/PageMode /UseNone /Pages 7 0 R /Type /Catalog\n>>\nendobj\n6 0 obj\n<<\n/Author (\\(anonymous\\)) /CreationDate (D:20251217135140+00\'00\') /Creator (\\(unspecified\\)) /Keywords () /ModDate (D:20251217135140+00\'00\') /Producer (ReportLab PDF Library - www.reportlab.com) \n  /Subject (\\(unspecified\\)) /Title (\\(anonymous\\)) /Trapped /False\n>>\nendobj\n7 0 obj\n<<\n/Count 1 /Kids [ 4 0 R ] /Type /Pages\n>>\nendobj\n8 0 obj\n<<\n/Filter [ /ASCII85Decode /FlateDecode ] /Length 700\n>>\nstream\nGat=)9lJ`N&A@Zck#.%(WgR.rm3O\\pROV;M\"k_tUAHb`g#hu@6Xi.F3G\\us(Ho7%?5N]Z4pL\\\'F0L34:]e:\"K0+%pX$lB5W![^#1l4Lb0hX;MdR?<.n0MfibU^R=O!r9#@jg)dEPaKfq*1/:Dik/NP7?PWDP_?(`o^>:BrLAmc5eV`[L!OV\'<$udqQ+;BER9.O1\"PP\'$ErUESQop\"d/rFMKmf8IZ3:^H1ISu/2YOf-T=;RdLJcXp#;X$GTi#6:n#$;46Ed!qSr8&[cD3h)>OlaST2[2nkrR!5Uku,FO,T4h\'O-X:<f3#pI9/Nk\"7U(RK7HaX6e,6(o?9EIW*SnPa6H4EcKTR86V./8<\\e\'qJ(!FPW@_](FT&O:[:HFOm1;DM\\(O\\=\'/eg][kS#!Gh+i3X7j;?fIF<)1Pid`D,gneJa:54g>GKZ<\'lr?a)?TZV>5Mg9=lf**c;N]tG*j6[grWTp79n&bJS2L`^jX>LDO43Fk8^aEjUpBgpaRfdg0ETl&6SMIjF9eJY`*\"QV46l+UcX\"E;^adPl9og8L[[ICCJKEDiL\'bd7:Orq+7so\\)_q:d++O$e8o1itAIUF7_`EIQLdS/WUHE:8\'r.*F7U\'J]jmtauFZ+HMrAs.$_9)53\\l778U>c-D<P3`\\eK$iDN+JdCBFg0;K[C#87liBgs54R/l!h?^k`,r@rW.0\"EP_~>endstream\nendobj\nxref\n0 9\n0000000000 65535 f \n0000000073 00000 n \n0000000114 00000 n \n0000000221 00000 n \n0000000333 00000 n \n0000000536 00000 n \n0000000604 00000 n \n0000000887 00000 n \n0000000946 00000 n \ntrailer\n<<\n/ID \n[<bb92637c7ee3fcde3401d0a068c334a4><bb92637c7ee3fcde3401d0a068c334a4>]\n% ReportLab generated PDF document -- digest (http://www.reportlab.com)\n\n/Info 6 0 R\n/Root 5 0 R\n/Size 9\n>>\nstartxref\n1736\n%%EOF\n',2141,'fattura_001.pdf','FATTURA | Numero fattura: 001/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2025-12-17 14:07:24','2025-12-17 15:07:23'),(32,'FAT-002-2025',7,NULL,NULL,NULL,1024.59,225.41,1250.00,'EUR','2025-12-15','2026-01-16','2025-12-17 14:08:21','Eingegangen',1,1,0,'20251217_150820_eb0c62dd.pdf',_binary '%PDF-1.4\n%“Œ‹ž ReportLab Generated PDF document http://www.reportlab.com\n1 0 obj\n<<\n/F1 2 0 R /F2 3 0 R\n>>\nendobj\n2 0 obj\n<<\n/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font\n>>\nendobj\n3 0 obj\n<<\n/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font\n>>\nendobj\n4 0 obj\n<<\n/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<\n/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]\n>> /Rotate 0 /Trans <<\n\n>> \n  /Type /Page\n>>\nendobj\n5 0 obj\n<<\n/PageMode /UseNone /Pages 7 0 R /Type /Catalog\n>>\nendobj\n6 0 obj\n<<\n/Author (\\(anonymous\\)) /CreationDate (D:20251217135140+00\'00\') /Creator (\\(unspecified\\)) /Keywords () /ModDate (D:20251217135140+00\'00\') /Producer (ReportLab PDF Library - www.reportlab.com) \n  /Subject (\\(unspecified\\)) /Title (\\(anonymous\\)) /Trapped /False\n>>\nendobj\n7 0 obj\n<<\n/Count 1 /Kids [ 4 0 R ] /Type /Pages\n>>\nendobj\n8 0 obj\n<<\n/Filter [ /ASCII85Decode /FlateDecode ] /Length 699\n>>\nstream\nGat=)9on!^&A@Zck#.%AWF>-QM:ihP]%\'j9C&rNS>V%RG<[:O0BI/+U-VaqB+A5p-jC@$c^NlE5@=WGSHXA\'!pBjA#$lB5W!@Bo0l3TYS_9W._R?<.n0MfirU^R=O!r;Qkjg&JY8k`nI%SW0]EF(99U<$h29#B*sL(=ro^<J#aTO\'q?_YZ5bW\\_6?b1sb3bU[6[J_#KS*e)om-I6(pMdi=E4$_jON]]:Y?W:OeI9osDl@Lip0Ok\'ZdXf9N/YJpZ?n#@&fkn1g`u8Z1ZTO5*/2pW+<+&kJE,pb/]%/Pm8Ht+KPN>p--.Xcr&e41A6Y)!QF?,k@=l,[AB+H%j-?nsXOE\"V1@3ingQ<Dg:(ZJ;a=XMu`qdE-HMMkO(A\"BcO`/VsS\\f>]+$6h.q#nP$n-ToKq&MWE4BfK!_o0X\'%Bq?X3\"u`rmdHSp`<TA<5Jbu:qiRI3pH$kFSe2VS49TBR+[b#4*(JA+C%p([EkM.$e))ZHV&aNJhnbj,.AVK!0/,Tq[94\"\"`=\'7>\\@p!=,DSJ\'n62/kC8l(7(OnI5_;cf!;1EN3E4V#Hcbd*q7l1\\Aj@fD3JINP&EfQPZc()Af_FU21`LJi\\9H.;=57P@c#2U)lXB1(a&2KuM+3p<2fZh$2\"kHG=_j1daZGl+kJHeb-NAZOd;\'@2RCU]3Ful-Q*<KQe!*X6kA64!HBR\")RII#l~>endstream\nendobj\nxref\n0 9\n0000000000 65535 f \n0000000073 00000 n \n0000000114 00000 n \n0000000221 00000 n \n0000000333 00000 n \n0000000536 00000 n \n0000000604 00000 n \n0000000887 00000 n \n0000000946 00000 n \ntrailer\n<<\n/ID \n[<8b49bf133db554c872f8842fff1159ff><8b49bf133db554c872f8842fff1159ff>]\n% ReportLab generated PDF document -- digest (http://www.reportlab.com)\n\n/Info 6 0 R\n/Root 5 0 R\n/Size 9\n>>\nstartxref\n1735\n%%EOF\n',2140,'fattura_002.pdf','FATTURA | Numero fattura: 002/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2025-12-17 14:08:21','2025-12-17 15:08:21'),(33,'FAT-003-2025',7,NULL,NULL,NULL,245.90,54.10,300.00,'EUR','2025-12-15','2026-01-16','2025-12-17 14:09:16','Eingegangen',1,1,0,'20251217_150915_43ba3352.pdf',_binary '%PDF-1.4\n%“Œ‹ž ReportLab Generated PDF document http://www.reportlab.com\n1 0 obj\n<<\n/F1 2 0 R /F2 3 0 R\n>>\nendobj\n2 0 obj\n<<\n/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font\n>>\nendobj\n3 0 obj\n<<\n/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font\n>>\nendobj\n4 0 obj\n<<\n/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<\n/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]\n>> /Rotate 0 /Trans <<\n\n>> \n  /Type /Page\n>>\nendobj\n5 0 obj\n<<\n/PageMode /UseNone /Pages 7 0 R /Type /Catalog\n>>\nendobj\n6 0 obj\n<<\n/Author (\\(anonymous\\)) /CreationDate (D:20251217135140+00\'00\') /Creator (\\(unspecified\\)) /Keywords () /ModDate (D:20251217135140+00\'00\') /Producer (ReportLab PDF Library - www.reportlab.com) \n  /Subject (\\(unspecified\\)) /Title (\\(anonymous\\)) /Trapped /False\n>>\nendobj\n7 0 obj\n<<\n/Count 1 /Kids [ 4 0 R ] /Type /Pages\n>>\nendobj\n8 0 obj\n<<\n/Filter [ /ASCII85Decode /FlateDecode ] /Length 699\n>>\nstream\nGat=)gMY_1&:N^lk+r]I<&8m+^#Y0=VFm+C!F24@Z!`DH_R=4G<oWF,?5m\"9>?b8*1?ZlQ3BO!i!ResRI@1(_MI>qpJ8pCr^n`>$HA4(Mmq7\\=bYUSRRA\\P2;$I&7Jc)W?\\a6O?,pou5#H\"Mt33O*,@H]GF\']IFHqN%C\"qCs#H61bZ74a_(`UcP3MXj\"aYAR6mN$+)%\\ErVt0FIp<0/rDEF*ro.H3-\'L%ITDHap3Bt]*#GEequPjXUsaeqh^tLtlXM5GbLpa@o(s>>DmMP`7@%^>I4VV&U-I?LSZZE=lQh,9o\\\"791,gp]ZQo`uN$0sp3kFNN^G##8d&RCIo?dY&7EE!#ILrM&?8Ln.l9[VGA<t@\'Aj:4T:N=tNF(sJ>b]UWT=6jnF?-!Pi5S3>oh+i3PLXKh^IF<)1PU6Hn$>H(Hj;QVDXjQCY$<?,2%=jAZCO`FpbM;GXQ>3=8LWT)%SWn+tQsq3a?JqgcpGLR7>t0fYE5\\W=-[]pp7p-FBoF66L^*V*Iri<%:<X+jm\\h,j%h8L1F$BuoLPK5B++b_:h_\\%\\G?8*e2\'!$2)UYgFIM!8\";pq:TG@[fe>)jo:q2Bcm**(g[3jAEPT(qnERg+l=&Sd-HXZFQGVR\\2VE-`9o.:14qGLOXYOnb-,9FSKf1/o7rO4Zohm#ljL8U_AC[%mGM8Q^`\"7G=8+u#;;onWW~>endstream\nendobj\nxref\n0 9\n0000000000 65535 f \n0000000073 00000 n \n0000000114 00000 n \n0000000221 00000 n \n0000000333 00000 n \n0000000536 00000 n \n0000000604 00000 n \n0000000887 00000 n \n0000000946 00000 n \ntrailer\n<<\n/ID \n[<82de21b91b86403725a14956d4a41851><82de21b91b86403725a14956d4a41851>]\n% ReportLab generated PDF document -- digest (http://www.reportlab.com)\n\n/Info 6 0 R\n/Root 5 0 R\n/Size 9\n>>\nstartxref\n1735\n%%EOF\n',2140,'fattura_003.pdf','FATTURA | Numero fattura: 003/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2025-12-17 14:09:16','2025-12-17 15:09:15');
 /*!40000 ALTER TABLE `invoices` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -244,12 +243,12 @@ CREATE TABLE `notifications` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `invoice_id` int DEFAULT NULL,
-  `type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `is_read` tinyint(1) DEFAULT '0',
-  `priority` enum('low','normal','high','urgent') COLLATE utf8mb4_unicode_ci DEFAULT 'normal',
-  `action_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `priority` enum('low','normal','high','urgent') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'normal',
+  `action_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `read_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -258,7 +257,7 @@ CREATE TABLE `notifications` (
   KEY `idx_is_read` (`is_read`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -267,7 +266,7 @@ CREATE TABLE `notifications` (
 
 LOCK TABLES `notifications` WRITE;
 /*!40000 ALTER TABLE `notifications` DISABLE KEYS */;
-INSERT INTO `notifications` VALUES (19,3,13,'invoice_received','Neue Rechnung eingegangen','Rechnung Fattura_Esempio_Azienda_SRL von IT-Solutions Ã¼ber 0,00 â‚¬ EUR ist eingegangen.',0,'low','/invoices/13','2025-12-16 13:43:18',NULL),(20,3,14,'invoice_received','Neue Rechnung eingegangen','Rechnung umero von BÃ¼roservice Express Ã¼ber 610,00 â‚¬ EUR ist eingegangen.',0,'low','/invoices/14','2025-12-16 13:48:17',NULL),(21,3,15,'invoice_received','Neue Rechnung eingegangen','Rechnung umero von IT-Solutions Ã¼ber 610,00 â‚¬ EUR ist eingegangen.',0,'low','/invoices/15','2025-12-16 14:00:41',NULL);
+INSERT INTO `notifications` VALUES (29,3,31,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2025 von Azienda Demo SRL Ã¼ber 500,00 â‚¬ EUR ist eingegangen.',0,'low','/invoices/31','2025-12-17 14:07:24',NULL),(30,3,32,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2025 von Azienda Demo SRL Ã¼ber 1.250,00 â‚¬ EUR ist eingegangen.',0,'low','/invoices/32','2025-12-17 14:08:21',NULL),(31,3,33,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-003-2025 von Azienda Demo SRL Ã¼ber 300,00 â‚¬ EUR ist eingegangen.',0,'low','/invoices/33','2025-12-17 14:09:16',NULL);
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -279,13 +278,13 @@ DROP TABLE IF EXISTS `projects`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `projects` (
-  `id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `cost_center_id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `cost_center_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `budget` decimal(12,2) DEFAULT '0.00',
   `spent_amount` decimal(12,2) DEFAULT '0.00',
-  `status` enum('Geplant','Aktiv','Pausiert','Abgeschlossen') COLLATE utf8mb4_unicode_ci DEFAULT 'Geplant',
+  `status` enum('Geplant','Aktiv','Pausiert','Abgeschlossen') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Geplant',
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
   `project_manager_id` int DEFAULT NULL,
@@ -316,14 +315,14 @@ DROP TABLE IF EXISTS `purchase_orders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `purchase_orders` (
-  `id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `title` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `cost_center_id` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `project_id` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `cost_center_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `project_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `total_amount` decimal(12,2) NOT NULL,
-  `currency` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT 'EUR',
-  `status` enum('Offen','Teilweise_Erfuellt','Erfuellt','Storniert') COLLATE utf8mb4_unicode_ci DEFAULT 'Offen',
+  `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'EUR',
+  `status` enum('Offen','Teilweise_Erfuellt','Erfuellt','Storniert') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Offen',
   `created_by` int NOT NULL,
   `approved_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -358,8 +357,8 @@ DROP TABLE IF EXISTS `roles`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `roles` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `permissions` json DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
@@ -385,27 +384,27 @@ DROP TABLE IF EXISTS `suppliers`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `suppliers` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `legal_name` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tax_number` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `vat_number` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `address_line1` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `address_line2` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `postal_code` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `city` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `country` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'Deutschland',
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `bank_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `iban` varchar(34) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `bic` varchar(11) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `legal_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tax_number` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vat_number` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address_line1` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address_line2` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `postal_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `city` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `country` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Deutschland',
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `bank_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `iban` varchar(34) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `bic` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `payment_terms_days` int DEFAULT '30',
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   FULLTEXT KEY `name` (`name`,`legal_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -414,7 +413,7 @@ CREATE TABLE `suppliers` (
 
 LOCK TABLES `suppliers` WRITE;
 /*!40000 ALTER TABLE `suppliers` DISABLE KEYS */;
-INSERT INTO `suppliers` VALUES (1,'Microsoft Deutschland','Microsoft Deutschland GmbH',NULL,NULL,NULL,NULL,NULL,'MÃ¼nchen','Deutschland','buchhaltung@microsoft.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47'),(2,'Amazon Business','Amazon EU S.Ã  r.l.',NULL,NULL,NULL,NULL,NULL,'Berlin','Deutschland','business@amazon.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47'),(3,'BÃ¼roservice Express','BÃ¼roservice Express GmbH',NULL,NULL,NULL,NULL,NULL,'Hamburg','Deutschland','info@bueroservice.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47'),(4,'IT-Solutions','IT-Solutions & Development GmbH',NULL,NULL,NULL,NULL,NULL,'Frankfurt','Deutschland','contact@it-solutions.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47'),(5,'Office World','Office World Handels-GmbH',NULL,NULL,NULL,NULL,NULL,'KÃ¶ln','Deutschland','service@officeworld.de',NULL,NULL,NULL,NULL,30,1,'2025-12-15 10:25:47','2025-12-15 10:25:47');
+INSERT INTO `suppliers` VALUES (7,'Azienda Demo SRL','Azienda Demo SRL','IT01234567890','IT01234567890','Via Roma 1 00100',NULL,'00100','Roma','Italien',NULL,NULL,NULL,NULL,NULL,30,1,'2025-12-17 14:07:24','2025-12-17 14:07:24');
 /*!40000 ALTER TABLE `suppliers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -427,10 +426,10 @@ DROP TABLE IF EXISTS `system_config`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `system_config` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `config_key` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `config_value` text COLLATE utf8mb4_unicode_ci,
-  `data_type` enum('string','number','boolean','json') COLLATE utf8mb4_unicode_ci DEFAULT 'string',
-  `description` text COLLATE utf8mb4_unicode_ci,
+  `config_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `config_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `data_type` enum('string','number','boolean','json') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'string',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `is_editable` tinyint(1) DEFAULT '1',
   `updated_by` int DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -488,12 +487,12 @@ DROP TABLE IF EXISTS `users`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `first_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `last_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `active_directory_sid` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `first_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active_directory_sid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `password_changed_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `failed_login_attempts` int DEFAULT '0',
   `locked_until` timestamp NULL DEFAULT NULL,
@@ -513,7 +512,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','admin@firma.de','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-16 14:54:03'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','MÃ¼ller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:49');
+INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','admin@firma.de','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-17 14:26:36'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','MÃ¼ller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:49');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -608,4 +607,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-17 11:40:18
+-- Dump completed on 2025-12-17 16:35:19

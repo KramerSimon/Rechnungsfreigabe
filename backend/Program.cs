@@ -69,12 +69,18 @@ builder.Services.AddControllers();
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular", policy =>
+    options.AddPolicy("FrontendCors", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200", "https://localhost:4200")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy.WithOrigins(
+            "http://localhost:4200",
+            "http://127.0.0.1:4200",
+            "https://localhost:4200",
+            "http://rechnungsfreigabe.s3-website.eu-central-1.amazonaws.com",
+            "https://rechnungsfreigabe.s3-website.eu-central-1.amazonaws.com"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+        // Note: AllowCredentials() removed since we use JWT in Authorization header
     });
 });
 
@@ -136,7 +142,7 @@ else
     app.UseHttpsRedirection();
 }
 
-app.UseCors("AllowAngular");
+app.UseCors("FrontendCors");
 
 app.UseAuthentication();
 app.UseAuthorization();
