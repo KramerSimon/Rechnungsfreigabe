@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
+using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 using System.Text.Json;
 
@@ -10,8 +11,13 @@ public interface IApprovalService
     Task CreateApprovalWorkflowAsync(int invoiceId);
     Task<bool> EvaluateApprovalRulesAsync(int invoiceId);
     Task<IEnumerable<ApprovalRule>> GetActiveRulesAsync();
+    Task<IEnumerable<ApprovalWorkflowDto>> GetAllWorkflowsAsync();
     Task<ApprovalRule> CreateRuleAsync(ApprovalRule rule);
     Task<bool> DeleteRuleAsync(int ruleId);
+    Task<IEnumerable<ApprovalWorkflowDto>> GetPendingApprovalsAsync(int userId);
+    Task<bool> ApproveAsync(int approvalId, int userId, string? comments);
+    Task<bool> RejectAsync(int approvalId, int userId, string? comments);
+    Task<int> GetInvoiceIdFromApprovalAsync(int approvalId);
 }
 
 public class ApprovalService : IApprovalService
@@ -31,9 +37,9 @@ public class ApprovalService : IApprovalService
         {
             var invoice = await _context.Invoices
                 .Include(i => i.CostCenter)
-                .ThenInclude(cc => cc.Manager)
+                .ThenInclude(cc => cc!.Manager)
                 .Include(i => i.Project)
-                .ThenInclude(p => p.ProjectManager)
+                .ThenInclude(p => p!.ProjectManager)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
             if (invoice == null)
@@ -176,9 +182,9 @@ public class ApprovalService : IApprovalService
         }
     }
 
-    private async Task<bool> EvaluateConditionAsync(Invoice invoice, RuleCondition condition)
+    private Task<bool> EvaluateConditionAsync(Invoice invoice, RuleCondition condition)
     {
-        return condition.Field.ToLower() switch
+        var result = condition.Field.ToLower() switch
         {
             "total_amount" => EvaluateNumericCondition(invoice.TotalAmount, condition),
             "cost_center_id" => EvaluateStringCondition(invoice.CostCenterId, condition),
@@ -187,6 +193,7 @@ public class ApprovalService : IApprovalService
             "currency" => EvaluateStringCondition(invoice.Currency, condition),
             _ => false
         };
+        return Task.FromResult(result);
     }
 
     private bool EvaluateNumericCondition(decimal value, RuleCondition condition)
@@ -415,6 +422,187 @@ public class ApprovalService : IApprovalService
             "double" => 2,
             _ => 1
         };
+    }
+
+    public async Task<IEnumerable<ApprovalWorkflowDto>> GetPendingApprovalsAsync(int userId)
+    {
+        try
+        {
+            var workflows = await _context.ApprovalWorkflows
+                .Include(w => w.Invoice)
+                .Include(w => w.Approver)
+                .Include(w => w.Rule)
+                .Where(w => w.ApproverId == userId && w.Status == ApprovalStatus.Pending)
+                .OrderBy(w => w.CreatedAt)
+                .Select(w => new ApprovalWorkflowDto
+                {
+                    Id = w.Id,
+                    InvoiceId = w.InvoiceId,
+                    InvoiceNumber = w.Invoice.InvoiceNumber,
+                    RuleId = w.RuleId,
+                    RuleName = w.Rule != null ? w.Rule.Name : null,
+                    StepNumber = w.StepNumber,
+                    Approver = new UserDto
+                    {
+                        Id = w.Approver.Id,
+                        Username = w.Approver.Username,
+                        Email = w.Approver.Email,
+                        FirstName = w.Approver.FirstName,
+                        LastName = w.Approver.LastName
+                    },
+                    ApprovalLevel = w.ApprovalLevel,
+                    Status = w.Status.ToString(),
+                    Comments = w.Comments,
+                    ApprovedAt = w.ApprovedAt,
+                    CreatedAt = w.CreatedAt
+                })
+                .ToListAsync();
+
+            return workflows;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting pending approvals for user: {UserId}", userId);
+            return new List<ApprovalWorkflowDto>();
+        }
+    }
+
+    public async Task<bool> ApproveAsync(int approvalId, int userId, string? comments)
+    {
+        try
+        {
+            var approval = await _context.ApprovalWorkflows
+                .Include(w => w.Invoice)
+                .FirstOrDefaultAsync(w => w.Id == approvalId);
+
+            if (approval == null || approval.Status != ApprovalStatus.Pending)
+                return false;
+
+            if (approval.ApproverId != userId)
+            {
+                _logger.LogWarning("Unauthorized approval attempt by user {UserId} for approval {ApprovalId}", userId, approvalId);
+                return false;
+            }
+
+            approval.Status = ApprovalStatus.Approved;
+            approval.ApprovedAt = DateTime.UtcNow;
+            approval.Comments = comments;
+
+            // Check if all approvals are done
+            var invoice = approval.Invoice;
+            var pendingApprovals = await _context.ApprovalWorkflows
+                .Where(w => w.InvoiceId == invoice.Id && w.Status == ApprovalStatus.Pending && w.Id != approvalId)
+                .CountAsync();
+
+            if (pendingApprovals == 0)
+            {
+                // All approvals done, set invoice as approved
+                invoice.Status = InvoiceStatus.Freigegeben;
+                _logger.LogInformation("Invoice {InvoiceId} fully approved", invoice.Id);
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Approval {ApprovalId} approved by user {UserId}", approvalId, userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error approving invoice approval: {ApprovalId}", approvalId);
+            return false;
+        }
+    }
+
+    public async Task<bool> RejectAsync(int approvalId, int userId, string? comments)
+    {
+        try
+        {
+            var approval = await _context.ApprovalWorkflows
+                .Include(w => w.Invoice)
+                .FirstOrDefaultAsync(w => w.Id == approvalId);
+
+            if (approval == null || approval.Status != ApprovalStatus.Pending)
+                return false;
+
+            if (approval.ApproverId != userId)
+            {
+                _logger.LogWarning("Unauthorized rejection attempt by user {UserId} for approval {ApprovalId}", userId, approvalId);
+                return false;
+            }
+
+            approval.Status = ApprovalStatus.Rejected;
+            approval.ApprovedAt = DateTime.UtcNow;
+            approval.Comments = comments;
+
+            // Mark invoice as rejected
+            var invoice = approval.Invoice;
+            invoice.Status = InvoiceStatus.Abgelehnt;
+
+            // Reject all pending approvals for this invoice
+            var pendingApprovals = await _context.ApprovalWorkflows
+                .Where(w => w.InvoiceId == invoice.Id && w.Status == ApprovalStatus.Pending)
+                .ToListAsync();
+
+            foreach (var pending in pendingApprovals)
+            {
+                pending.Status = ApprovalStatus.Rejected;
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Invoice {InvoiceId} rejected by user {UserId}", invoice.Id, userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting invoice approval: {ApprovalId}", approvalId);
+            return false;
+        }
+    }
+
+    public async Task<int> GetInvoiceIdFromApprovalAsync(int approvalId)
+    {
+        try
+        {
+            var approval = await _context.ApprovalWorkflows
+                .FirstOrDefaultAsync(w => w.Id == approvalId);
+
+            return approval?.InvoiceId ?? 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting invoice ID from approval: {ApprovalId}", approvalId);
+            return 0;
+        }
+    }
+
+    public async Task<IEnumerable<ApprovalWorkflowDto>> GetAllWorkflowsAsync()
+    {
+        try
+        {
+            var workflows = await _context.ApprovalWorkflows
+                .Include(w => w.Approver)
+                .OrderByDescending(w => w.CreatedAt)
+                .Select(w => new ApprovalWorkflowDto
+                {
+                    Id = w.Id,
+                    InvoiceId = w.InvoiceId,
+                    StepNumber = w.StepNumber,
+                    ApproverName = $"{w.Approver.FirstName} {w.Approver.LastName}",
+                    Status = w.Status.ToString(),
+                    Comments = w.Comments,
+                    ApprovedAt = w.ApprovedAt,
+                    CreatedAt = w.CreatedAt,
+                    ApproverId = w.ApproverId,
+                    ApprovalLevel = w.ApprovalLevel
+                })
+                .ToListAsync();
+
+            return workflows;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all approval workflows");
+            return Enumerable.Empty<ApprovalWorkflowDto>();
+        }
     }
 }
 

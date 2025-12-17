@@ -78,7 +78,7 @@ CREATE TABLE `approval_workflows` (
   CONSTRAINT `approval_workflows_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `approval_workflows_ibfk_2` FOREIGN KEY (`rule_id`) REFERENCES `approval_rules` (`id`),
   CONSTRAINT `approval_workflows_ibfk_3` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -87,6 +87,7 @@ CREATE TABLE `approval_workflows` (
 
 LOCK TABLES `approval_workflows` WRITE;
 /*!40000 ALTER TABLE `approval_workflows` DISABLE KEYS */;
+INSERT INTO `approval_workflows` VALUES (40,20,NULL,1,2,1,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(41,21,3,1,2,1,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(42,21,3,2,3,2,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(43,22,3,1,2,1,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(44,22,3,2,3,2,'Pending',NULL,NULL,'2025-12-16 15:24:37'),(45,22,3,3,1,3,'Pending',NULL,NULL,'2025-12-16 15:24:37');
 /*!40000 ALTER TABLE `approval_workflows` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -151,7 +152,7 @@ CREATE TABLE `invoice_history` (
   KEY `idx_action_source` (`action_source`),
   CONSTRAINT `invoice_history_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `invoice_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -160,6 +161,7 @@ CREATE TABLE `invoice_history` (
 
 LOCK TABLES `invoice_history` WRITE;
 /*!40000 ALTER TABLE `invoice_history` DISABLE KEYS */;
+INSERT INTO `invoice_history` VALUES (10,13,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-16 13:43:18'),(11,14,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-16 13:48:17'),(12,15,'Rechnung importiert','Created','Import',NULL,'Eingegangen',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-16 14:00:41');
 /*!40000 ALTER TABLE `invoice_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -189,6 +191,7 @@ CREATE TABLE `invoices` (
   `approval_level` int DEFAULT '1',
   `auto_approved` tinyint(1) DEFAULT '0',
   `pdf_file_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pdf_content` longblob COMMENT 'PDF-Dateiinhalt als BLOB',
   `pdf_file_size` bigint DEFAULT NULL,
   `original_filename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
@@ -209,6 +212,7 @@ CREATE TABLE `invoices` (
   KEY `idx_invoice_date` (`invoice_date`),
   KEY `idx_due_date` (`due_date`),
   KEY `idx_received_date` (`received_date`),
+  KEY `idx_pdf_content` (`pdf_file_size`),
   FULLTEXT KEY `description` (`description`,`internal_notes`),
   CONSTRAINT `invoices_ibfk_1` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`),
   CONSTRAINT `invoices_ibfk_2` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`id`),
@@ -216,7 +220,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `invoices_ibfk_5` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `invoices_ibfk_6` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -225,6 +229,7 @@ CREATE TABLE `invoices` (
 
 LOCK TABLES `invoices` WRITE;
 /*!40000 ALTER TABLE `invoices` DISABLE KEYS */;
+INSERT INTO `invoices` VALUES (13,'Fattura_Esempio_Azienda_SRL',4,NULL,NULL,NULL,0.00,0.00,0.00,'EUR','2025-12-16','2026-01-15','2025-12-16 13:43:18','Eingegangen',1,1,0,NULL,NULL,NULL,'Fattura_Esempio_Azienda_SRL.pdf','PDF-Upload: Fattura_Esempio_Azienda_SRL.pdf',NULL,1,NULL,'2025-12-16 13:43:18','2025-12-17 10:36:33'),(14,'umero',3,NULL,'OFFICE',NULL,512.61,97.39,610.00,'EUR','2025-01-01','2026-01-15','2025-12-16 13:48:16','Eingegangen',1,1,0,NULL,NULL,NULL,'Fattura_Esempio_Libero_Professionista.pdf','Studio Tecnico Bianchi | Fattura | Numero fattura: 2025/002 | Data: 01/01/2025 | Cliente: Cliente Verdi Luca',NULL,1,NULL,'2025-12-16 13:48:16','2025-12-17 10:36:33'),(15,'umero',4,NULL,'OFFICE',NULL,512.61,97.39,610.00,'EUR','2025-01-01','2026-01-15','2025-12-16 14:00:41','Eingegangen',1,1,0,NULL,NULL,NULL,'Fattura_Esempio_Azienda_SRL.pdf','Azienda Esempio SRL | Fattura | Numero fattura: 2025/001 | Data: 01/01/2025 | Cliente: Cliente Rossi Mario',NULL,1,NULL,'2025-12-16 14:00:41','2025-12-17 10:36:33'),(20,'INV-2025-001',1,NULL,'OFFICE',NULL,1261.34,0.00,1500.00,'EUR','2025-12-16','2026-01-15','2025-12-16 15:24:37','Eingegangen',1,1,0,NULL,NULL,NULL,NULL,NULL,NULL,1,NULL,'2025-12-16 15:24:37','2025-12-16 15:24:37'),(21,'INV-2025-002',2,NULL,'IT',NULL,6306.72,0.00,7500.00,'EUR','2025-12-16','2026-01-15','2025-12-16 15:24:37','Eingegangen',1,1,0,NULL,NULL,NULL,NULL,NULL,NULL,1,NULL,'2025-12-16 15:24:37','2025-12-16 15:24:37'),(22,'INV-2025-003',3,NULL,'FINANCE',NULL,12613.45,0.00,15000.00,'EUR','2025-12-16','2026-01-15','2025-12-16 15:24:37','Eingegangen',1,1,0,NULL,NULL,NULL,NULL,NULL,NULL,1,NULL,'2025-12-16 15:24:37','2025-12-16 15:24:37'),(23,'INV-2025-004',4,NULL,'HR',NULL,252.10,0.00,300.00,'EUR','2025-12-16','2026-01-15','2025-12-16 15:24:37','Freigegeben',1,1,1,NULL,NULL,NULL,NULL,NULL,NULL,1,NULL,'2025-12-16 15:24:37','2025-12-16 15:24:37');
 /*!40000 ALTER TABLE `invoices` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -253,7 +258,7 @@ CREATE TABLE `notifications` (
   KEY `idx_is_read` (`is_read`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -262,6 +267,7 @@ CREATE TABLE `notifications` (
 
 LOCK TABLES `notifications` WRITE;
 /*!40000 ALTER TABLE `notifications` DISABLE KEYS */;
+INSERT INTO `notifications` VALUES (19,3,13,'invoice_received','Neue Rechnung eingegangen','Rechnung Fattura_Esempio_Azienda_SRL von IT-Solutions über 0,00 € EUR ist eingegangen.',0,'low','/invoices/13','2025-12-16 13:43:18',NULL),(20,3,14,'invoice_received','Neue Rechnung eingegangen','Rechnung umero von Büroservice Express über 610,00 € EUR ist eingegangen.',0,'low','/invoices/14','2025-12-16 13:48:17',NULL),(21,3,15,'invoice_received','Neue Rechnung eingegangen','Rechnung umero von IT-Solutions über 610,00 € EUR ist eingegangen.',0,'low','/invoices/15','2025-12-16 14:00:41',NULL);
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -507,7 +513,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','admin@firma.de','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-16 09:38:56'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','Müller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:49');
+INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','admin@firma.de','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-16 14:54:03'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','Müller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:49');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -602,4 +608,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-16 14:31:45
+-- Dump completed on 2025-12-17 11:40:18

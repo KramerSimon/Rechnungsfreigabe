@@ -11,7 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { User } from '../../core/models/user.models';
 import { TabConfig } from '../../core/interfaces/common.interfaces';
@@ -24,6 +24,9 @@ import { EditCostCenterDialogComponent } from './dialogs/edit-cost-center-dialog
 import { EditProjectDialogComponent } from './dialogs/edit-project-dialog.component';
 import { EditUserDialogComponent } from './dialogs/edit-user-dialog.component';
 import { RoleManagementDialogComponent } from './dialogs/role-management-dialog.component';
+// Use the Admin Rules dialog for consistent rule UI
+import { RuleDialogComponent } from '../smart-dashboard/dashboard/rule-dashboard/rule-dialog/rule-dialog.component';
+import { ApprovalRule as AdminRule, RuleDialogData } from '../../core/models';
 import { SupplierService } from '../../core/services/supplier.service';
 import { CostCenterService } from '../../core/services/cost-center.service';
 import { ProjectService } from '../../core/services/project.service';
@@ -33,6 +36,11 @@ import { CostCenter } from '../../core/models/cost-center.model';
 import { Project } from '../../core/models/project.model';
 import { PurchaseOrder } from '../../core/models/purchaseOrder.model';
 import { PurchaseOrderService } from '../../core/services/purchase-order.service';
+import { Invoice } from '../../core/models/invoice.models';
+import { InvoiceService } from '../../core/services/invoice.service';
+import { ApprovalService } from '../../core/services/approval.service';
+import { ApprovalRule, ApprovalWorkflow, CreateApprovalRuleDto, CreateApprovalWorkflowDto, UpdateApprovalWorkflowDto } from '../../core/models/approval.model';
+import { ApprovalWorkflowDialogComponent, ApprovalWorkflowDialogData } from './dialogs/approval-workflow-dialog.component';
 
 @Component({
   selector: 'app-master-data',
@@ -51,6 +59,7 @@ import { PurchaseOrderService } from '../../core/services/purchase-order.service
     MatSelectModule,
     FormsModule,
     ReactiveFormsModule,
+    RouterLink,
   ],
   templateUrl: './master-data.component.html',
   styleUrls: ['./master-data.component.scss'],
@@ -63,14 +72,20 @@ export class MasterDataComponent implements OnInit {
   costCenters: CostCenter[] = [];
   projects: Project[] = [];
   purchaseOrders: PurchaseOrder[] = [];
+  invoices: Invoice[] = [];
   users: User[] = [];
+  approvalRules: ApprovalRule[] = [];
+  approvalWorkflows: ApprovalWorkflow[] = [];
 
   // Loading states
   loadingSuppliers = false;
   loadingCostCenters = false;
   loadingProjects = false;
   loadingPurchaseOrders = false;
+  loadingInvoices = false;
   loadingUsers = false;
+  loadingApprovalRules = false;
+  loadingApprovalWorkflows = false;
 
   // Tab management
   activeTab = 0;
@@ -78,8 +93,10 @@ export class MasterDataComponent implements OnInit {
     { id: 'suppliers', label: 'Lieferanten', index: 0 },
     { id: 'costcenters', label: 'Kostenstellen', index: 1 },
     { id: 'projects', label: 'Projekte', index: 2 },
-    { id: 'users', label: 'Benutzer & Rollen', index: 3 },
-    { id: 'escalation', label: 'Eskalations-Einstellungen', index: 4 },
+    { id: 'invoices', label: 'Rechnungen', index: 3 },
+    { id: 'users', label: 'Benutzer & Rollen', index: 4 },
+    { id: 'escalation', label: 'Eskalations-Einstellungen', index: 5 },
+    { id: 'approval_workflows', label: 'Genehmigungsworkflows', index: 6 },
   ];
 
   // Table columns
@@ -101,6 +118,15 @@ export class MasterDataComponent implements OnInit {
     'createdAt',
     'actions',
   ];
+  invoiceColumns = [
+    'id',
+    'invoiceNumber',
+    'supplier',
+    'totalAmount',
+    'status',
+    'invoiceDate',
+    'actions',
+  ];
   userColumns = [
     'username',
     'fullName',
@@ -108,6 +134,24 @@ export class MasterDataComponent implements OnInit {
     'role',
     'isActive',
     'lastLogin',
+    'actions',
+  ];
+  approvalRuleColumns = [
+    'id',
+    'name',
+    'description',
+    'ruleType',
+    'priority',
+    'isActive',
+    'actions',
+  ];
+  approvalWorkflowColumns = [
+    'id',
+    'invoiceId',
+    'approverId',
+    'approvalLevel',
+    'status',
+    'createdAt',
     'actions',
   ];
 
@@ -119,7 +163,9 @@ export class MasterDataComponent implements OnInit {
     private costCenterService: CostCenterService,
     private projectService: ProjectService,
     private purchaseOrderService: PurchaseOrderService,
-    private userService: UserService
+    private invoiceService: InvoiceService,
+    private userService: UserService,
+    private approvalService: ApprovalService
   ) {}
 
   ngOnInit(): void {
@@ -142,7 +188,10 @@ export class MasterDataComponent implements OnInit {
     this.loadCostCenters();
     this.loadProjects();
     this.loadPurchaseOrders();
+    this.loadInvoices();
     this.loadUsers();
+    this.loadApprovalRules();
+    this.loadApprovalWorkflows();
   }
 
   // Suppliers
@@ -285,6 +334,43 @@ export class MasterDataComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting purchase order:', error);
+          this.snackBar.open('Fehler beim Löschen', 'Schließen', {
+            duration: 3000,
+          });
+        },
+      });
+    }
+  }
+
+  // Invoices
+  loadInvoices(): void {
+    this.loadingInvoices = true;
+    this.invoiceService.getInvoices().subscribe({
+      next: (data) => {
+        this.invoices = data.items; // Use the array of invoices from the paged result
+        this.loadingInvoices = false;
+      },
+      error: (error) => {
+        console.error('Error loading invoices:', error);
+        this.loadingInvoices = false;
+        this.snackBar.open('Fehler beim Laden der Rechnungen', 'Schließen', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  deleteInvoice(id: number): void {
+    if (confirm('Möchten Sie diese Rechnung wirklich löschen?')) {
+      this.invoiceService.deleteInvoice(id).subscribe({
+        next: () => {
+          this.snackBar.open('Rechnung gelöscht', 'Schließen', {
+            duration: 3000,
+          });
+          this.loadInvoices();
+        },
+        error: (error) => {
+          console.error('Error deleting invoice:', error);
           this.snackBar.open('Fehler beim Löschen', 'Schließen', {
             duration: 3000,
           });
@@ -641,6 +727,204 @@ export class MasterDataComponent implements OnInit {
         this.loadUsers();
         this.snackBar.open('Rollen-Konfiguration aktualisiert', 'Schließen', {
           duration: 3000,
+        });
+      }
+    });
+  }
+
+  // Approval Rules
+  loadApprovalRules(): void {
+    this.loadingApprovalRules = true;
+    this.approvalService.getApprovalRules().subscribe({
+      next: (rules) => {
+        this.approvalRules = rules;
+        this.loadingApprovalRules = false;
+      },
+      error: (error) => {
+        console.error('Error loading approval rules:', error);
+        this.loadingApprovalRules = false;
+        this.snackBar.open('Fehler beim Laden der Genehmigungsregeln', 'Schließen', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  createApprovalRule(): void {
+    const dialogRef = this.dialog.open(RuleDialogComponent, {
+      width: '800px',
+      data: { mode: 'create' } as RuleDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: AdminRule | undefined) => {
+      if (result) {
+        const payload: CreateApprovalRuleDto = this.mapFromDialogRule(result);
+        this.approvalService.createApprovalRule(payload).subscribe({
+          next: () => {
+            this.snackBar.open('Genehmigungsregel erfolgreich erstellt', 'Schließen', {
+              duration: 3000,
+            });
+            this.loadApprovalRules();
+          },
+          error: (error) => {
+            console.error('Error creating approval rule:', error);
+            this.snackBar.open('Fehler beim Erstellen der Genehmigungsregel', 'Schließen', {
+              duration: 3000,
+            });
+          },
+        });
+      }
+    });
+  }
+
+  editApprovalRule(rule: ApprovalRule): void {
+    const dialogRef = this.dialog.open(RuleDialogComponent, {
+      width: '800px',
+      data: { mode: 'edit', rule: this.mapToDialogRule(rule) } as RuleDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: AdminRule | undefined) => {
+      if (result) {
+        const payload: CreateApprovalRuleDto = this.mapFromDialogRule(result);
+        this.approvalService.updateApprovalRule(rule.id, payload).subscribe({
+          next: () => {
+            this.snackBar.open('Genehmigungsregel erfolgreich aktualisiert', 'Schließen', {
+              duration: 3000,
+            });
+            this.loadApprovalRules();
+          },
+          error: (error) => {
+            console.error('Error updating approval rule:', error);
+            this.snackBar.open('Fehler beim Aktualisieren der Genehmigungsregel', 'Schließen', {
+              duration: 3000,
+            });
+          },
+        });
+      }
+    });
+  }
+
+  deleteApprovalRule(id: number): void {
+    if (confirm('Möchten Sie diese Genehmigungsregel wirklich löschen?')) {
+      this.approvalService.deleteApprovalRule(id).subscribe({
+        next: () => {
+          this.snackBar.open('Genehmigungsregel gelöscht', 'Schließen', {
+            duration: 3000,
+          });
+          this.loadApprovalRules();
+        },
+        error: (error) => {
+          console.error('Error deleting approval rule:', error);
+          this.snackBar.open('Fehler beim Löschen der Genehmigungsregel', 'Schließen', {
+            duration: 3000,
+          });
+        },
+      });
+    }
+  }
+
+  // Mapping helpers for Admin Rule dialog <-> API DTOs
+  private mapToDialogRule(rule: ApprovalRule): AdminRule {
+    let conditions: any[] = [];
+    let actions: any[] = [];
+    try {
+      conditions = rule.conditions ? JSON.parse(rule.conditions as unknown as string) : [];
+    } catch {}
+    try {
+      actions = rule.actions ? JSON.parse(rule.actions as unknown as string) : [];
+    } catch {}
+    const apiType = typeof rule.ruleType === 'string' ? rule.ruleType.toLowerCase() : '';
+    const dialogType: 'automatic' | 'manual' = apiType === 'automatic' ? 'automatic' : 'manual';
+    return {
+      id: rule.id,
+      name: rule.name,
+      description: rule.description || '',
+      isActive: rule.isActive,
+      ruleType: dialogType,
+      conditions: conditions,
+      actions: actions,
+      priority: rule.priority ?? 10,
+    } as AdminRule;
+  }
+
+  private mapFromDialogRule(rule: AdminRule): CreateApprovalRuleDto {
+    const apiType = rule.ruleType === 'automatic' ? 'Automatic' : 'Manual';
+    return {
+      name: rule.name,
+      description: rule.description,
+      ruleType: apiType,
+      priority: rule.priority,
+      conditions: JSON.stringify(rule.conditions || []),
+      actions: JSON.stringify(rule.actions || []),
+    } as CreateApprovalRuleDto;
+  }
+
+  // Approval Workflows
+  loadApprovalWorkflows(): void {
+    this.loadingApprovalWorkflows = true;
+    this.approvalService.getApprovalWorkflows().subscribe({
+      next: (workflows) => {
+        this.approvalWorkflows = workflows;
+        this.loadingApprovalWorkflows = false;
+      },
+      error: (error) => {
+        console.error('Error loading approval workflows:', error);
+        this.loadingApprovalWorkflows = false;
+        this.snackBar.open('Fehler beim Laden der Genehmigungsworkflows', 'Schließen', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  deleteApprovalWorkflow(id: number): void {
+    if (confirm('Möchten Sie diesen Genehmigungsworkflow wirklich löschen?')) {
+      // Note: Backend might not support direct deletion of workflows
+      this.snackBar.open('Workflows können nicht direkt gelöscht werden', 'Schließen', {
+        duration: 3000,
+      });
+    }
+  }
+
+  createApprovalWorkflow(): void {
+    const dialogRef = this.dialog.open(ApprovalWorkflowDialogComponent, {
+      width: '650px',
+      data: { mode: 'create' } as ApprovalWorkflowDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((payload: CreateApprovalWorkflowDto | undefined) => {
+      if (payload) {
+        this.approvalService.createApprovalWorkflow(payload).subscribe({
+          next: () => {
+            this.snackBar.open('Workflow erfolgreich erstellt', 'Schließen', { duration: 3000 });
+            this.loadApprovalWorkflows();
+          },
+          error: (error) => {
+            console.error('Error creating workflow:', error);
+            this.snackBar.open('Fehler beim Erstellen des Workflows', 'Schließen', { duration: 3000 });
+          },
+        });
+      }
+    });
+  }
+
+  editApprovalWorkflow(workflow: ApprovalWorkflow): void {
+    const dialogRef = this.dialog.open(ApprovalWorkflowDialogComponent, {
+      width: '650px',
+      data: { mode: 'edit', workflow } as ApprovalWorkflowDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((payload: UpdateApprovalWorkflowDto | undefined) => {
+      if (payload) {
+        this.approvalService.updateApprovalWorkflow(workflow.id, payload).subscribe({
+          next: () => {
+            this.snackBar.open('Workflow erfolgreich aktualisiert', 'Schließen', { duration: 3000 });
+            this.loadApprovalWorkflows();
+          },
+          error: (error) => {
+            console.error('Error updating workflow:', error);
+            this.snackBar.open('Fehler beim Aktualisieren des Workflows', 'Schließen', { duration: 3000 });
+          },
         });
       }
     });

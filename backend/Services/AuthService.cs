@@ -144,16 +144,16 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<bool> ValidateTokenAsync(string token)
+    public Task<bool> ValidateTokenAsync(string token)
     {
         try
         {
             var principal = ValidateJwtToken(token);
-            return principal != null;
+            return Task.FromResult(principal != null);
         }
         catch
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -176,6 +176,18 @@ public class AuthService : IAuthService
             new(ClaimTypes.GivenName, user.FirstName),
             new(ClaimTypes.Surname, user.LastName),
         };
+
+        // Add role claims so [Authorize(Roles = "...")] works
+        if (user.UserRoles != null)
+        {
+            foreach (var ur in user.UserRoles)
+            {
+                if (!string.IsNullOrWhiteSpace(ur.Role?.Name))
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, ur.Role.Name));
+                }
+            }
+        }
 
         // Add permission claims
         foreach (var permission in permissions)

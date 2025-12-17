@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { User, Invoice, PagedResult, PageRequest } from '../models';
 
@@ -15,6 +16,17 @@ export class InvoiceService {
 
   constructor(private http: HttpClient) {}
 
+  private mapInvoice(invoice: any): Invoice {
+    // Behalte den vollständigen PDF-Pfad - der Backend wird damit umgehen
+    const pdfPath = invoice.pdf_file_path || invoice.pdfFilePath;
+
+    return {
+      ...invoice,
+      pdfFilePath: pdfPath,
+      pdfFileName: invoice.original_filename || invoice.pdfFileName
+    };
+  }
+
   getInvoices(pageRequest?: PageRequest): Observable<PagedResult<Invoice>> {
     let params = new HttpParams();
 
@@ -27,11 +39,18 @@ export class InvoiceService {
       if (pageRequest.status) params = params.set('status', pageRequest.status);
     }
 
-    return this.http.get<PagedResult<Invoice>>(this.apiUrl, { params });
+    return this.http.get<PagedResult<Invoice>>(this.apiUrl, { params }).pipe(
+      map((result: any) => ({
+        ...result,
+        items: result.items?.map((invoice: any) => this.mapInvoice(invoice)) || []
+      }))
+    );
   }
 
   getInvoiceById(id: number): Observable<Invoice> {
-    return this.http.get<Invoice>(`${this.apiUrl}/${id}`);
+    return this.http.get<Invoice>(`${this.apiUrl}/${id}`).pipe(
+      map(invoice => this.mapInvoice(invoice))
+    );
   }
 
   createInvoice(invoice: Partial<Invoice>): Observable<Invoice> {
@@ -63,5 +82,11 @@ export class InvoiceService {
 
   getPendingApprovals(): Observable<Invoice[]> {
     return this.http.get<Invoice[]>(`${this.apiUrl}/pending-approvals`);
+  }
+
+  downloadInvoicePdf(invoiceId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/pdfupload/download/${invoiceId}`, {
+      responseType: 'blob'
+    });
   }
 }

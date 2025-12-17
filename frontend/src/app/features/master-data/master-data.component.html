@@ -219,6 +219,80 @@
       </div>
     </mat-tab>
 
+    <!-- Rechnungen -->
+    <mat-tab label="Rechnungen">
+      <div class="tab-content">
+        <div class="header-actions">
+          <button mat-icon-button (click)="loadInvoices()" matTooltip="Aktualisieren">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+
+        <mat-card>
+          <table mat-table [dataSource]="invoices" class="data-table">
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>ID</th>
+              <td mat-cell *matCellDef="let element">{{element.id}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="invoiceNumber">
+              <th mat-header-cell *matHeaderCellDef>Rechnungsnummer</th>
+              <td mat-cell *matCellDef="let element">{{element.invoiceNumber}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="supplier">
+              <th mat-header-cell *matHeaderCellDef>Lieferant</th>
+              <td mat-cell *matCellDef="let element">{{element.supplierName || element.supplierId}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="totalAmount">
+              <th mat-header-cell *matHeaderCellDef>Betrag</th>
+              <td mat-cell *matCellDef="let element">{{formatCurrency(element.totalAmount)}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let element">
+                <span class="status-badge" [ngClass]="'status-' + element.status.toLowerCase()">
+                  {{element.status}}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="invoiceDate">
+              <th mat-header-cell *matHeaderCellDef>Rechnungsdatum</th>
+              <td mat-cell *matCellDef="let element">{{element.invoiceDate | date:'dd.MM.yyyy'}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+              <td mat-cell *matCellDef="let element">
+                <button mat-icon-button matTooltip="Details ansehen" [routerLink]="['/invoice', element.id]">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteInvoice(element.id)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="invoiceColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: invoiceColumns;"></tr>
+          </table>
+
+          <div *ngIf="loadingInvoices" class="loading-overlay">
+            <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+            <p>Lade Rechnungen...</p>
+          </div>
+
+          <div *ngIf="!loadingInvoices && invoices.length === 0" class="empty-state">
+            <mat-icon>receipt</mat-icon>
+            <p>Keine Rechnungen vorhanden</p>
+          </div>
+        </mat-card>
+      </div>
+    </mat-tab>
+
     <!-- Benutzer & Rollen -->
     <mat-tab label="Benutzer & Rollen">
       <div class="tab-content">
@@ -326,5 +400,159 @@
         </mat-card>
       </div>
     </mat-tab>
-  </mat-tab-group>
-</div>
+
+    <!-- Genehmigungsworkflows -->
+    <mat-tab label="Genehmigungsworkflows">
+      <div class="tab-content">
+        <div class="header-actions">
+          <button mat-raised-button color="primary" (click)="createApprovalRule()">
+            <mat-icon>add</mat-icon>
+            Neue Genehmigungsregel
+          </button>
+          <button mat-icon-button (click)="loadApprovalRules()" matTooltip="Aktualisieren">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+
+        <!-- Approval Rules Section -->
+        <div class="section">
+          <h3>Genehmigungsregeln</h3>
+          <mat-card>
+            <table mat-table [dataSource]="approvalRules" class="data-table">
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let element">{{element.id}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let element">{{element.name}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="description">
+                <th mat-header-cell *matHeaderCellDef>Beschreibung</th>
+                <td mat-cell *matCellDef="let element">{{element.description || '-'}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="ruleType">
+                <th mat-header-cell *matHeaderCellDef>Regeltyp</th>
+                <td mat-cell *matCellDef="let element">{{element.ruleType}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="priority">
+                <th mat-header-cell *matHeaderCellDef>Priorität</th>
+                <td mat-cell *matCellDef="let element">{{element.priority}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="isActive">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let element">
+                  <span [class.active-badge]="element.isActive" [class.inactive-badge]="!element.isActive">
+                    {{element.isActive ? 'Aktiv' : 'Inaktiv'}}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+                <td mat-cell *matCellDef="let element">
+                  <button mat-icon-button matTooltip="Bearbeiten" (click)="editApprovalRule(element)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteApprovalRule(element.id)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="approvalRuleColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: approvalRuleColumns;"></tr>
+            </table>
+
+            <div *ngIf="loadingApprovalRules" class="loading-overlay">
+              <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+              <p>Lade Genehmigungsregeln...</p>
+            </div>
+
+            <div *ngIf="!loadingApprovalRules && approvalRules.length === 0" class="empty-state">
+              <mat-icon>rule</mat-icon>
+              <p>Keine Genehmigungsregeln vorhanden</p>
+            </div>
+          </mat-card>
+        </div>
+
+        <!-- Approval Workflows Section -->
+        <div class="section">
+          <div class="header-actions">
+            <h3 style="margin: 0; flex: 1">Genehmigungsworkflows</h3>
+            <span style="flex: 1 0 auto"></span>
+            <button mat-raised-button color="primary" (click)="createApprovalWorkflow()">
+              <mat-icon>add</mat-icon>
+              Neuer Workflow
+            </button>
+            <button mat-icon-button (click)="loadApprovalWorkflows()" matTooltip="Aktualisieren">
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </div>
+          <mat-card>
+            <table mat-table [dataSource]="approvalWorkflows" class="data-table">
+              <ng-container matColumnDef="id">
+                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <td mat-cell *matCellDef="let element">{{element.id}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="invoiceId">
+                <th mat-header-cell *matHeaderCellDef>Rechnungs-ID</th>
+                <td mat-cell *matCellDef="let element">{{element.invoiceId}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="approverId">
+                <th mat-header-cell *matHeaderCellDef>Genehmiger</th>
+                <td mat-cell *matCellDef="let element">{{element.approverName || element.approverId}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="approvalLevel">
+                <th mat-header-cell *matHeaderCellDef>Genehmigungsstufe</th>
+                <td mat-cell *matCellDef="let element">{{element.approvalLevel}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let element">
+                  <span class="status-badge" [ngClass]="'status-' + element.status.toLowerCase()">
+                    {{element.status}}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="createdAt">
+                <th mat-header-cell *matHeaderCellDef>Erstellt am</th>
+                <td mat-cell *matCellDef="let element">{{element.createdAt | date:'dd.MM.yyyy HH:mm'}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+                <td mat-cell *matCellDef="let element">
+                  <button mat-icon-button matTooltip="Bearbeiten" (click)="editApprovalWorkflow(element)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="approvalWorkflowColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: approvalWorkflowColumns;"></tr>
+            </table>
+
+            <div *ngIf="loadingApprovalWorkflows" class="loading-overlay">
+              <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+              <p>Lade Genehmigungsworkflows...</p>
+            </div>
+
+            <div *ngIf="!loadingApprovalWorkflows && approvalWorkflows.length === 0" class="empty-state">
+              <mat-icon>workflow</mat-icon>
+              <p>Keine Genehmigungsworkflows vorhanden</p>
+            </div>
+          </mat-card>
+        </div>
+      </div>
+    </mat-tab>

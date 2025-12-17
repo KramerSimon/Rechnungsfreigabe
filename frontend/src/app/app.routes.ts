@@ -5,7 +5,7 @@ import { UserDashboardComponent } from './features/smart-dashboard/dashboard/use
 import { AccountingDashboardComponent } from './features/smart-dashboard/dashboard/accounting-dashboard/accounting-dashboard.component';
 import { AdminDashboardComponent } from './features/smart-dashboard/dashboard/admin-dashboard/admin-dashboard.component';
 import { InvoiceDetailComponent } from './features/invoice-detail/invoice-detail.component';
-import { AdminRulesComponent } from './features/admin-rules/admin-rules.component';
+import { RuleDashboardComponent } from './features/smart-dashboard/dashboard/rule-dashboard/rule-dashboard.component';
 import { LoginComponent } from './features/login/login.component';
 import { MasterDataComponent } from './features/master-data/master-data.component';
 import { authGuard } from './core/guards/auth.guard';
@@ -26,9 +26,12 @@ export const routes: Routes = [
   { path: 'admin/users', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'users' } },
   { path: 'admin/cost-centers', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'costcenters' } },
   { path: 'admin/suppliers', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'suppliers' } },
+  { path: 'admin/invoices', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'invoices' } },
   { path: 'admin/escalation', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'escalation' } },
+  { path: 'admin/projects', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'projects' } },
+  { path: 'admin/approval_workflows', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'approval_workflows' } },
 
-  { path: 'invoice/:id', component: InvoiceDetailComponent },
-  { path: 'admin/rules', component: AdminRulesComponent, canActivate: [authGuard] },
+  { path: 'invoice/:id', component: InvoiceDetailComponent, canActivate: [authGuard] },
+  { path: 'admin/rules', component: RuleDashboardComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '/login' }
 ];

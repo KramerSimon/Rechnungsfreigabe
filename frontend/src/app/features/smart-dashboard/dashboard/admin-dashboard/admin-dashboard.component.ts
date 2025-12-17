@@ -84,11 +84,11 @@ export class AdminDashboardComponent implements OnInit {
 
   masterDataSections: MasterDataSection[] = [
     {
-      id: 'users',
-      title: 'Benutzer & Rollen',
-      description: 'Wer darf freigeben?',
-      icon: 'group',
-      route: '/admin/users'
+      id: 'suppliers',
+      title: 'Lieferanten-Verwaltung',
+      description: 'Stammdaten und Kategorien',
+      icon: 'business',
+      route: '/admin/suppliers'
     },
     {
       id: 'costcenters',
@@ -98,6 +98,27 @@ export class AdminDashboardComponent implements OnInit {
       route: '/admin/cost-centers'
     },
     {
+      id: 'projects',
+      title: 'Projekte',
+      description: 'Auswahllisten pflegen',
+      icon: 'account_tree',
+      route: '/admin/projects'
+    },
+    {
+      id: 'invoices',
+      title: 'Rechnungen',
+      description: 'Alle Rechnungen verwalten',
+      icon: 'receipt',
+      route: '/admin/invoices'
+    },
+    {
+      id: 'users',
+      title: 'Benutzer & Rollen',
+      description: 'Wer darf freigeben?',
+      icon: 'group',
+      route: '/admin/users'
+    },
+    {
       id: 'escalation',
       title: 'Eskalations-Einstellungen',
       description: 'Wann gehen E-Mails raus?',
@@ -105,12 +126,12 @@ export class AdminDashboardComponent implements OnInit {
       route: '/admin/escalation'
     },
     {
-      id: 'suppliers',
-      title: 'Lieferanten-Verwaltung',
-      description: 'Stammdaten und Kategorien',
-      icon: 'business',
-      route: '/admin/suppliers'
-    }
+      id: 'approval-rules',
+      title: 'Regel-Einstellungen',
+      description: 'Regeln für automatische Freigabe und Workflows',
+      icon: 'schedule',
+      route: '/admin/approval_workflows'
+    },
   ];
 
   constructor(

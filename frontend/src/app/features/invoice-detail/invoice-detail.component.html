@@ -26,22 +26,37 @@
           <mat-card-title>PDF VORSCHAU DER RECHNUNG</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <div class="pdf-mock">
-            <div class="pdf-header">
-              <strong>{{ invoice.supplier.name }} GmbH</strong>
-              <div>Rechnung</div>
-            </div>
-            <div class="pdf-content">
-              <p><strong>Betrag: {{ invoice.totalAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</strong></p>
-              <p>Rechnungsnummer: {{ invoice.invoiceNumber }}</p>
-              <p>Datum: 01.12.2023</p>
-              <p>Fälligkeitsdatum: 15.12.2023</p>
-              <div class="pdf-spacer"></div>
-              <p>Positionen:</p>
-              <p>• Webentwicklung - 40 Stunden</p>
-              <p>• Design - 20 Stunden</p>
-              <p>• Testing - 10 Stunden</p>
-            </div>
+          <!-- PDF Loader -->
+          <div *ngIf="pdfLoading" class="pdf-loader">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>PDF wird geladen...</p>
+          </div>
+
+          <!-- PDF Viewer mit ngx-extended-pdf-viewer -->
+          <div *ngIf="pdfSrc && !pdfLoading" class="pdf-viewer-wrapper">
+            <ngx-extended-pdf-viewer
+              [src]="pdfSrc"
+              [height]="'700px'"
+              [textLayer]="true"
+              [showHandToolButton]="true"
+              [showZoomButtons]="true"
+              [showPresentationModeButton]="false"
+              [showOpenFileButton]="false"
+              [showPrintButton]="true"
+              [showDownloadButton]="true"
+              [showSecondaryToolbarButton]="true"
+              [showRotateButton]="true"
+              [showSidebarButton]="true"
+              [mobileFriendlyZoom]="'150%'"
+              [zoom]="'page-width'"
+            ></ngx-extended-pdf-viewer>
+          </div>
+
+          <!-- Fallback wenn kein PDF vorhanden -->
+          <div *ngIf="!pdfSrc && !pdfLoading" class="pdf-placeholder">
+            <mat-icon>description</mat-icon>
+            <p>Keine PDF-Datei vorhanden</p>
+            <p class="hint">Nach dem Hochladen wird die PDF-Vorschau hier angezeigt</p>
           </div>
         </mat-card-content>
       </mat-card>
@@ -52,45 +67,177 @@
       <mat-card class="data-section">
         <mat-card-header>
           <mat-card-title>1. DATEN VERVOLLSTÄNDIGEN</mat-card-title>
-          <mat-card-subtitle>(Grüne Boxen im Diagramm)</mat-card-subtitle>
+          <mat-card-subtitle>(Bearbeiten Sie alle Rechnungsinformationen)</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Projekt</mat-label>
-            <mat-select [(ngModel)]="invoice.projectId">
-              <mat-option *ngFor="let project of projects" [value]="project.id">
-                {{ project.id }} — {{ project.name }}
-              </mat-option>
-              <mat-option *ngIf="projects.length === 0" [disabled]="true">Keine Projekte gefunden</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Kostenstelle</mat-label>
-            <mat-select [(ngModel)]="invoice.costCenterId" (selectionChange)="onCostCenterChange($event.value)">
-              <mat-option *ngFor="let center of costCenters" [value]="center.id">
-                {{ center.name }}
-              </mat-option>
-              <mat-option *ngIf="costCenters.length === 0" [disabled]="true">Kostenstellen werden geladen...</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Bestellung</mat-label>
-            <mat-select [(ngModel)]="invoice.purchaseOrderId">
-              <mat-option *ngFor="let po of purchaseOrders" [value]="po.id">
-                {{ po.id }} — {{ po.title }}
-              </mat-option>
-              <mat-option *ngIf="purchaseOrders.length === 0" [disabled]="true">Keine Bestellungen gefunden</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <div class="actions-row">
-            <button mat-stroked-button color="primary" (click)="saveData()" [disabled]="saving || loading">
-              <mat-icon>save</mat-icon>
-              Speichern
+          <div class="edit-mode-toggle">
+            <button mat-stroked-button *ngIf="!isEditMode" (click)="toggleEditMode()">
+              <mat-icon>edit</mat-icon>
+              Bearbeiten
             </button>
+            <div class="edit-mode-buttons" *ngIf="isEditMode">
+              <button mat-stroked-button color="warn" (click)="cancelEdit()">
+                <mat-icon>close</mat-icon>
+                Abbrechen
+              </button>
+              <button mat-raised-button color="primary" (click)="saveData()" [disabled]="saving || !editFormDirty">
+                <mat-icon>save</mat-icon>
+                Speichern
+              </button>
+            </div>
+          </div>
 
+          <div class="edit-form" *ngIf="isEditMode">
+            <!-- Rechnungskopf -->
+            <div class="form-section">
+              <h3>Rechnungsinformationen</h3>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Rechnungsnummer</mat-label>
+                <input matInput [(ngModel)]="invoice.invoiceNumber" (change)="onInvoiceFieldChange()" disabled>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Rechnungsdatum</mat-label>
+                <input matInput type="date" [(ngModel)]="invoice.invoiceDate" (change)="onInvoiceFieldChange()">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Fälligkeitsdatum</mat-label>
+                <input matInput type="date" [(ngModel)]="invoice.dueDate" (change)="onInvoiceFieldChange()">
+              </mat-form-field>
+            </div>
+
+            <!-- Beträge -->
+            <div class="form-section">
+              <h3>Beträge</h3>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Nettobetrag</mat-label>
+                <input matInput type="number" [(ngModel)]="invoice.netAmount" (change)="onInvoiceFieldChange()" step="0.01">
+                <mat-hint>EUR</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Steuerbetrag</mat-label>
+                <input matInput type="number" [(ngModel)]="invoice.taxAmount" (change)="onInvoiceFieldChange()" step="0.01">
+                <mat-hint>EUR</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Gesamtbetrag</mat-label>
+                <input matInput type="number" [(ngModel)]="invoice.totalAmount" (change)="onInvoiceFieldChange()" step="0.01">
+                <mat-hint>EUR</mat-hint>
+              </mat-form-field>
+            </div>
+
+            <!-- Zuordnungen -->
+            <div class="form-section">
+              <h3>Zuordnungen</h3>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Kostenstelle</mat-label>
+                <mat-select [(ngModel)]="invoice.costCenterId" (selectionChange)="onCostCenterChange($event.value); onInvoiceFieldChange()">
+                  <mat-option *ngFor="let center of costCenters" [value]="center.id">
+                    {{ center.id }} — {{ center.name }}
+                  </mat-option>
+                  <mat-option *ngIf="costCenters.length === 0" [disabled]="true">Kostenstellen werden geladen...</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Projekt</mat-label>
+                <mat-select [(ngModel)]="invoice.projectId" (change)="onInvoiceFieldChange()">
+                  <mat-option *ngFor="let project of projects" [value]="project.id">
+                    {{ project.id }} — {{ project.name }}
+                  </mat-option>
+                  <mat-option *ngIf="projects.length === 0" [disabled]="true">Keine Projekte gefunden</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Bestellung</mat-label>
+                <mat-select [(ngModel)]="invoice.purchaseOrderId" (change)="onInvoiceFieldChange()">
+                  <mat-option *ngFor="let po of purchaseOrders" [value]="po.id">
+                    {{ po.id }} — {{ po.title }}
+                  </mat-option>
+                  <mat-option *ngIf="purchaseOrders.length === 0" [disabled]="true">Keine Bestellungen gefunden</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Notizen & Beschreibung -->
+            <div class="form-section">
+              <h3>Notizen & Beschreibung</h3>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Beschreibung</mat-label>
+                <textarea matInput [(ngModel)]="invoice.description" (change)="onInvoiceFieldChange()" rows="3" placeholder="Rechnungsbeschreibung..."></textarea>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Interne Notizen</mat-label>
+                <textarea matInput [(ngModel)]="invoice.internalNotes" (change)="onInvoiceFieldChange()" rows="3" placeholder="Interne Anmerkungen..."></textarea>
+              </mat-form-field>
+            </div>
+
+            <!-- Optionen -->
+            <div class="form-section">
+              <h3>Optionen</h3>
+              <mat-checkbox [(ngModel)]="invoice.requiresApproval" (change)="onInvoiceFieldChange()">
+                Freigabe erforderlich
+              </mat-checkbox>
+            </div>
+          </div>
+
+          <!-- Zusammenfassung View (nicht im Edit-Modus) -->
+          <div class="view-mode" *ngIf="!isEditMode">
+            <div class="info-grid">
+              <div class="info-item">
+                <strong>Rechnungsnummer:</strong>
+                <span>{{ invoice.invoiceNumber }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Datum:</strong>
+                <span>{{ invoice.invoiceDate }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Fällig:</strong>
+                <span>{{ invoice.dueDate }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Nettobtrag:</strong>
+                <span>{{ invoice.netAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Steuer:</strong>
+                <span>{{ invoice.taxAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Gesamt:</strong>
+                <span><strong>{{ invoice.totalAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</strong></span>
+              </div>
+              <div class="info-item">
+                <strong>Kostenstelle:</strong>
+                <span>{{ invoice.costCenterId }} — {{ invoice.costCenterName }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Projekt:</strong>
+                <span>{{ invoice.projectId }} — {{ invoice.projectName }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Bestellung:</strong>
+                <span>{{ invoice.purchaseOrderId || '—' }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Beschreibung:</strong>
+                <span>{{ invoice.description || '—' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Save Status -->
+          <div class="actions-row" *ngIf="!isEditMode">
             <div class="save-status" *ngIf="saveStatus === 'success'">
               <mat-icon color="primary">check_circle</mat-icon>
               <span>{{ saveMessage }}<ng-container *ngIf="lastSavedAt"> ({{ lastSavedAt | date:'shortTime' }})</ng-container></span>

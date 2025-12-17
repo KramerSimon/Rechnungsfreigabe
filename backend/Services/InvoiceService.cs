@@ -342,16 +342,35 @@ public class InvoiceService : IInvoiceService
     {
         try
         {
-            var invoice = await _context.Invoices.FindAsync(id);
+            var invoice = await _context.Invoices
+                .Include(i => i.ApprovalWorkflows)
+                .Include(i => i.InvoiceHistories)
+                .Include(i => i.Notifications)
+                .FirstOrDefaultAsync(i => i.Id == id);
+            
             if (invoice == null) return false;
 
-            // Soft delete - change status to cancelled
-            invoice.Status = InvoiceStatus.Storniert;
-            invoice.UpdatedAt = DateTime.UtcNow;
+            // Hard delete - remove all related entities first
+            if (invoice.ApprovalWorkflows != null && invoice.ApprovalWorkflows.Any())
+            {
+                _context.ApprovalWorkflows.RemoveRange(invoice.ApprovalWorkflows);
+            }
 
+            if (invoice.InvoiceHistories != null && invoice.InvoiceHistories.Any())
+            {
+                _context.InvoiceHistories.RemoveRange(invoice.InvoiceHistories);
+            }
+
+            if (invoice.Notifications != null && invoice.Notifications.Any())
+            {
+                _context.Notifications.RemoveRange(invoice.Notifications);
+            }
+
+            // Finally delete the invoice itself
+            _context.Invoices.Remove(invoice);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Invoice soft deleted: {InvoiceId}", id);
+            _logger.LogInformation("Invoice hard deleted: {InvoiceId}", id);
             return true;
         }
         catch (Exception ex)

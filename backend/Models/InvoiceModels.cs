@@ -200,6 +200,9 @@ public class Invoice
     [Column("pdf_file_size")]
     public long? PdfFileSize { get; set; }
 
+    [Column("pdf_content")]
+    public byte[]? PdfContent { get; set; }
+
     [StringLength(255)]
     [Column("original_filename")]
     public string? OriginalFilename { get; set; }

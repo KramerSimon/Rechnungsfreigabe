@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.Services;
 using RechnungsfreigabeAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using RechnungsfreigabeAPI.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace RechnungsfreigabeAPI.Controllers;
 
@@ -12,13 +14,16 @@ public class PdfUploadController : ControllerBase
 {
     private readonly IPdfUploadService _pdfUploadService;
     private readonly ILogger<PdfUploadController> _logger;
+    private readonly ApplicationDbContext _context;
 
     public PdfUploadController(
         IPdfUploadService pdfUploadService,
-        ILogger<PdfUploadController> logger)
+        ILogger<PdfUploadController> logger,
+        ApplicationDbContext context)
     {
         _pdfUploadService = pdfUploadService;
         _logger = logger;
+        _context = context;
     }
 
     /// <summary>
@@ -72,25 +77,86 @@ public class PdfUploadController : ControllerBase
     }
 
     /// <summary>
-    /// Download an invoice PDF by invoice ID
+    /// Download a PDF by invoice ID (from database)
     /// </summary>
     [HttpGet("download/{invoiceId}")]
+    [AllowAnonymous]
     public async Task<IActionResult> DownloadInvoicePdf(int invoiceId)
     {
         try
         {
-            var pdfBytes = await _pdfUploadService.GetInvoicePdfAsync(invoiceId);
-            return File(pdfBytes, "application/pdf", $"invoice_{invoiceId}.pdf");
-        }
-        catch (FileNotFoundException ex)
-        {
-            _logger.LogWarning(ex, $"PDF not found for invoice {invoiceId}");
-            return NotFound(new { message = ex.Message });
+            var invoice = await _context.Invoices.FindAsync(invoiceId);
+            if (invoice == null)
+            {
+                return NotFound(new { message = "Invoice not found" });
+            }
+
+            // Wenn PDF in Datenbank gespeichert ist, von dort servieren
+            if (invoice.PdfContent != null && invoice.PdfContent.Length > 0)
+            {
+                var fileName = invoice.OriginalFilename ?? $"invoice_{invoiceId}.pdf";
+                _logger.LogInformation($"Serving PDF from database for invoice {invoiceId}, size: {invoice.PdfContent.Length} bytes");
+                return File(invoice.PdfContent, "application/pdf", fileName);
+            }
+
+            // Fallback: Versuche PDF vom Dateisystem zu laden (für alte Rechnungen)
+            if (!string.IsNullOrEmpty(invoice.PdfFilePath))
+            {
+                var filePath = invoice.PdfFilePath;
+                
+                // Prüfe ob absoluter Pfad oder nur Dateiname
+                if (!Path.IsPathRooted(filePath))
+                {
+                    filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "invoices", filePath);
+                }
+
+                if (System.IO.File.Exists(filePath))
+                {
+                    var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                    var fileName = invoice.OriginalFilename ?? Path.GetFileName(filePath);
+                    _logger.LogInformation($"Serving PDF from filesystem for invoice {invoiceId} (legacy): {filePath}");
+                    return File(fileBytes, "application/pdf", fileName);
+                }
+            }
+
+            return NotFound(new { message = "PDF not found in database or filesystem" });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error downloading PDF for invoice {invoiceId}");
-            return StatusCode(500, new { message = "An error occurred while downloading the file" });
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Download a PDF by file path (legacy support - reads from database)
+    /// </summary>
+    [HttpGet("download")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DownloadByPath([FromQuery] string path)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(path))
+                return BadRequest(new { message = "Path is required" });
+
+            // Versuche PDF von Datenbank basierend auf Dateiname zu finden
+            var invoice = await _context.Invoices
+                .FirstOrDefaultAsync(i => i.OriginalFilename == path || i.PdfFilePath == path);
+
+            if (invoice?.PdfContent == null)
+            {
+                return NotFound(new { message = "PDF not found" });
+            }
+
+            var fileName = invoice.OriginalFilename ?? "invoice.pdf";
+            _logger.LogInformation($"Serving PDF from database, size: {invoice.PdfContent.Length} bytes");
+            return File(invoice.PdfContent, "application/pdf", fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error downloading PDF by path");
+            return StatusCode(500, new { message = ex.Message });
         }
     }
 
@@ -199,7 +265,15 @@ public class PdfUploadController : ControllerBase
     {
         // Extrahiere User ID aus dem JWT Token
         var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid");
-        return userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
+        
+        if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId) && userId > 0)
+        {
+            return userId;
+        }
+        
+        // Fallback to user ID 1 (default admin) when auth is disabled for testing
+        _logger.LogWarning("No valid user ID found in token, using default user ID 1");
+        return 1;
     }
 }
 

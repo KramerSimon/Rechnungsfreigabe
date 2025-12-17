@@ -11,6 +11,10 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatTabsModule } from '@angular/material/tabs';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 import { InvoiceHistoryTimelineComponent } from '../invoice-history/invoice-history-timeline.component';
 import { InvoiceService, PagedResult } from '../../core/services/invoice.service';
 import { Invoice, InvoiceDetail } from '../../core/models';
@@ -36,6 +40,9 @@ import { PurchaseOrder } from '../../core/models/purchaseOrder.model';
     MatTabsModule,
     FormsModule,
     MatSnackBarModule,
+    MatCheckboxModule,
+    MatProgressSpinnerModule,
+    NgxExtendedPdfViewerModule,
     InvoiceHistoryTimelineComponent
   ],
   templateUrl: './invoice-detail.component.html',
@@ -45,6 +52,12 @@ export class InvoiceDetailComponent implements OnInit {
   invoiceId: number = 0;
   invoiceNumber: string = '';
   loading = false;
+  isEditMode = false;
+  editFormDirty = false;
+  pdfLoading = false;
+  pdfUrl: SafeResourceUrl | null = null;
+  pdfBlobUrl: string | null = null;
+  pdfSrc: Uint8Array | null = null;
 
   invoice: InvoiceDetail = {
     id: 1, // This would come from route parameters in real implementation
@@ -89,12 +102,11 @@ export class InvoiceDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private invoiceService: InvoiceService,
-    private authService: AuthService,
     private costCenterService: CostCenterService,
-    private purchaseOrderService: PurchaseOrderService
+    private purchaseOrderService: PurchaseOrderService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit() {
@@ -111,39 +123,56 @@ export class InvoiceDetailComponent implements OnInit {
         this.loading = false;
         this.loadProjects(this.invoice.costCenterId);
         this.loadPurchaseOrders();
+        this.loadPdf();
       },
       error: (error) => {
         console.error('Error loading invoice:', error);
         this.loading = false;
-        // Fallback zu Demo-Daten wenn API fehlt
-        this.invoice = {
-          id: this.invoiceId,
-          invoiceNumber: 'MS-2024-001',
-          supplier: { id: 1, name: 'Microsoft Deutschland', legal_name: 'Microsoft Deutschland GmbH' },
-          totalAmount: 1000,
-          netAmount: 840.34,
-          taxAmount: 159.66,
-          currency: 'EUR',
-          invoiceDate: '2024-01-15',
-          dueDate: '2024-02-15',
-          receivedDate: '2024-01-16',
-          status: 'Freigabe_Erforderlich',
-          costCenterId: 'IT',
-          requiresApproval: true,
-          approvalLevel: 1,
-          autoApproved: false,
-          createdAt: '2024-01-16T08:00:00Z',
-          updatedAt: '2024-01-16T08:00:00Z',
-          isOverdue: false,
-          daysOverdue: 0,
-          attachments: [],
-          approvalHistory: [],
-          comments: []
-        };
-        this.loadProjects(this.invoice.costCenterId);
-        this.loadPurchaseOrders();
       }
     });
+  }
+
+  private loadPdf(): void {
+    this.pdfLoading = true;
+
+    // Lade PDF als Blob und konvertiere zu Uint8Array für ngx-extended-pdf-viewer
+    this.invoiceService.downloadInvoicePdf(this.invoice.id).subscribe({
+      next: async (blob) => {
+        // Konvertiere Blob zu ArrayBuffer und dann zu Uint8Array
+        const arrayBuffer = await blob.arrayBuffer();
+        this.pdfSrc = new Uint8Array(arrayBuffer);
+
+        // Erstelle auch Blob URL für Fallback-Buttons
+        this.pdfBlobUrl = URL.createObjectURL(blob);
+
+        this.pdfLoading = false;
+        console.log('PDF successfully loaded, size:', this.pdfSrc.length, 'bytes');
+      },
+      error: (error) => {
+        console.error('Error loading PDF:', error);
+        this.pdfSrc = null;
+        this.pdfBlobUrl = null;
+        this.pdfLoading = false;
+        this.snackBar.open('PDF konnte nicht geladen werden', 'Schließen', {
+          duration: 3000
+        });
+      }
+    });
+  }
+
+  openPdfInNewTab(): void {
+    if (this.pdfBlobUrl) {
+      window.open(this.pdfBlobUrl, '_blank');
+    }
+  }
+
+  downloadPdf(): void {
+    if (this.pdfBlobUrl) {
+      const link = document.createElement('a');
+      link.href = this.pdfBlobUrl;
+      link.download = `${this.invoice.invoiceNumber}.pdf`;
+      link.click();
+    }
   }
 
   private loadCostCenters() {
@@ -242,12 +271,15 @@ export class InvoiceDetailComponent implements OnInit {
       projectId: this.invoice.projectId?.trim() || undefined,
       costCenterId: this.invoice.costCenterId || undefined,
       purchaseOrderId: this.invoice.purchaseOrderId || undefined,
+      netAmount: this.invoice.netAmount || undefined,
+      taxAmount: this.invoice.taxAmount || undefined,
+      totalAmount: this.invoice.totalAmount || undefined,
+      invoiceDate: this.invoice.invoiceDate || undefined,
+      dueDate: this.invoice.dueDate || undefined,
       description: this.invoice.description || undefined,
-      internalNotes: this.invoice.internalNotes || undefined
+      internalNotes: this.invoice.internalNotes || undefined,
+      requiresApproval: this.invoice.requiresApproval
     };
-
-    // Debug-Ausgabe zur Kontrolle, was gesendet wird
-    console.log('Saving invoice payload', payload);
 
     this.invoiceService.updateInvoice(this.invoice.id, payload).subscribe({
       next: (updated) => {
@@ -260,6 +292,8 @@ export class InvoiceDetailComponent implements OnInit {
         this.lastSavedAt = new Date();
         this.saveMessage = `Daten gespeichert (Projekt: ${this.invoice.projectId || '—'})`;
         this.snackBar.open('Daten gespeichert', 'OK', { duration: 3000 });
+        this.isEditMode = false;
+        this.editFormDirty = false;
 
         // Direkt nachladen, um gespeicherte Werte aus dem Backend zu holen
         this.loadInvoice();
@@ -272,6 +306,23 @@ export class InvoiceDetailComponent implements OnInit {
         this.snackBar.open(this.saveMessage, 'OK', { duration: 4000 });
       }
     });
+  }
+
+  toggleEditMode() {
+    this.isEditMode = !this.isEditMode;
+    this.editFormDirty = false;
+    this.saveStatus = null;
+  }
+
+  cancelEdit() {
+    this.isEditMode = false;
+    this.editFormDirty = false;
+    this.loadInvoice();
+  }
+
+  onInvoiceFieldChange() {
+    this.editFormDirty = true;
+    this.saveStatus = null;
   }
 
   private getErrorMessage(error: any): string {

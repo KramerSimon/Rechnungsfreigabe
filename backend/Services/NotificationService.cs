@@ -15,6 +15,7 @@ public interface INotificationService
     Task NotifyInvoiceCreatedAsync(int invoiceId);
     Task NotifyInvoiceApprovalAsync(int invoiceId, bool approved);
     Task NotifyOverdueInvoicesAsync();
+    Task NotifyApprovalStatusAsync(int invoiceId, string status);
 }
 
 public class NotificationService : INotificationService
@@ -32,7 +33,7 @@ public class NotificationService : INotificationService
     {
         var query = _context.Notifications
             .Include(n => n.Invoice)
-            .ThenInclude(i => i.Supplier)
+            .ThenInclude(i => i!.Supplier)
             .Where(n => n.UserId == userId);
 
         if (unreadOnly)
@@ -76,7 +77,7 @@ public class NotificationService : INotificationService
             // Reload with invoice details
             var createdNotification = await _context.Notifications
                 .Include(n => n.Invoice)
-                .ThenInclude(i => i.Supplier)
+                .ThenInclude(i => i!.Supplier)
                 .FirstAsync(n => n.Id == notification.Id);
 
             _logger.LogInformation("Notification created for user {UserId}: {Title}", userId, title);
@@ -331,5 +332,38 @@ public class NotificationService : INotificationService
                 }
             } : null
         };
+    }
+
+    public async Task NotifyApprovalStatusAsync(int invoiceId, string status)
+    {
+        try
+        {
+            var invoice = await _context.Invoices
+                .Include(i => i.Creator)
+                .Include(i => i.Supplier)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+            if (invoice == null) return;
+
+            var title = status == "approved" ? "Rechnung genehmigt" : "Rechnung abgelehnt";
+            var message = $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier?.Name ?? "Supplier"} wurde {(status == "approved" ? "genehmigt" : "abgelehnt")}";
+            var priority = status == "approved" ? NotificationPriority.Normal : NotificationPriority.High;
+
+            if (invoice.CreatedBy.HasValue)
+            {
+                await CreateNotificationAsync(
+                    invoice.CreatedBy.Value,
+                    status == "approved" ? "approval_status" : "rejection_status",
+                    title,
+                    message,
+                    invoiceId,
+                    priority
+                );
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error notifying approval status for invoice: {InvoiceId}", invoiceId);
+        }
     }
 }

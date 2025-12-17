@@ -22,6 +22,8 @@ export interface Invoice {
   requiresApproval: boolean;
   approvalLevel: number;
   autoApproved: boolean;
+  pdfFilePath?: string;
+  pdfFileName?: string;
   description?: string;
   internalNotes?: string;
   creator?: User;

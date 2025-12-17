@@ -183,12 +183,21 @@ mat-card {
   100% { transform: rotate(360deg); }
 }
 
-::ng-deep {
-  .mat-mdc-tab-labels {
-    justify-content: flex-start;
+.section {
+  margin-bottom: 32px;
+
+  h3 {
+    margin-bottom: 16px;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
   }
 
-  .mat-mdc-tab {
-    min-width: 160px;
+  mat-card {
+    margin-top: 8px;
   }
+}
+
+.mat-mdc-tab {
+  min-width: 160px;
 }

@@ -1,4 +1,4 @@
-import { CostCenterService } from './../../core/services/cost-center.service';
+import { CostCenterService } from '../../../../core/services/cost-center.service';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,16 +14,16 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterModule } from '@angular/router';
-import { RuleDialogComponent } from './rule-dialog.component';
-import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData } from '../../core/models';
-import { ProjectService } from '../../core/services/project.service';
-import { CostCenter } from '../../core/models/cost-center.model';
-import { Project } from '../../core/models/project.model';
+import { RuleDialogComponent } from './rule-dialog/rule-dialog.component';
+import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData } from '../../../../core/models';
+import { ProjectService } from '../../../../core/services/project.service';
+import { CostCenter } from '../../../../core/models/cost-center.model';
+import { Project } from '../../../../core/models/project.model';
 
 export type { ApprovalRule, RuleCondition, RuleAction };
 
 @Component({
-  selector: 'app-admin-rules',
+  selector: 'app-rule-dashboard',
   standalone: true,
   imports: [
     CommonModule,
@@ -41,10 +41,10 @@ export type { ApprovalRule, RuleCondition, RuleAction };
     MatTabsModule,
     RouterModule
   ],
-  templateUrl: './admin-rules.component.html',
-  styleUrls: ['./admin-rules.component.scss']
+  templateUrl: './rule-dashboard.component.html',
+  styleUrls: ['./rule-dashboard.component.scss']
 })
-export class AdminRulesComponent implements OnInit {
+export class RuleDashboardComponent implements OnInit {
   activeTab = 0;
 
   // Freigabe-Regeln
@@ -211,32 +211,6 @@ export class AdminRulesComponent implements OnInit {
 
   onToggleRule(rule: ApprovalRule) {
     rule.isActive = !rule.isActive;
-  }
-
-  // Kostenstellen-Management
-  onAddCostCenter() {
-    if (this.newCostCenter.id && this.newCostCenter.name) {
-      this.costCenterService.addCostCenter(this.newCostCenter as CostCenter).subscribe(() => {});
-    }
-  }
-
-  onDeleteCostCenter(id: string) {
-    if (confirm('Kostenstelle wirklich löschen?')) {
-      this.costCenterService.deleteCostCenter(id).subscribe(() => {});
-    }
-  }
-
-  // Projekt-Management
-  onAddProject() {
-    if (this.newProject.id && this.newProject.name && this.newProject.costCenter) {
-      this.projectService.addProject(this.newProject as Project).subscribe(() => {});
-    }
-  }
-
-  onDeleteProject(id: string) {
-    if (confirm('Projekt wirklich löschen?')) {
-      this.projectService.deleteProject(id).subscribe(() => {});
-    }
   }
 
   // Hilfsfunktionen
