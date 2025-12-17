@@ -7,7 +7,6 @@ namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class SuppliersController : ControllerBase
 {
     private readonly ISupplierService _supplierService;
@@ -23,6 +22,7 @@ public class SuppliersController : ControllerBase
     /// Get all suppliers
     /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<SupplierDto>>> GetSuppliers()
     {
         try
@@ -41,6 +41,7 @@ public class SuppliersController : ControllerBase
     /// Get suppliers with pagination
     /// </summary>
     [HttpGet("paged")]
+    [AllowAnonymous]
     public async Task<ActionResult<PagedResult<SupplierDto>>> GetSuppliersPaged([FromQuery] PageRequest pageRequest)
     {
         try
@@ -59,6 +60,7 @@ public class SuppliersController : ControllerBase
     /// Get supplier by ID
     /// </summary>
     [HttpGet("{id}")]
+    [AllowAnonymous]
     public async Task<ActionResult<SupplierDto>> GetSupplier(int id)
     {
         try

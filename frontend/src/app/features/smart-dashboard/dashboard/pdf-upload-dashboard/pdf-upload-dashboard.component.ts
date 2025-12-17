@@ -72,7 +72,7 @@ export class PdfUploadDashboardComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {
     this.uploadForm = this.fb.group({
-      supplierId: ['', Validators.required],
+      supplierId: [''],  // Optional - wird aus PDF extrahiert wenn nicht angegeben
       costCenterId: [''],
       purchaseOrderId: ['']
     });
@@ -169,14 +169,17 @@ export class PdfUploadDashboardComponent implements OnInit {
   }
 
   uploadFiles() {
-    if (this.selectedFiles.length === 0 || !this.uploadForm.valid) {
+    if (this.selectedFiles.length === 0) {
       return;
     }
 
     this.isUploading = true;
-    const supplierId = this.uploadForm.get('supplierId')?.value;
-    const costCenterId = this.uploadForm.get('costCenterId')?.value;
-    const purchaseOrderId = this.uploadForm.get('purchaseOrderId')?.value;
+    const supplierIdValue = this.uploadForm.get('supplierId')?.value;
+    const supplierId = supplierIdValue && supplierIdValue !== '' ? Number(supplierIdValue) : undefined;
+    const costCenterIdValue = this.uploadForm.get('costCenterId')?.value;
+    const costCenterId = costCenterIdValue && costCenterIdValue !== '' ? costCenterIdValue : undefined;
+    const purchaseOrderIdValue = this.uploadForm.get('purchaseOrderId')?.value;
+    const purchaseOrderId = purchaseOrderIdValue && purchaseOrderIdValue !== '' ? purchaseOrderIdValue : undefined;
 
     this.pdfUploadService.bulkUploadInvoicePdfs(
       this.selectedFiles,

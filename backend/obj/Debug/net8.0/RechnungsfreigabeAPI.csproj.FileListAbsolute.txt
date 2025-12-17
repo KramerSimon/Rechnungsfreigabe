@@ -1,5 +1,4 @@
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.csproj.AssemblyReference.cache
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\rpswa.dswa.cache.json
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.AssemblyInfoInputs.cache
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.AssemblyInfo.cs
@@ -23,7 +22,6 @@ C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\publish\publ
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\publish\publish\RechnungsfreigabeAPI.runtimeconfig.json
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\publish\RechnungsfreigabeAPI.deps.json
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\publish\RechnungsfreigabeAPI.runtimeconfig.json
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\RechnungsfreigabeAPI.staticwebassets.endpoints.json
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\RechnungsfreigabeAPI.exe
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\RechnungsfreigabeAPI.deps.json
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\RechnungsfreigabeAPI.runtimeconfig.json
@@ -144,17 +142,17 @@ C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\tr\Microsoft
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\rjimswa.dswa.cache.json
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\scopedcss\bundle\RechnungsfreigabeAPI.styles.css
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets.build.json
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets.build.json.cache
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets.development.json
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets.build.endpoints.json
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\Rechnung.1132EAC4.Up2Date
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.dll
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\refint\RechnungsfreigabeAPI.dll
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.pdb
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.genruntimeconfig.cache
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\ref\RechnungsfreigabeAPI.dll
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets\msbuild.RechnungsfreigabeAPI.Microsoft.AspNetCore.StaticWebAssets.props
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets\msbuild.build.RechnungsfreigabeAPI.props
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.RechnungsfreigabeAPI.props
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.RechnungsfreigabeAPI.props
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets.pack.json

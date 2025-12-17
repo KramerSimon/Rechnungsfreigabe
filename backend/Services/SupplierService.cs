@@ -29,7 +29,6 @@ public class SupplierService : ISupplierService
     public async Task<IEnumerable<SupplierDto>> GetAllSuppliersAsync()
     {
         var suppliers = await _context.Suppliers
-            .Where(s => s.IsActive)
             .OrderBy(s => s.Name)
             .ToListAsync();
 
@@ -124,13 +123,11 @@ public class SupplierService : ISupplierService
             var supplier = await _context.Suppliers.FindAsync(id);
             if (supplier == null) return false;
 
-            // Soft delete
-            supplier.IsActive = false;
-            supplier.UpdatedAt = DateTime.UtcNow;
-
+            // Hard delete - completely remove the supplier
+            _context.Suppliers.Remove(supplier);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Supplier soft deleted: {SupplierId}", id);
+            _logger.LogInformation("Supplier deleted permanently: {SupplierId}", id);
             return true;
         }
         catch (Exception ex)

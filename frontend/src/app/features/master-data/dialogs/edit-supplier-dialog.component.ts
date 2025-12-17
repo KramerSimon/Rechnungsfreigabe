@@ -102,6 +102,7 @@ interface Supplier {
               <mat-option value="Deutschland">Deutschland</mat-option>
               <mat-option value="Österreich">Österreich</mat-option>
               <mat-option value="Schweiz">Schweiz</mat-option>
+              <mat-option value="Italien">Italien</mat-option>
             </mat-select>
           </mat-form-field>
         </div>

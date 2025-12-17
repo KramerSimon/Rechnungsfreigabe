@@ -13,7 +13,7 @@ namespace RechnungsfreigabeAPI.Services;
 
 public interface IPdfUploadService
 {
-    Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int supplierId, string? purchaseOrderId, string? costCenterId, int userId);
+    Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int? supplierId, string? purchaseOrderId, string? costCenterId, int userId);
     Task<byte[]> GetInvoicePdfAsync(int invoiceId);
     Task<bool> DeleteInvoicePdfAsync(int invoiceId);
     Task<PdfUploadStatusDto> GetUploadStatusAsync();
@@ -46,19 +46,12 @@ public class PdfUploadService : IPdfUploadService
         }
     }
 
-    public async Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int supplierId, string? purchaseOrderId, string? costCenterId, int userId)
+    public async Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int? supplierId, string? purchaseOrderId, string? costCenterId, int userId)
     {
         try
         {
             // Validiere die Datei
             ValidateFile(file);
-
-            // Prüfe, ob Supplier existiert
-            var supplier = await _context.Suppliers.FindAsync(supplierId);
-            if (supplier == null)
-            {
-                throw new InvalidOperationException($"Supplier with ID {supplierId} not found");
-            }
 
             // Lies die PDF-Datei in den Speicher
             byte[] pdfContent;
@@ -80,14 +73,34 @@ public class PdfUploadService : IPdfUploadService
 
             var pdfData = ExtractInvoiceDataFromPdf(tempPath);
             
-            // Verwende extrahierte Daten oder Fallback-Werte
-            var invoiceNumber = pdfData.InvoiceNumber ?? ExtractInvoiceNumber(file.FileName) ?? $"INV-{DateTime.UtcNow:yyyyMMdd-HHmmss}";
+            // Generiere Rechnungsnummer im Format FAT-{Nummer}-{Jahr}
+            var invoiceNumber = await GenerateInvoiceNumberAsync();
+
+            // Finde oder erstelle Lieferant
+            int finalSupplierId;
+            if (supplierId.HasValue && supplierId.Value > 0)
+            {
+                // Verwende die übergebene SupplierId
+                var supplier = await _context.Suppliers.FindAsync(supplierId.Value);
+                if (supplier == null)
+                {
+                    throw new InvalidOperationException($"Supplier with ID {supplierId} not found");
+                }
+                finalSupplierId = supplierId.Value;
+                _logger.LogInformation($"Using provided supplier: {supplier.Name} (ID: {finalSupplierId})");
+            }
+            else
+            {
+                // Extrahiere und erstelle/finde Lieferant aus PDF
+                finalSupplierId = await FindOrCreateSupplierAsync(pdfData.SupplierInfo, tempPath);
+                _logger.LogInformation($"Found or created supplier from PDF (ID: {finalSupplierId})");
+            }
 
             // Erstelle Invoice-Eintrag in der Datenbank mit extrahierten Daten
             var createInvoiceDto = new CreateInvoiceDto
             {
                 InvoiceNumber = invoiceNumber,
-                SupplierId = supplierId,
+                SupplierId = finalSupplierId,
                 PurchaseOrderId = purchaseOrderId,
                 CostCenterId = costCenterId,
                 NetAmount = pdfData.NetAmount ?? 0,
@@ -255,6 +268,9 @@ public class PdfUploadService : IPdfUploadService
                 // Extrahiere Währung
                 extractedData.Currency = ExtractCurrency(text);
                 
+                // Extrahiere Lieferanteninformation
+                extractedData.SupplierInfo = ExtractSupplierInfo(text);
+                
                 // Erstelle Beschreibung aus ersten Zeilen
                 var lines = text.Split('\n').Take(5).Select(l => l.Trim()).Where(l => !string.IsNullOrEmpty(l));
                 extractedData.Description = string.Join(" | ", lines);
@@ -306,33 +322,68 @@ public class PdfUploadService : IPdfUploadService
         decimal? taxAmount = null;
         decimal? totalAmount = null;
 
-        // Deutsche und italienische Dezimaltrennzeichen berücksichtigen
-        var amountPattern = @"(\d{1,3}(?:[.,]\d{3})*[.,]\d{2})";
-        
-        // Suche nach Gesamtbetrag
-        var totalPatterns = new[]
-        {
-            @"(?:Gesamt|Total|Totale|Importo\s+totale|Betrag)[:\s]+€?\s*" + amountPattern,
-            @"(?:Summe|Sum|Somma)[:\s]+€?\s*" + amountPattern,
-            @"(?:Endbetrag|Rechnungsbetrag)[:\s]+€?\s*" + amountPattern
-        };
+        _logger.LogInformation($"=== Starting amount extraction ===\nText sample:\n{text.Substring(0, Math.Min(1500, text.Length))}");
 
-        foreach (var pattern in totalPatterns)
+        // Finde alle Beträge mit € Symbol
+        var allAmountsPattern = @"€\s*(\d+[.,]\d{2})";
+        var amountMatches = Regex.Matches(text, allAmountsPattern);
+        var foundAmounts = new List<(string text, decimal value)>();
+
+        foreach (Match match in amountMatches)
         {
-            var match = Regex.Match(text, pattern, RegexOptions.IgnoreCase);
-            if (match.Success && match.Groups.Count > 1)
+            if (match.Groups.Count > 1)
             {
-                totalAmount = ParseAmount(match.Groups[1].Value);
-                if (totalAmount.HasValue)
-                    break;
+                var amountStr = match.Groups[1].Value;
+                var parsedAmount = ParseAmount(amountStr);
+                if (parsedAmount.HasValue)
+                {
+                    foundAmounts.Add((amountStr, parsedAmount.Value));
+                    _logger.LogInformation($"Found amount with €: {amountStr} = {parsedAmount}");
+                }
+            }
+        }
+
+        // Wenn wir Beträge mit € gefunden haben
+        if (foundAmounts.Any())
+        {
+            // Der größte Betrag ist wahrscheinlich das Total
+            var maxAmount = foundAmounts.OrderByDescending(x => x.value).FirstOrDefault();
+            totalAmount = maxAmount.value;
+            _logger.LogInformation($"✓ Set total amount from € symbols: {totalAmount}");
+        }
+        else
+        {
+            // Fallback: Suche nach "Totale fattura:" Muster
+            var totalPatterns = new[]
+            {
+                @"Totale\s+fattura:\s*€?\s*(\d+[.,]\d{2})",
+                @"Totale\s+fattura:\s*€?\s*(\d+(?:[.,]\d{3})*[.,]\d{2})",
+                @"(?:Gesamt|Total|Totale|Importo\s+totale)[:\s]+€?\s*(\d+[.,]\d{2})",
+                @"(?:Summe|Sum|Somma)[:\s]+€?\s*(\d+[.,]\d{2})"
+            };
+
+            foreach (var pattern in totalPatterns)
+            {
+                var match = Regex.Match(text, pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                if (match.Success && match.Groups.Count > 1)
+                {
+                    var amountStr = match.Groups[1].Value.Trim();
+                    _logger.LogInformation($"Trying pattern: {pattern}\nFound: {amountStr}");
+                    totalAmount = ParseAmount(amountStr);
+                    if (totalAmount.HasValue)
+                    {
+                        _logger.LogInformation($"✓ Matched with pattern: {totalAmount}");
+                        break;
+                    }
+                }
             }
         }
 
         // Suche nach Nettobetrag
         var netPatterns = new[]
         {
-            @"(?:Netto|Net|Imponibile|Subtotal)[:\s]+€?\s*" + amountPattern,
-            @"(?:Zwischensumme)[:\s]+€?\s*" + amountPattern
+            @"(?:Netto|Net|Imponibile|Subtotal)[:\s]+€?\s*(\d+[.,]\d{2})",
+            @"(?:Zwischensumme)[:\s]+€?\s*(\d+[.,]\d{2})"
         };
 
         foreach (var pattern in netPatterns)
@@ -340,37 +391,73 @@ public class PdfUploadService : IPdfUploadService
             var match = Regex.Match(text, pattern, RegexOptions.IgnoreCase);
             if (match.Success && match.Groups.Count > 1)
             {
-                netAmount = ParseAmount(match.Groups[1].Value);
+                netAmount = ParseAmount(match.Groups[1].Value.Trim());
                 if (netAmount.HasValue)
+                {
+                    _logger.LogInformation($"✓ Found net amount: {netAmount}");
                     break;
+                }
             }
         }
 
-        // Suche nach MwSt/USt
-        var taxPatterns = new[]
+        // Suche nach Steuerbetrag oder Steuersatz
+        // Erst versuchen, den tatsächlichen Betrag zu finden
+        var taxAmountPatterns = new[]
         {
-            @"(?:MwSt|USt|VAT|IVA|Steuer)[:\s]+€?\s*" + amountPattern,
-            @"(?:\d{1,2}%\s*MwSt)[:\s]+€?\s*" + amountPattern
+            @"(?:IVA|MwSt|USt|VAT)[:\s]*€?\s*(\d+[.,]\d{2})",
+            @"€\s*(\d+[.,]\d{2})\s*(?:IVA|MwSt|USt|VAT)",
+            @"Steuer[:\s]+€?\s*(\d+[.,]\d{2})"
         };
 
-        foreach (var pattern in taxPatterns)
+        foreach (var pattern in taxAmountPatterns)
         {
             var match = Regex.Match(text, pattern, RegexOptions.IgnoreCase);
             if (match.Success && match.Groups.Count > 1)
             {
-                taxAmount = ParseAmount(match.Groups[1].Value);
-                if (taxAmount.HasValue)
+                var potentialTaxAmount = ParseAmount(match.Groups[1].Value.Trim());
+                if (potentialTaxAmount.HasValue)
+                {
+                    taxAmount = potentialTaxAmount;
+                    _logger.LogInformation($"✓ Found tax amount: {taxAmount}");
                     break;
+                }
             }
         }
 
-        // Wenn Gesamtbetrag gefunden wurde, aber nicht Netto und Steuer, versuche zu berechnen
-        if (totalAmount.HasValue && !netAmount.HasValue && !taxAmount.HasValue)
+        // Wenn nur Gesamtbetrag vorhanden, berechne Netto und Steuer
+        if (totalAmount.HasValue && (!netAmount.HasValue || !taxAmount.HasValue))
         {
-            // Annahme: 19% MwSt
-            netAmount = totalAmount.Value / 1.19m;
-            taxAmount = totalAmount.Value - netAmount.Value;
+            // Suche nach IVA-Prozentsatz
+            var ivaMatch = Regex.Match(text, @"IVA\s+(\d{1,2})\%", RegexOptions.IgnoreCase);
+            if (ivaMatch.Success && int.TryParse(ivaMatch.Groups[1].Value, out int ivaPct))
+            {
+                decimal factor = 1 + (ivaPct / 100m);
+                netAmount = totalAmount.Value / factor;
+                taxAmount = totalAmount.Value - netAmount.Value;
+                _logger.LogInformation($"Calculated from total with IVA {ivaPct}% - Net: {netAmount:F2}, Tax: {taxAmount:F2}");
+            }
+            else
+            {
+                // Suche nach MwSt-Prozentsatz
+                var mwstMatch = Regex.Match(text, @"(?:MwSt|USt)\s+(\d{1,2})\%", RegexOptions.IgnoreCase);
+                if (mwstMatch.Success && int.TryParse(mwstMatch.Groups[1].Value, out int mwstPct))
+                {
+                    decimal factor = 1 + (mwstPct / 100m);
+                    netAmount = totalAmount.Value / factor;
+                    taxAmount = totalAmount.Value - netAmount.Value;
+                    _logger.LogInformation($"Calculated from total with MwSt {mwstPct}% - Net: {netAmount:F2}, Tax: {taxAmount:F2}");
+                }
+                else
+                {
+                    // Fallback: Annahme 19% MwSt
+                    netAmount = totalAmount.Value / 1.19m;
+                    taxAmount = totalAmount.Value - netAmount.Value;
+                    _logger.LogInformation($"Calculated from total with default 19% - Net: {netAmount:F2}, Tax: {taxAmount:F2}");
+                }
+            }
         }
+
+        _logger.LogInformation($"=== Final amounts ===\nNet: {netAmount}, Tax: {taxAmount}, Total: {totalAmount}");
 
         return (netAmount, taxAmount, totalAmount);
     }
@@ -379,8 +466,17 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            // Entferne Währungssymbole
-            amountStr = Regex.Replace(amountStr, @"[€$£]", "").Trim();
+            _logger.LogInformation($"Parsing amount string: '{amountStr}'");
+            
+            if (string.IsNullOrWhiteSpace(amountStr))
+            {
+                _logger.LogWarning("Amount string is empty or whitespace");
+                return null;
+            }
+
+            // Entferne Währungssymbole und führende/nachfolgende Spaces
+            amountStr = Regex.Replace(amountStr, @"[€$£\s]", "").Trim();
+            _logger.LogInformation($"After removing currency: '{amountStr}'");
             
             // Bestimme, ob Punkt oder Komma als Dezimaltrennzeichen verwendet wird
             var lastComma = amountStr.LastIndexOf(',');
@@ -390,21 +486,28 @@ public class PdfUploadService : IPdfUploadService
             {
                 // Deutsches Format: 1.234,56
                 amountStr = amountStr.Replace(".", "").Replace(",", ".");
+                _logger.LogInformation($"German format detected: '{amountStr}'");
             }
-            else
+            else if (lastDot > lastComma && lastDot >= 0)
             {
-                // Englisches Format: 1,234.56
+                // Englisches Format: 1,234.56 oder 500.00
                 amountStr = amountStr.Replace(",", "");
+                _logger.LogInformation($"English format detected: '{amountStr}'");
             }
             
             if (decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal result))
             {
+                _logger.LogInformation($"✓ Successfully parsed to: {result}");
                 return result;
+            }
+            else
+            {
+                _logger.LogWarning($"Failed to parse as decimal: '{amountStr}'");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, $"Error parsing amount: {amountStr}");
+            _logger.LogWarning(ex, $"Exception parsing amount: {amountStr}");
         }
         
         return null;
@@ -536,6 +639,181 @@ public class PdfUploadService : IPdfUploadService
 
         return nameWithoutExtension.Replace(" ", "_");
     }
+
+    private async Task<string> GenerateInvoiceNumberAsync()
+    {
+        var currentYear = DateTime.UtcNow.Year;
+        
+        // Finde die höchste Nummer des aktuellen Jahres
+        var invoicesThisYear = await _context.Invoices
+            .Where(i => i.InvoiceNumber.EndsWith(currentYear.ToString()))
+            .Select(i => i.InvoiceNumber)
+            .ToListAsync();
+
+        int nextNumber = 1;
+        
+        if (invoicesThisYear.Any())
+        {
+            // Extrahiere die Nummer aus bestehenden Rechnungsnummern (Format: FAT-023-2025)
+            var numbers = invoicesThisYear
+                .Select(inv => 
+                {
+                    var parts = inv.Split('-');
+                    if (parts.Length >= 2 && int.TryParse(parts[1], out int num))
+                    {
+                        return num;
+                    }
+                    return 0;
+                })
+                .Where(n => n > 0)
+                .ToList();
+
+            if (numbers.Any())
+            {
+                nextNumber = numbers.Max() + 1;
+            }
+        }
+
+        // Generiere Rechnungsnummer im Format FAT-{Nummer mit führenden Nullen}-{Jahr}
+        return $"FAT-{nextNumber:D3}-{currentYear}";
+    }
+
+    private async Task<int> FindOrCreateSupplierAsync(SupplierInfo? supplierInfo, string tempPdfPath)
+    {
+        if (supplierInfo == null || string.IsNullOrWhiteSpace(supplierInfo.Name))
+        {
+            _logger.LogWarning("No supplier information found in PDF, using default supplier");
+            // Suche oder erstelle einen Standard-Lieferanten
+            var defaultSupplier = await _context.Suppliers.FirstOrDefaultAsync(s => s.Name == "Unbekannter Lieferant");
+            if (defaultSupplier == null)
+            {
+                defaultSupplier = new Supplier
+                {
+                    Name = "Unbekannter Lieferant",
+                    Country = "Deutschland"
+                };
+                _context.Suppliers.Add(defaultSupplier);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Created default supplier: {defaultSupplier.Name}");
+            }
+            return defaultSupplier.Id;
+        }
+
+        // Suche nach existierendem Lieferanten
+        var existingSupplier = await _context.Suppliers
+            .FirstOrDefaultAsync(s => 
+                s.Name.ToLower() == supplierInfo.Name.ToLower() ||
+                (supplierInfo.VatNumber != null && s.VatNumber == supplierInfo.VatNumber) ||
+                (supplierInfo.TaxNumber != null && s.TaxNumber == supplierInfo.TaxNumber));
+
+        if (existingSupplier != null)
+        {
+            _logger.LogInformation($"Found existing supplier: {existingSupplier.Name} (ID: {existingSupplier.Id})");
+            return existingSupplier.Id;
+        }
+
+        // Erstelle neuen Lieferanten
+        var newSupplier = new Supplier
+        {
+            Name = supplierInfo.Name,
+            LegalName = supplierInfo.LegalName ?? supplierInfo.Name,
+            VatNumber = supplierInfo.VatNumber,
+            TaxNumber = supplierInfo.TaxNumber,
+            AddressLine1 = supplierInfo.Address,
+            City = supplierInfo.City,
+            PostalCode = supplierInfo.PostalCode,
+            Country = supplierInfo.Country ?? "Italien"
+        };
+
+        _context.Suppliers.Add(newSupplier);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation($"✓ Created new supplier: {newSupplier.Name} (ID: {newSupplier.Id})");
+        return newSupplier.Id;
+    }
+
+    private SupplierInfo? ExtractSupplierInfo(string text)
+    {
+        var supplierInfo = new SupplierInfo();
+
+        _logger.LogInformation("=== Extracting supplier information ===");
+
+        // Suche nach Fornitore (Italienisch für Lieferant/Anbieter)
+        var fornitoPattern = @"Fornitore\s+(.*?)(?=\n|Cliente|P\.\s*IVA)";
+        var fornitoMatch = Regex.Match(text, fornitoPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (fornitoMatch.Success)
+        {
+            var fornitoText = fornitoMatch.Groups[1].Value.Trim();
+            var lines = fornitoText.Split('\n').Select(l => l.Trim()).Where(l => !string.IsNullOrEmpty(l)).ToArray();
+            
+            if (lines.Length > 0)
+            {
+                supplierInfo.Name = lines[0];
+                _logger.LogInformation($"Found supplier name (Fornitore): {supplierInfo.Name}");
+                
+                // Versuche Adresse zu finden
+                if (lines.Length > 1)
+                {
+                    supplierInfo.Address = lines[1];
+                }
+            }
+        }
+
+        // Fallback: Suche nach Name am Anfang des Dokuments (erste paar Zeilen nach "FATTURA")
+        if (string.IsNullOrWhiteSpace(supplierInfo.Name))
+        {
+            var namePattern = @"FATTURA\s+(?:Numero fattura:.*?\s+Data:.*?\s+Fornitore\s+)?([\w\s]+(?:SRL|SpA|GmbH|AG|Inc|LLC|Ltd))";
+            var nameMatch = Regex.Match(text, namePattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            if (nameMatch.Success)
+            {
+                supplierInfo.Name = nameMatch.Groups[1].Value.Trim();
+                _logger.LogInformation($"Found supplier name (after FATTURA): {supplierInfo.Name}");
+            }
+        }
+
+        // Suche nach P. IVA (Italienische Umsatzsteuer-ID)
+        var vatPattern = @"P\.\s*IVA:\s*([A-Z]{2}\d{11,15}|\d{11,15})";
+        var vatMatch = Regex.Match(text, vatPattern, RegexOptions.IgnoreCase);
+        if (vatMatch.Success)
+        {
+            supplierInfo.VatNumber = vatMatch.Groups[1].Value.Trim();
+            supplierInfo.TaxNumber = supplierInfo.VatNumber;
+            _logger.LogInformation($"Found VAT number: {supplierInfo.VatNumber}");
+        }
+
+        // Suche nach Adresse und PLZ/Stadt
+        var addressPattern = @"Via\s+([\w\s]+)\s+(\d+)";
+        var addressMatch = Regex.Match(text, addressPattern, RegexOptions.IgnoreCase);
+        if (addressMatch.Success)
+        {
+            supplierInfo.Address = $"Via {addressMatch.Groups[1].Value.Trim()} {addressMatch.Groups[2].Value}";
+            _logger.LogInformation($"Found address: {supplierInfo.Address}");
+        }
+
+        // Suche nach PLZ und Stadt (italienisches Format: 00100 Roma)
+        var cityPattern = @"(\d{5})\s+([A-Za-zàèéìòù]+(?:\s+\([A-Z]{2}\))?)";
+        var cityMatch = Regex.Match(text, cityPattern);
+        if (cityMatch.Success)
+        {
+            supplierInfo.PostalCode = cityMatch.Groups[1].Value;
+            supplierInfo.City = cityMatch.Groups[2].Value.Replace("(RM)", "").Replace("(MI)", "").Trim();
+            _logger.LogInformation($"Found postal code and city: {supplierInfo.PostalCode} {supplierInfo.City}");
+        }
+
+        // Bestimme Land basierend auf Indizien
+        if (!string.IsNullOrWhiteSpace(supplierInfo.VatNumber) || text.Contains("P. IVA") || text.Contains("Fattura"))
+        {
+            supplierInfo.Country = "Italien";
+        }
+        else if (text.Contains("MwSt") || text.Contains("USt"))
+        {
+            supplierInfo.Country = "Deutschland";
+        }
+
+        _logger.LogInformation($"=== Extracted supplier: {supplierInfo.Name ?? "(none)"}, VAT: {supplierInfo.VatNumber ?? "(none)"}, Country: {supplierInfo.Country ?? "(none)"} ===");
+
+        return string.IsNullOrWhiteSpace(supplierInfo.Name) ? null : supplierInfo;
+    }
 }
 
 // DTOs
@@ -559,4 +837,17 @@ public class ExtractedInvoiceData
     public DateTime? InvoiceDate { get; set; }
     public DateTime? DueDate { get; set; }
     public string? Description { get; set; }
+    public SupplierInfo? SupplierInfo { get; set; }
+}
+
+public class SupplierInfo
+{
+    public string? Name { get; set; }
+    public string? LegalName { get; set; }
+    public string? VatNumber { get; set; }
+    public string? TaxNumber { get; set; }
+    public string? Address { get; set; }
+    public string? PostalCode { get; set; }
+    public string? City { get; set; }
+    public string? Country { get; set; }
 }

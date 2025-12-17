@@ -42,16 +42,19 @@ export class PdfUploadService {
 
   /**
    * Upload a single PDF file
+   * If supplierId is not provided, it will be extracted from the PDF
    */
   uploadInvoicePdf(
     file: File,
-    supplierId: number,
+    supplierId?: number,
     purchaseOrderId?: string,
     costCenterId?: string
   ): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('supplierId', supplierId.toString());
+    if (supplierId) {
+      formData.append('supplierId', supplierId.toString());
+    }
     if (purchaseOrderId) {
       formData.append('purchaseOrderId', purchaseOrderId);
     }
@@ -64,10 +67,11 @@ export class PdfUploadService {
 
   /**
    * Upload multiple PDF files
+   * If supplierId is not provided, it will be extracted from each PDF
    */
   bulkUploadInvoicePdfs(
     files: File[],
-    supplierId: number,
+    supplierId?: number,
     purchaseOrderId?: string,
     costCenterId?: string
   ): Observable<BulkUploadResult> {
@@ -77,7 +81,9 @@ export class PdfUploadService {
       formData.append('files', file);
     });
 
-    formData.append('supplierId', supplierId.toString());
+    if (supplierId) {
+      formData.append('supplierId', supplierId.toString());
+    }
     if (purchaseOrderId) {
       formData.append('purchaseOrderId', purchaseOrderId);
     }

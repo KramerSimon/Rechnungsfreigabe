@@ -690,12 +690,12 @@ public class InvoiceService : IInvoiceService
         {
             Id = invoice.Id,
             InvoiceNumber = invoice.InvoiceNumber,
-            Supplier = new SupplierDto
+            Supplier = invoice.Supplier != null ? new SupplierDto
             {
                 Id = invoice.Supplier.Id,
                 Name = invoice.Supplier.Name,
                 Email = invoice.Supplier.Email
-            },
+            } : new SupplierDto { Id = 0, Name = "N/A" },
             PurchaseOrderId = invoice.PurchaseOrderId,
             CostCenterId = invoice.CostCenterId,
             CostCenterName = invoice.CostCenter?.Name,

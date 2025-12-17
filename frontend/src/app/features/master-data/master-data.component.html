@@ -242,7 +242,7 @@
 
             <ng-container matColumnDef="supplier">
               <th mat-header-cell *matHeaderCellDef>Lieferant</th>
-              <td mat-cell *matCellDef="let element">{{element.supplierName || element.supplierId}}</td>
+              <td mat-cell *matCellDef="let element">{{element.supplier.name }}</td>
             </ng-container>
 
             <ng-container matColumnDef="totalAmount">

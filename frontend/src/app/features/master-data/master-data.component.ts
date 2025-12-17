@@ -347,6 +347,7 @@ export class MasterDataComponent implements OnInit {
     this.loadingInvoices = true;
     this.invoiceService.getInvoices().subscribe({
       next: (data) => {
+        console.log('Loaded invoices:', data);
         this.invoices = data.items; // Use the array of invoices from the paged result
         this.loadingInvoices = false;
       },

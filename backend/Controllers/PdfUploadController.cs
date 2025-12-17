@@ -30,7 +30,7 @@ public class PdfUploadController : ControllerBase
     /// Upload an invoice PDF file
     /// </summary>
     /// <param name="file">The PDF file to upload</param>
-    /// <param name="supplierId">The supplier ID associated with this invoice</param>
+    /// <param name="supplierId">Optional: The supplier ID associated with this invoice (will be extracted from PDF if not provided)</param>
     /// <param name="purchaseOrderId">Optional: Purchase order ID</param>
     /// <param name="costCenterId">Optional: Cost center ID</param>
     /// <returns>The created invoice DTO</returns>
@@ -38,7 +38,7 @@ public class PdfUploadController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<InvoiceDto>> UploadInvoicePdf(
         [FromForm] IFormFile file,
-        [FromForm] int supplierId,
+        [FromForm] int? supplierId = null,
         [FromForm] string? purchaseOrderId = null,
         [FromForm] string? costCenterId = null)
     {
