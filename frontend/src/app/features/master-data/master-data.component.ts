@@ -41,6 +41,9 @@ import { InvoiceService } from '../../core/services/invoice.service';
 import { ApprovalService } from '../../core/services/approval.service';
 import { ApprovalRule, ApprovalWorkflow, CreateApprovalRuleDto, CreateApprovalWorkflowDto, UpdateApprovalWorkflowDto } from '../../core/models/approval.model';
 import { ApprovalWorkflowDialogComponent, ApprovalWorkflowDialogData } from './dialogs/approval-workflow-dialog.component';
+import { EscalationRule, CreateEscalationRuleDto } from '../../core/models/escalation-rule.model';
+import { EscalationRuleService } from '../../core/services/escalation-rule.service';
+import { EscalationRuleDialogComponent, EscalationRuleDialogData } from './dialogs/escalation-rule-dialog.component';
 
 @Component({
   selector: 'app-master-data',
@@ -76,6 +79,7 @@ export class MasterDataComponent implements OnInit {
   users: User[] = [];
   approvalRules: ApprovalRule[] = [];
   approvalWorkflows: ApprovalWorkflow[] = [];
+  escalationRules: EscalationRule[] = [];
 
   // Loading states
   loadingSuppliers = false;
@@ -86,6 +90,7 @@ export class MasterDataComponent implements OnInit {
   loadingUsers = false;
   loadingApprovalRules = false;
   loadingApprovalWorkflows = false;
+  loadingEscalationRules = false;
 
   // Tab management
   activeTab = 0;
@@ -97,6 +102,17 @@ export class MasterDataComponent implements OnInit {
     { id: 'users', label: 'Benutzer & Rollen', index: 4 },
     { id: 'escalation', label: 'Eskalations-Einstellungen', index: 5 },
     { id: 'approval_workflows', label: 'Genehmigungsworkflows', index: 6 },
+  ];
+
+  invoiceStatuses = [
+    'Eingegangen',
+    'In_Pruefung',
+    'Freigabe_Erforderlich',
+    'Freigegeben',
+    'Abgelehnt',
+    'Bezahlt',
+    'Ueberfaellig',
+    'Storniert'
   ];
 
   // Table columns
@@ -145,6 +161,17 @@ export class MasterDataComponent implements OnInit {
     'isActive',
     'actions',
   ];
+  escalationColumns = [
+    'id',
+    'name',
+    'triggerStatus',
+    'triggerAfterHours',
+    'repeatIntervalHours',
+    'maxEscalations',
+    'notify',
+    'isActive',
+    'actions',
+  ];
   approvalWorkflowColumns = [
     'id',
     'invoiceId',
@@ -165,7 +192,8 @@ export class MasterDataComponent implements OnInit {
     private purchaseOrderService: PurchaseOrderService,
     private invoiceService: InvoiceService,
     private userService: UserService,
-    private approvalService: ApprovalService
+    private approvalService: ApprovalService,
+    private escalationRuleService: EscalationRuleService
   ) {}
 
   ngOnInit(): void {
@@ -192,6 +220,7 @@ export class MasterDataComponent implements OnInit {
     this.loadUsers();
     this.loadApprovalRules();
     this.loadApprovalWorkflows();
+    this.loadEscalationRules();
   }
 
   // Suppliers
@@ -566,11 +595,93 @@ export class MasterDataComponent implements OnInit {
   }
 
   createEscalationRule(): void {
-    this.snackBar.open(
-      'Eskalations-Regeln werden in Kürze verfügbar sein',
-      'Schließen',
-      { duration: 3000 }
-    );
+    const dialogRef = this.dialog.open(EscalationRuleDialogComponent, {
+      width: '700px',
+      data: {
+        mode: 'create',
+        statuses: this.invoiceStatuses,
+      } as EscalationRuleDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: CreateEscalationRuleDto | undefined) => {
+      if (result) {
+        const payload: CreateEscalationRuleDto = {
+          ...result,
+          triggerAfterHours: Number(result.triggerAfterHours),
+          repeatIntervalHours: result.repeatIntervalHours ? Number(result.repeatIntervalHours) : null,
+          maxEscalations: result.maxEscalations !== undefined && result.maxEscalations !== null
+            ? Number(result.maxEscalations)
+            : null,
+          notifyUserId: result.notifyUserId ? Number(result.notifyUserId) : null,
+          isActive: result.isActive ?? true,
+        };
+
+        this.escalationRuleService.createRule(payload).subscribe({
+          next: () => {
+            this.snackBar.open('Eskalationsregel erstellt', 'Schließen', { duration: 3000 });
+            this.loadEscalationRules();
+          },
+          error: (error) => {
+            console.error('Error creating escalation rule:', error);
+            this.snackBar.open('Fehler beim Erstellen der Eskalationsregel', 'Schließen', { duration: 3000 });
+          },
+        });
+      }
+    });
+  }
+
+  editEscalationRule(rule: EscalationRule): void {
+    const dialogRef = this.dialog.open(EscalationRuleDialogComponent, {
+      width: '700px',
+      data: {
+        mode: 'edit',
+        statuses: this.invoiceStatuses,
+        rule,
+      } as EscalationRuleDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result: CreateEscalationRuleDto | undefined) => {
+      if (result) {
+        const payload: CreateEscalationRuleDto = {
+          ...result,
+          triggerAfterHours: Number(result.triggerAfterHours),
+          repeatIntervalHours: result.repeatIntervalHours ? Number(result.repeatIntervalHours) : null,
+          maxEscalations: result.maxEscalations !== undefined && result.maxEscalations !== null
+            ? Number(result.maxEscalations)
+            : null,
+          notifyUserId: result.notifyUserId ? Number(result.notifyUserId) : null,
+          isActive: result.isActive ?? rule.isActive,
+        };
+
+        this.escalationRuleService.updateRule(rule.id, payload).subscribe({
+          next: () => {
+            this.snackBar.open('Eskalationsregel aktualisiert', 'Schließen', { duration: 3000 });
+            this.loadEscalationRules();
+          },
+          error: (error) => {
+            console.error('Error updating escalation rule:', error);
+            this.snackBar.open('Fehler beim Aktualisieren der Eskalationsregel', 'Schließen', { duration: 3000 });
+          },
+        });
+      }
+    });
+  }
+
+  deleteEscalationRule(rule: EscalationRule): void {
+    if (!confirm(`Eskalationsregel "${rule.name}" deaktivieren?`)) {
+      return;
+    }
+
+    this.escalationRuleService.deleteRule(rule.id).subscribe({
+      next: () => {
+        this.snackBar.open('Eskalationsregel deaktiviert', 'Schließen', { duration: 3000 });
+        this.loadEscalationRules();
+      },
+      error: (error) => {
+        console.error('Error deleting escalation rule:', error);
+        this.snackBar.open('Fehler beim Deaktivieren der Eskalationsregel', 'Schließen', { duration: 3000 });
+      },
+    });
   }
 
   // Edit Methods
@@ -751,6 +862,21 @@ export class MasterDataComponent implements OnInit {
     });
   }
 
+  loadEscalationRules(): void {
+    this.loadingEscalationRules = true;
+    this.escalationRuleService.getRules().subscribe({
+      next: (rules) => {
+        this.escalationRules = rules;
+        this.loadingEscalationRules = false;
+      },
+      error: (error) => {
+        console.error('Error loading escalation rules:', error);
+        this.loadingEscalationRules = false;
+        this.snackBar.open('Fehler beim Laden der Eskalationsregeln', 'Schließen', { duration: 3000 });
+      },
+    });
+  }
+
   createApprovalRule(): void {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
       width: '800px',
@@ -880,9 +1006,15 @@ export class MasterDataComponent implements OnInit {
 
   deleteApprovalWorkflow(id: number): void {
     if (confirm('Möchten Sie diesen Genehmigungsworkflow wirklich löschen?')) {
-      // Note: Backend might not support direct deletion of workflows
-      this.snackBar.open('Workflows können nicht direkt gelöscht werden', 'Schließen', {
-        duration: 3000,
+      this.approvalService.deleteApprovalWorkflow(id).subscribe({
+        next: () => {
+          this.snackBar.open('Workflow gelöscht', 'Schließen', { duration: 3000 });
+          this.loadApprovalWorkflows();
+        },
+        error: (error) => {
+          console.error('Error deleting workflow:', error);
+          this.snackBar.open('Fehler beim Löschen des Workflows', 'Schließen', { duration: 3000 });
+        },
       });
     }
   }

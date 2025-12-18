@@ -25,12 +25,21 @@ public class InvoiceHistoryService : IInvoiceHistoryService
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<InvoiceHistoryService> _logger;
+    private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
 
-    public InvoiceHistoryService(ApplicationDbContext context, IMapper mapper, ILogger<InvoiceHistoryService> logger)
+    public InvoiceHistoryService(
+        ApplicationDbContext context,
+        IMapper mapper,
+        ILogger<InvoiceHistoryService> logger,
+        IEmailService emailService,
+        INotificationService notificationService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _emailService = emailService;
+        _notificationService = notificationService;
     }
 
     public async Task CreateHistoryEntryAsync(CreateHistoryEntryDto createHistoryDto)
@@ -120,6 +129,40 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             SystemReason = reason,
             ChangedBy = null // System escalation
         });
+
+        // Determine target user for notification/email
+        var invoice = await _context.Invoices
+            .Include(i => i.CostCenter)
+                .ThenInclude(cc => cc!.Manager)
+            .Include(i => i.Project)
+                .ThenInclude(p => p!.ProjectManager)
+            .Include(i => i.Creator)
+            .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+        var targetUser = escalatedTo.HasValue
+            ? await _context.Users.FirstOrDefaultAsync(u => u.Id == escalatedTo.Value)
+            : invoice?.CostCenter?.Manager ?? invoice?.Project?.ProjectManager ?? invoice?.Creator;
+
+        if (targetUser != null)
+        {
+            var subject = $"Eskalation für Rechnung {invoice?.InvoiceNumber ?? invoiceId.ToString()}";
+            var body = reason ?? "Eine Eskalation wurde ausgelöst.";
+
+            // Send email if we have an address
+            if (!string.IsNullOrWhiteSpace(targetUser.Email))
+            {
+                await _emailService.SendEmailAsync(targetUser.Email, subject, body);
+            }
+
+            // Also create an in-app notification
+            await _notificationService.CreateNotificationAsync(
+                targetUser.Id,
+                "invoice_escalation",
+                subject,
+                body,
+                invoiceId,
+                NotificationPriority.High);
+        }
     }
 
     public async Task CreateStatusChangeAsync(int invoiceId, string oldStatus, string newStatus, int changedBy, string? comments = null)

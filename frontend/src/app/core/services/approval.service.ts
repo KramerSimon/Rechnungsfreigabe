@@ -46,6 +46,10 @@ export class ApprovalService {
     return this.http.put<ApprovalWorkflow>(`${this.apiUrl}/workflows/${id}`, payload);
   }
 
+  deleteApprovalWorkflow(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/workflows/${id}`);
+  }
+
   getPendingApprovals(): Observable<ApprovalWorkflow[]> {
     return this.http.get<ApprovalWorkflow[]>(`${this.apiUrl}/pending`);
   }

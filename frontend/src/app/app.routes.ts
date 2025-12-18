@@ -9,6 +9,7 @@ import { RuleDashboardComponent } from './features/smart-dashboard/dashboard/rul
 import { LoginComponent } from './features/login/login.component';
 import { MasterDataComponent } from './features/master-data/master-data.component';
 import { authGuard } from './core/guards/auth.guard';
+import { NotificationsComponent } from './features/notifications/notifications.component';
 import { PdfUploadDashboardComponent } from './features/smart-dashboard/dashboard/pdf-upload-dashboard/pdf-upload-dashboard.component';
 
 export const routes: Routes = [
@@ -33,5 +34,6 @@ export const routes: Routes = [
 
   { path: 'invoice/:id', component: InvoiceDetailComponent, canActivate: [authGuard] },
   { path: 'admin/rules', component: RuleDashboardComponent, canActivate: [authGuard] },
+  { path: 'notifications', component: NotificationsComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '/login' }
 ];

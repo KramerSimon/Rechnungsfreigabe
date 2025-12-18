@@ -53,6 +53,18 @@ img {
   }
 }
 
+.notification-button {
+  color: #666;
+
+  &:hover {
+    color: #1976d2;
+  }
+
+  ::ng-deep .mdc-badge__content {
+    font-weight: 600;
+  }
+}
+
 ::ng-deep .account-menu {
   min-width: 320px;
 

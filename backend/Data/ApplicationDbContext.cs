@@ -23,6 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<InvoiceHistory> InvoiceHistories { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<SystemConfig> SystemConfigs { get; set; }
+    public DbSet<EscalationRule> EscalationRules { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +43,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<InvoiceHistory>().ToTable("invoice_history");
         modelBuilder.Entity<Notification>().ToTable("notifications");
         modelBuilder.Entity<SystemConfig>().ToTable("system_config");
+        modelBuilder.Entity<EscalationRule>().ToTable("escalation_rules");
 
         // Configure primary keys
         modelBuilder.Entity<UserRole>()
@@ -215,6 +217,12 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(n => n.InvoiceId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<EscalationRule>()
+            .HasOne(er => er.NotifyUser)
+            .WithMany()
+            .HasForeignKey(er => er.NotifyUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<SystemConfig>()
             .HasOne(sc => sc.UpdatedByUser)
             .WithMany()
@@ -240,6 +248,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SystemConfig>()
             .HasIndex(sc => sc.ConfigKey)
             .IsUnique();
+
+        modelBuilder.Entity<EscalationRule>()
+            .HasIndex(er => er.IsActive);
 
         // Configure enum conversions to strings
         modelBuilder.Entity<Project>()

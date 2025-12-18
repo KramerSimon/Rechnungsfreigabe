@@ -14,6 +14,7 @@ public interface IApprovalService
     Task<IEnumerable<ApprovalWorkflowDto>> GetAllWorkflowsAsync();
     Task<ApprovalRule> CreateRuleAsync(ApprovalRule rule);
     Task<bool> DeleteRuleAsync(int ruleId);
+    Task<bool> DeleteWorkflowAsync(int workflowId);
     Task<IEnumerable<ApprovalWorkflowDto>> GetPendingApprovalsAsync(int userId);
     Task<bool> ApproveAsync(int approvalId, int userId, string? comments);
     Task<bool> RejectAsync(int approvalId, int userId, string? comments);
@@ -602,6 +603,26 @@ public class ApprovalService : IApprovalService
         {
             _logger.LogError(ex, "Error getting all approval workflows");
             return Enumerable.Empty<ApprovalWorkflowDto>();
+        }
+    }
+
+    public async Task<bool> DeleteWorkflowAsync(int workflowId)
+    {
+        try
+        {
+            var workflow = await _context.ApprovalWorkflows.FindAsync(workflowId);
+            if (workflow == null) return false;
+
+            _context.ApprovalWorkflows.Remove(workflow);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Approval workflow deleted: {WorkflowId}", workflowId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting approval workflow: {WorkflowId}", workflowId);
+            return false;
         }
     }
 }

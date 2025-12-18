@@ -1,0 +1,43 @@
+<div class="notifications-container">
+  <div class="header">
+    <h2>Benachrichtigungen</h2>
+    <div class="actions">
+      <button mat-button (click)="toggleUnreadOnly()">
+        <mat-icon>{{ showUnreadOnly ? 'visibility_off' : 'visibility' }}</mat-icon>
+        {{ showUnreadOnly ? 'Alle anzeigen' : 'Nur ungelesene' }}
+      </button>
+      <button mat-stroked-button color="primary" (click)="markAllAsRead()">
+        <mat-icon>done_all</mat-icon>
+        Alle als gelesen markieren
+      </button>
+    </div>
+  </div>
+
+  <mat-nav-list>
+    <ng-container *ngIf="notifications.length > 0; else empty">
+      <a mat-list-item *ngFor="let n of notifications" (click)="navigateTo(n)">
+        <mat-icon matListIcon [class.read]="n.isRead">
+          {{ n.isRead ? 'notifications' : 'notifications_active' }}
+        </mat-icon>
+        <div mat-line class="title">
+          {{ n.title }}
+          <span class="priority" [ngClass]="n.priority.toLowerCase()">{{ n.priority }}</span>
+        </div>
+        <div mat-line class="message">{{ n.message }}</div>
+        <div mat-line class="meta">
+          <span>{{ n.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+          <button mat-icon-button (click)="markAsRead(n); $event.stopPropagation()" [disabled]="n.isRead" matTooltip="Als gelesen markieren">
+            <mat-icon>done</mat-icon>
+          </button>
+        </div>
+      </a>
+    </ng-container>
+  </mat-nav-list>
+
+  <ng-template #empty>
+    <div class="empty">
+      <mat-icon>notifications_off</mat-icon>
+      <p>Keine Benachrichtigungen vorhanden.</p>
+    </div>
+  </ng-template>
+</div>

@@ -4,6 +4,7 @@ using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace RechnungsfreigabeAPI.Controllers;
 
@@ -197,6 +198,12 @@ public class ApprovalController : ControllerBase
             _context.ApprovalWorkflows.Add(workflow);
             await _context.SaveChangesAsync();
 
+            // Send notification to approver if workflow is pending (duplicate-safe)
+            if (status == ApprovalStatus.Pending)
+            {
+                await _notificationService.EnsureApprovalNotificationForApproverAsync(dto.InvoiceId, dto.ApproverId);
+            }
+
             var result = new ApprovalWorkflowDto
             {
                 Id = workflow.Id,
@@ -307,6 +314,30 @@ public class ApprovalController : ControllerBase
         {
             _logger.LogError(ex, "Error updating approval workflow");
             return StatusCode(500, new { message = "An error occurred while updating the approval workflow" });
+        }
+    }
+
+    /// <summary>
+    /// Delete an approval workflow (admin only)
+    /// </summary>
+    [HttpDelete("workflows/{workflowId}")]
+    [Authorize(Roles = "Administrator")]
+    public async Task<ActionResult> DeleteApprovalWorkflow(int workflowId)
+    {
+        try
+        {
+            var success = await _approvalService.DeleteWorkflowAsync(workflowId);
+            if (!success)
+            {
+                return NotFound(new { message = "Approval workflow not found" });
+            }
+
+            return Ok(new { message = "Approval workflow deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting approval workflow {WorkflowId}", workflowId);
+            return StatusCode(500, new { message = "An error occurred while deleting the approval workflow" });
         }
     }
 

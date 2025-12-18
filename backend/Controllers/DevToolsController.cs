@@ -12,15 +12,18 @@ public class DevToolsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IPasswordService _passwordService;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<DevToolsController> _logger;
 
     public DevToolsController(
         ApplicationDbContext context, 
         IPasswordService passwordService,
+        INotificationService notificationService,
         ILogger<DevToolsController> logger)
     {
         _context = context;
         _passwordService = passwordService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -88,6 +91,57 @@ public class DevToolsController : ControllerBase
         {
             _logger.LogError(ex, "Error fixing password hashes");
             return StatusCode(500, "Fehler beim Aktualisieren der Passwort-Hashes");
+        }
+    }
+
+    /// <summary>
+    /// Backfill notifications for all pending approval workflows where none exist yet.
+    /// DEVELOPMENT ONLY – helps populate notifications for existing data.
+    /// </summary>
+    [HttpPost("backfill-notifications")]
+    public async Task<IActionResult> BackfillNotifications()
+    {
+        try
+        {
+            var pendingWorkflows = await _context.ApprovalWorkflows
+                .Include(w => w.Approver)
+                .Include(w => w.Invoice)
+                    .ThenInclude(i => i!.Supplier)
+                .Where(w => w.Status == Models.ApprovalStatus.Pending)
+                .ToListAsync();
+
+            int created = 0;
+
+            foreach (var wf in pendingWorkflows)
+            {
+                if (wf.Invoice == null || wf.Approver == null) continue;
+
+                // Check if a notification already exists for this approver & invoice & type
+                var hasExisting = await _context.Notifications.AnyAsync(n =>
+                    n.UserId == wf.ApproverId &&
+                    n.InvoiceId == wf.InvoiceId &&
+                    n.Type == "invoice_approval_required");
+
+                if (!hasExisting)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        wf.ApproverId,
+                        "invoice_approval_required",
+                        "Neue Rechnung zur Freigabe",
+                        $"Rechnung {wf.Invoice.InvoiceNumber} von {wf.Invoice.Supplier!.Name} über {wf.Invoice.TotalAmount:C} EUR wartet auf Ihre Freigabe.",
+                        wf.InvoiceId,
+                        Models.NotificationPriority.Normal
+                    );
+                    created++;
+                }
+            }
+
+            return Ok(new { message = "Backfill abgeschlossen", created });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error backfilling notifications");
+            return StatusCode(500, new { message = "Fehler beim Backfill der Benachrichtigungen" });
         }
     }
 

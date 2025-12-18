@@ -151,8 +151,10 @@ C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\refint\Rechn
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.pdb
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\RechnungsfreigabeAPI.genruntimeconfig.cache
 C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\ref\RechnungsfreigabeAPI.dll
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets\msbuild.RechnungsfreigabeAPI.Microsoft.AspNetCore.StaticWebAssets.props
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets\msbuild.build.RechnungsfreigabeAPI.props
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.RechnungsfreigabeAPI.props
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.RechnungsfreigabeAPI.props
-C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets.pack.json
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\bin\Debug\net8.0\RechnungsfreigabeAPI.staticwebassets.endpoints.json
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\rpswa.dswa.cache.json
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\rjimswa.dswa.cache.json
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets.build.json.cache
+C:\Users\threk\Documents\Rechnungsfreigabe\backend\obj\Debug\net8.0\staticwebassets.build.endpoints.json

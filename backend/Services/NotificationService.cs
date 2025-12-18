@@ -16,6 +16,7 @@ public interface INotificationService
     Task NotifyInvoiceApprovalAsync(int invoiceId, bool approved);
     Task NotifyOverdueInvoicesAsync();
     Task NotifyApprovalStatusAsync(int invoiceId, string status);
+    Task EnsureApprovalNotificationForApproverAsync(int invoiceId, int approverId);
 }
 
 public class NotificationService : INotificationService
@@ -27,6 +28,40 @@ public class NotificationService : INotificationService
     {
         _context = context;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Ensure the approver has a pending approval notification for a given invoice.
+    /// Duplicate-safe and includes supplier details.
+    /// </summary>
+    public async Task EnsureApprovalNotificationForApproverAsync(int invoiceId, int approverId)
+    {
+        try
+        {
+            var exists = await _context.Notifications.AnyAsync(n =>
+                n.UserId == approverId && n.InvoiceId == invoiceId && n.Type == "invoice_approval_required");
+
+            if (exists) return;
+
+            var invoice = await _context.Invoices
+                .Include(i => i.Supplier)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+            if (invoice == null || invoice.Supplier == null) return;
+
+            await CreateNotificationAsync(
+                approverId,
+                "invoice_approval_required",
+                "Neue Rechnung zur Freigabe",
+                $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} über {invoice.TotalAmount:C} EUR wartet auf Ihre Freigabe.",
+                invoiceId,
+                NotificationPriority.Normal
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ensuring approver notification for invoice {InvoiceId} and user {UserId}", invoiceId, approverId);
+        }
     }
 
     public async Task<IEnumerable<NotificationDto>> GetUserNotificationsAsync(int userId, bool unreadOnly = false)
@@ -155,6 +190,8 @@ public class NotificationService : INotificationService
 
             if (invoice == null) return;
 
+            var notifiedUserIds = new HashSet<int>();
+
             // Notify approvers
             var approvers = invoice.ApprovalWorkflows
                 .Where(aw => aw.Status == ApprovalStatus.Pending)
@@ -164,6 +201,7 @@ public class NotificationService : INotificationService
 
             foreach (var approver in approvers)
             {
+                notifiedUserIds.Add(approver.Id);
                 await CreateNotificationAsync(
                     approver.Id,
                     "invoice_approval_required",
@@ -183,6 +221,7 @@ public class NotificationService : INotificationService
 
             foreach (var accountingUser in accountingUsers)
             {
+                notifiedUserIds.Add(accountingUser.Id);
                 await CreateNotificationAsync(
                     accountingUser.Id,
                     "invoice_received",
@@ -191,6 +230,28 @@ public class NotificationService : INotificationService
                     invoiceId,
                     NotificationPriority.Low
                 );
+            }
+
+            // Notify admins (if not already notified)
+            var adminUsers = await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Administrator"))
+                .ToListAsync();
+
+            foreach (var adminUser in adminUsers)
+            {
+                if (!notifiedUserIds.Contains(adminUser.Id))
+                {
+                    await CreateNotificationAsync(
+                        adminUser.Id,
+                        "invoice_received",
+                        "Neue Rechnung eingegangen",
+                        $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} über {invoice.TotalAmount:C} EUR ist eingegangen.",
+                        invoiceId,
+                        NotificationPriority.Normal
+                    );
+                }
             }
         }
         catch (Exception ex)

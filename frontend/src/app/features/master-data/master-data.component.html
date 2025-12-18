@@ -388,14 +388,83 @@
             <mat-icon>notification_add</mat-icon>
             Neue Regel
           </button>
+          <button mat-icon-button (click)="loadEscalationRules()" matTooltip="Aktualisieren">
+            <mat-icon>refresh</mat-icon>
+          </button>
         </div>
 
         <mat-card>
-          <div class="placeholder-content">
+          <table mat-table [dataSource]="escalationRules" class="data-table">
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>ID</th>
+              <td mat-cell *matCellDef="let element">{{element.id}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let element">{{element.name}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="triggerStatus">
+              <th mat-header-cell *matHeaderCellDef>Status-Auslöser</th>
+              <td mat-cell *matCellDef="let element">{{element.triggerStatus}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="triggerAfterHours">
+              <th mat-header-cell *matHeaderCellDef>Auslöser nach</th>
+              <td mat-cell *matCellDef="let element">{{element.triggerAfterHours}} h</td>
+            </ng-container>
+
+            <ng-container matColumnDef="repeatIntervalHours">
+              <th mat-header-cell *matHeaderCellDef>Wiederholung</th>
+              <td mat-cell *matCellDef="let element">{{element.repeatIntervalHours ? element.repeatIntervalHours + ' h' : 'Keine'}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="maxEscalations">
+              <th mat-header-cell *matHeaderCellDef>Max. Eskalationen</th>
+              <td mat-cell *matCellDef="let element">{{element.maxEscalations ?? '–'}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="notify">
+              <th mat-header-cell *matHeaderCellDef>Benachrichtigen</th>
+              <td mat-cell *matCellDef="let element">
+                {{element.notifyUserName || element.notifyRole || 'Manager (Standard)'}}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="isActive">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let element">
+                <span [class.active-badge]="element.isActive" [class.inactive-badge]="!element.isActive">
+                  {{element.isActive ? 'Aktiv' : 'Inaktiv'}}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+              <td mat-cell *matCellDef="let element">
+                <button mat-icon-button matTooltip="Bearbeiten" (click)="editEscalationRule(element)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" matTooltip="Deaktivieren" (click)="deleteEscalationRule(element)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="escalationColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: escalationColumns;"></tr>
+          </table>
+
+          <div *ngIf="loadingEscalationRules" class="loading-overlay">
+            <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+            <p>Lade Eskalationsregeln...</p>
+          </div>
+
+          <div *ngIf="!loadingEscalationRules && escalationRules.length === 0" class="empty-state">
             <mat-icon>schedule</mat-icon>
-            <h3>Eskalations-Regeln</h3>
-            <p>Hier können Eskalations-Regeln für Freigabeprozesse definiert werden.</p>
-            <p><em>Diese Funktion wird in Kürze verfügbar sein.</em></p>
+            <p>Keine Eskalationsregeln vorhanden</p>
           </div>
         </mat-card>
       </div>
@@ -535,6 +604,9 @@
                 <td mat-cell *matCellDef="let element">
                   <button mat-icon-button matTooltip="Bearbeiten" (click)="editApprovalWorkflow(element)">
                     <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteApprovalWorkflow(element.id)">
+                    <mat-icon>delete</mat-icon>
                   </button>
                 </td>
               </ng-container>
