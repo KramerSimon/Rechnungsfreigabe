@@ -33,6 +33,7 @@ export interface CreateApprovalRuleDto {
   priority?: number;
   conditions?: string;
   actions?: string;
+  isActive?: boolean;
 }
 
 export interface CreateApprovalWorkflowDto {

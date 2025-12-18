@@ -22,7 +22,7 @@
     <div class="form-row">
       <mat-form-field appearance="outline">
         <mat-label>Regeltyp</mat-label>
-        <mat-select [(ngModel)]="rule.ruleType" required>
+        <mat-select [(ngModel)]="rule.ruleType" required (ngModelChange)="onRuleTypeChange($event)">
           <mat-option value="automatic">Automatische Freigabe</mat-option>
           <mat-option value="manual">Manuelle Freigabe</mat-option>
         </mat-select>
@@ -100,15 +100,26 @@
           <mat-form-field appearance="outline">
             <mat-label>Aktionstyp</mat-label>
             <mat-select [(ngModel)]="action.type" required (ngModelChange)="onActionTypeChange(action, $event)">
-              <mat-option *ngFor="let actionType of availableActions" [value]="actionType.value">
+              <mat-option *ngFor="let actionType of getActionOptions()" [value]="actionType.value">
                 {{ actionType.label }}
               </mat-option>
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" *ngIf="action.type === 'set_status' || action.type === 'assign_to'">
+          <!-- Status value input -->
+          <mat-form-field appearance="outline" *ngIf="action.type === 'set_status'">
             <mat-label>Wert</mat-label>
             <input matInput [(ngModel)]="action.value" required>
+          </mat-form-field>
+
+          <!-- Assign to user selector -->
+          <mat-form-field appearance="outline" *ngIf="action.type === 'assign_to'">
+            <mat-label>Benutzer</mat-label>
+            <mat-select [(ngModel)]="action.value" required>
+              <mat-option *ngFor="let u of users" [value]="u.id">
+                {{ u.firstName }} {{ u.lastName }} ({{ u.username }})
+              </mat-option>
+            </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow">

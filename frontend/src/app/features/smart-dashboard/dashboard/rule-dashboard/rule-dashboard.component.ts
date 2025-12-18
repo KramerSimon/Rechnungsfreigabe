@@ -17,8 +17,13 @@ import { RouterModule } from '@angular/router';
 import { RuleDialogComponent } from './rule-dialog/rule-dialog.component';
 import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData } from '../../../../core/models';
 import { ProjectService } from '../../../../core/services/project.service';
+import { ApprovalService } from '../../../../core/services/approval.service';
 import { CostCenter } from '../../../../core/models/cost-center.model';
 import { Project } from '../../../../core/models/project.model';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { UserService } from '../../../../core/services/user.service';
+import { User } from '../../../../core/models/user.models';
 
 export type { ApprovalRule, RuleCondition, RuleAction };
 
@@ -39,6 +44,8 @@ export type { ApprovalRule, RuleCondition, RuleAction };
     MatDialogModule,
     MatExpansionModule,
     MatTabsModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule,
     RouterModule
   ],
   templateUrl: './rule-dashboard.component.html',
@@ -48,56 +55,16 @@ export class RuleDashboardComponent implements OnInit {
   activeTab = 0;
 
   // Freigabe-Regeln
-  approvalRules: ApprovalRule[] = [
-    {
-      id: 1,
-      name: 'Kleinstbeträge (Automatische Freigabe)',
-      description: 'WENN Betrag < 50,00 EUR UND Lieferant = "Büromaterial" DANN -> Sofort "Bezahlt" setzen',
-      isActive: true,
-      ruleType: 'automatic',
-      priority: 1,
-      conditions: [
-        { field: 'amount', operator: '<', value: 50 },
-        { field: 'supplier', operator: '=', value: 'Büromaterial', logicalOperator: 'AND' }
-      ],
-      actions: [
-        { type: 'auto_approve', value: 'paid', description: 'Sofort als "Bezahlt" markieren' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'IT-Investitionen (Manuelle Freigabe)',
-      description: 'WENN Kostenstelle = "IT" ODER Betrag > 500,00 EUR DANN -> Freigabe durch "Active Directory Manager"',
-      isActive: true,
-      ruleType: 'manual',
-      priority: 2,
-      conditions: [
-        { field: 'costCenter', operator: '=', value: 'IT' },
-        { field: 'amount', operator: '>', value: 500, logicalOperator: 'OR' }
-      ],
-      actions: [
-        { type: 'require_approval', value: 'ad_manager', description: 'Freigabe durch Active Directory Manager erforderlich' }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Standard-Prozess',
-      description: 'Alle anderen Rechnungen durchlaufen den Standard-Freigabeprozess',
-      isActive: true,
-      ruleType: 'manual',
-      priority: 999,
-      conditions: [],
-      actions: [
-        { type: 'require_approval', value: 'standard', description: 'Standard-Freigabeprozess' }
-      ]
-    }
-  ];
+  approvalRules: any[] = [];
+  loading = false;
 
   // Kostenstellen
   costCenters: CostCenter[] = [];
 
   // Projekte
   projects: Project[] = [];
+  // Benutzer für Zuweisungen
+  users: User[] = [];
 
   // Formular für neue Regel
   newRule: Partial<ApprovalRule> = {
@@ -151,20 +118,75 @@ export class RuleDashboardComponent implements OnInit {
   // Verfügbare Aktionen
   availableActions = [
     { value: 'auto_approve', label: 'Automatisch freigeben' },
-    { value: 'require_approval', label: 'Freigabe erforderlich' },
     { value: 'set_status', label: 'Status setzen' },
     { value: 'assign_to', label: 'Zuweisen an' }
   ];
 
-  constructor(private dialog: MatDialog, private costCenterService: CostCenterService, private projectService: ProjectService) {}
+  constructor(
+    private dialog: MatDialog,
+    private costCenterService: CostCenterService,
+    private projectService: ProjectService,
+    private approvalService: ApprovalService,
+    private snackBar: MatSnackBar,
+    private userService: UserService
+  ) {}
 
   ngOnInit() {
+    this.loadApprovalRules();
     this.costCenterService.getCostCenters().subscribe((centers) => {
       this.costCenters = centers;
     });
     this.projectService.getProjects().subscribe((projects) => {
       this.projects = projects;
     });
+    this.userService.getUsers().subscribe(users => {
+      this.users = users || [];
+    });
+  }
+
+  private toBackendRuleType(rt: any): number {
+    // Backend expects enum numeric: Automatic=0, Manual=1
+    if (rt === 0 || rt === 1) return rt;
+    const v = String(rt).toLowerCase();
+    return v === 'automatic' ? 0 : 1;
+  }
+
+  loadApprovalRules() {
+    this.loading = true;
+    this.approvalService.getApprovalRules().subscribe({
+      next: (rules) => {
+        // Backend liefert rules mit conditions/actions als JSON-Strings
+        this.approvalRules = rules.map(rule => ({
+          ...rule,
+          conditions: this.parseConditions(rule.conditions),
+          actions: this.parseActions(rule.actions)
+        }));
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der Regeln:', error);
+        this.snackBar.open('Fehler beim Laden der Freigaberegeln', 'Schließen', { duration: 3000 });
+        this.loading = false;
+      }
+    });
+  }
+
+  private parseConditions(conditionsJson: string | undefined): RuleCondition[] {
+    if (!conditionsJson) return [];
+    try {
+      return JSON.parse(conditionsJson);
+    } catch {
+      return [];
+    }
+  }
+
+  private parseActions(actionsJson: string | undefined): RuleAction[] {
+    if (!actionsJson) return [];
+    try {
+      return JSON.parse(actionsJson);
+    } catch {
+      return [];
+    }
   }
 
   // Regel-Management
@@ -176,17 +198,39 @@ export class RuleDashboardComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        const newRule = {
-          ...result,
-          id: Math.max(...this.approvalRules.map(r => r.id), 0) + 1
-        } as ApprovalRule;
-        this.approvalRules.push(newRule);
-        console.log('Neue Regel erstellt:', newRule);
+        const dto = {
+          name: result.name,
+          description: result.description,
+          // Convert ruleType to string as required by CreateApprovalRuleDto
+          ruleType: typeof result.ruleType === 'number'
+            ? (result.ruleType === 0 ? 'automatic' : 'manual')
+            : result.ruleType,
+          priority: result.priority,
+          conditions: JSON.stringify(result.conditions || []),
+          actions: JSON.stringify(result.actions || [])
+        };
+
+        this.approvalService.createApprovalRule(dto).subscribe({
+          next: (createdRule) => {
+            this.snackBar.open('Regel erfolgreich erstellt', 'Schließen', { duration: 3000 });
+            this.loadApprovalRules();
+          },
+          error: (error) => {
+            console.error('Fehler beim Erstellen der Regel:', error);
+            let errorMessage = 'Fehler beim Erstellen der Regel';
+            if (error.status === 401) {
+              errorMessage = 'Nicht berechtigt. Bitte melden Sie sich als Administrator an.';
+            } else if (error.status === 400 && error.error?.message) {
+              errorMessage = error.error.message;
+            }
+            this.snackBar.open(errorMessage, 'Schließen', { duration: 5000 });
+          }
+        });
       }
     });
   }
 
-  onEditRule(rule: ApprovalRule) {
+  onEditRule(rule: any) {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
       width: '800px',
       data: { rule: { ...rule }, mode: 'edit' } as RuleDialogData
@@ -194,23 +238,74 @@ export class RuleDashboardComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        const index = this.approvalRules.findIndex(r => r.id === rule.id);
-        if (index !== -1) {
-          this.approvalRules[index] = { ...result, id: rule.id };
-          console.log('Regel bearbeitet:', result);
-        }
+        const dto = {
+          name: result.name,
+          description: result.description,
+          ruleType: typeof result.ruleType === 'number'
+            ? (result.ruleType === 0 ? 'automatic' : 'manual')
+            : result.ruleType,
+          priority: result.priority,
+          conditions: JSON.stringify(result.conditions || []),
+          actions: JSON.stringify(result.actions || [])
+        };
+
+        this.approvalService.updateApprovalRule(rule.id, dto).subscribe({
+          next: (updatedRule) => {
+            this.snackBar.open('Regel erfolgreich aktualisiert', 'Schließen', { duration: 3000 });
+            this.loadApprovalRules();
+          },
+          error: (error) => {
+            console.error('Fehler beim Aktualisieren der Regel:', error);
+            this.snackBar.open('Fehler beim Aktualisieren der Regel', 'Schließen', { duration: 3000 });
+          }
+        });
       }
     });
   }
 
   onDeleteRule(ruleId: number) {
     if (confirm('Regel wirklich löschen?')) {
-      this.approvalRules = this.approvalRules.filter(rule => rule.id !== ruleId);
+      this.approvalService.deleteApprovalRule(ruleId).subscribe({
+        next: () => {
+          this.snackBar.open('Regel erfolgreich gelöscht', 'Schließen', { duration: 3000 });
+          this.loadApprovalRules();
+        },
+        error: (error) => {
+          console.error('Fehler beim Löschen der Regel:', error);
+          this.snackBar.open('Fehler beim Löschen der Regel', 'Schließen', { duration: 3000 });
+        }
+      });
     }
   }
 
-  onToggleRule(rule: ApprovalRule) {
-    rule.isActive = !rule.isActive;
+  onToggleRule(rule: any) {
+    const newIsActive = !rule.isActive;
+    const dto = {
+      name: rule.name,
+      description: rule.description,
+      ruleType: typeof rule.ruleType === 'number'
+        ? (rule.ruleType === 0 ? 'automatic' : 'manual')
+        : rule.ruleType,
+      priority: rule.priority,
+      conditions: JSON.stringify(rule.conditions || []),
+      actions: JSON.stringify(rule.actions || []),
+      isActive: newIsActive
+    };
+
+    this.approvalService.updateApprovalRule(rule.id, dto).subscribe({
+      next: () => {
+        rule.isActive = newIsActive;
+        this.snackBar.open(
+          rule.isActive ? 'Regel aktiviert' : 'Regel deaktiviert',
+          'Schließen',
+          { duration: 2000 }
+        );
+      },
+      error: (error) => {
+        console.error('Fehler beim Umschalten der Regel:', error);
+        this.snackBar.open('Fehler beim Umschalten der Regel', 'Schließen', { duration: 3000 });
+      }
+    });
   }
 
   // Hilfsfunktionen
@@ -223,7 +318,14 @@ export class RuleDashboardComponent implements OnInit {
   }
 
   getRuleActionText(actions: RuleAction[]): string {
-    return actions.map(action => action.description).join(', ');
+    return actions.map(action => {
+      if (action.type === 'assign_to') {
+        const user = this.users.find(u => String(u.id) === String(action.value));
+        const name = user ? `${user.firstName} ${user.lastName}` : action.value;
+        return `Zuweisen an ${name}`;
+      }
+      return action.description;
+    }).join(', ');
   }
 
   getFieldLabel(fieldValue: string): string {

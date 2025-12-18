@@ -15,7 +15,12 @@
           </button>
         </div>
 
-        <div class="rules-section">
+        <div *ngIf="loading" class="loading-container">
+          <mat-spinner></mat-spinner>
+          <p>Lade Freigaberegeln...</p>
+        </div>
+
+        <div class="rules-section" *ngIf="!loading">
           <h3>AKTIVE REGELN</h3>
 
           <mat-accordion>
@@ -31,9 +36,9 @@
                     <span class="rule-number">{{ i + 1 }}.</span>
                     <span class="rule-name">{{ rule.name }}</span>
                     <mat-chip
-                      [color]="rule.ruleType === 'automatic' ? 'accent' : 'primary'"
+                      [color]="rule.ruleType === 'Automatic' || rule.ruleType === 0 ? 'accent' : 'primary'"
                       selected>
-                      {{ rule.ruleType === 'automatic' ? 'Automatische Freigabe' : 'Manuelle Freigabe' }}
+                      {{ rule.ruleType === 'Automatic' || rule.ruleType === 0 ? 'Automatische Freigabe' : 'Manuelle Freigabe' }}
                     </mat-chip>
                   </div>
                 </mat-panel-title>

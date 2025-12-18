@@ -49,14 +49,18 @@ public class ApprovalService : IApprovalService
                 return;
             }
 
+            _logger.LogInformation("Creating approval workflow for invoice {InvoiceId}, Amount: {Amount}", invoiceId, invoice.TotalAmount);
+
             var matchedRule = await FindMatchingRuleAsync(invoice);
             
             if (matchedRule != null)
             {
+                _logger.LogInformation("Processing matched rule: {RuleName} (Type: {RuleType})", matchedRule.Name, matchedRule.RuleType);
                 await ProcessRuleActionsAsync(invoice, matchedRule);
             }
             else
             {
+                _logger.LogInformation("No matching rule found, creating default approval workflow for invoice {InvoiceId}", invoiceId);
                 // Default approval workflow
                 await CreateDefaultApprovalWorkflowAsync(invoice);
             }
@@ -131,10 +135,10 @@ public class ApprovalService : IApprovalService
             var rule = await _context.ApprovalRules.FindAsync(ruleId);
             if (rule == null) return false;
 
-            rule.IsActive = false;
+            _context.ApprovalRules.Remove(rule);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Approval rule deactivated: {RuleId}", ruleId);
+            _logger.LogInformation("Approval rule deleted: {RuleId}", ruleId);
             return true;
         }
         catch (Exception ex)
@@ -148,14 +152,21 @@ public class ApprovalService : IApprovalService
     {
         var rules = await GetActiveRulesAsync();
         
-        foreach (var rule in rules)
+        _logger.LogInformation("Found {RuleCount} active rules to evaluate", rules.Count());
+        
+        foreach (var rule in rules.OrderBy(r => r.Priority))
         {
+            _logger.LogInformation("Evaluating rule ID {RuleId}: {RuleName} (Priority: {Priority}, Type: {RuleType})", 
+                rule.Id, rule.Name, rule.Priority, rule.RuleType);
+            
             if (await EvaluateRuleConditionsAsync(invoice, rule))
             {
+                _logger.LogInformation("✓ Matching rule found: {RuleName} (Priority: {Priority}, Type: {RuleType})", rule.Name, rule.Priority, rule.RuleType);
                 return rule;
             }
         }
 
+        _logger.LogInformation("✗ No matching approval rule found for invoice");
         return null;
     }
 
@@ -163,10 +174,17 @@ public class ApprovalService : IApprovalService
     {
         try
         {
+            _logger.LogInformation("Evaluating rule: {RuleName}, Conditions JSON: {ConditionsJson}", rule.Name, rule.Conditions);
+            
             var conditions = JsonSerializer.Deserialize<RuleCondition[]>(rule.Conditions);
             
+            _logger.LogInformation("Deserialized conditions count: {Count}", conditions?.Length ?? 0);
+            
             if (conditions == null || !conditions.Any())
+            {
+                _logger.LogInformation("No conditions defined for rule {RuleName}, rule applies to all invoices", rule.Name);
                 return true; // No conditions means rule applies to all
+            }
 
             foreach (var condition in conditions)
             {
@@ -185,15 +203,20 @@ public class ApprovalService : IApprovalService
 
     private Task<bool> EvaluateConditionAsync(Invoice invoice, RuleCondition condition)
     {
-        var result = condition.Field.ToLower() switch
+        var fieldLower = condition.Field.ToLower();
+        var result = fieldLower switch
         {
-            "total_amount" => EvaluateNumericCondition(invoice.TotalAmount, condition),
+            "total_amount" or "amount" => EvaluateNumericCondition(invoice.TotalAmount, condition),
             "cost_center_id" => EvaluateStringCondition(invoice.CostCenterId, condition),
             "project_id" => EvaluateStringCondition(invoice.ProjectId, condition),
             "supplier_id" => EvaluateNumericCondition(invoice.SupplierId, condition),
             "currency" => EvaluateStringCondition(invoice.Currency, condition),
             _ => false
         };
+        
+        _logger.LogInformation("Condition evaluation: {Field} {Operator} {Value} => {Result}", 
+            condition.Field, condition.Operator, condition.Value, result);
+        
         return Task.FromResult(result);
     }
 
@@ -280,6 +303,16 @@ public class ApprovalService : IApprovalService
                     await _context.SaveChangesAsync();
                 }
                 break;
+            case "assign_to":
+                if (int.TryParse(action.Value, out var assignedUserId))
+                {
+                    await AssignInvoiceToUserAsync(invoice, rule, assignedUserId);
+                }
+                else
+                {
+                    _logger.LogWarning("assign_to action value is not a valid userId: {Value}", action.Value);
+                }
+                break;
         }
     }
 
@@ -313,6 +346,32 @@ public class ApprovalService : IApprovalService
 
             _context.ApprovalWorkflows.Add(workflow);
         }
+
+        invoice.Status = InvoiceStatus.Freigabe_Erforderlich;
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task AssignInvoiceToUserAsync(Invoice invoice, ApprovalRule rule, int userId)
+    {
+        var userExists = await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive);
+        if (!userExists)
+        {
+            _logger.LogWarning("Cannot assign invoice {InvoiceId} to non-existent or inactive user {UserId}", invoice.Id, userId);
+            return;
+        }
+
+        var workflow = new ApprovalWorkflow
+        {
+            InvoiceId = invoice.Id,
+            RuleId = rule.Id,
+            StepNumber = 1,
+            ApproverId = userId,
+            ApprovalLevel = 1,
+            Status = ApprovalStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.ApprovalWorkflows.Add(workflow);
 
         invoice.Status = InvoiceStatus.Freigabe_Erforderlich;
         await _context.SaveChangesAsync();
@@ -630,15 +689,27 @@ public class ApprovalService : IApprovalService
 // Helper classes for JSON deserialization
 public class RuleCondition
 {
+    [System.Text.Json.Serialization.JsonPropertyName("field")]
     public string Field { get; set; } = string.Empty;
+    
+    [System.Text.Json.Serialization.JsonPropertyName("operator")]
     public string Operator { get; set; } = string.Empty;
+    
+    [System.Text.Json.Serialization.JsonPropertyName("value")]
     public string Value { get; set; } = string.Empty;
+    
+    [System.Text.Json.Serialization.JsonPropertyName("logicalOperator")]
     public string? LogicalOperator { get; set; }
 }
 
 public class RuleAction
 {
+    [System.Text.Json.Serialization.JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
+    
+    [System.Text.Json.Serialization.JsonPropertyName("value")]
     public string Value { get; set; } = string.Empty;
+    
+    [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string? Description { get; set; }
 }

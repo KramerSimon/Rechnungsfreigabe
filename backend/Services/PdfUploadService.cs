@@ -50,8 +50,11 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
+            _logger.LogInformation($"Starting PDF upload: {file.FileName}, userId: {userId}");
+
             // Validiere die Datei
             ValidateFile(file);
+            _logger.LogInformation($"File validation passed");
 
             // Lies die PDF-Datei in den Speicher
             byte[] pdfContent;
@@ -60,9 +63,11 @@ public class PdfUploadService : IPdfUploadService
                 await file.CopyToAsync(memoryStream);
                 pdfContent = memoryStream.ToArray();
             }
+            _logger.LogInformation($"PDF read into memory: {pdfContent.Length} bytes");
 
             // Generiere eindeutigen Dateinamen
             var fileName = GenerateUniqueFileName(file.FileName);
+            _logger.LogInformation($"Generated filename: {fileName}");
 
             // Extrahiere Daten aus dem PDF
             var tempPath = Path.Combine(_uploadDirectory, fileName);
@@ -70,11 +75,14 @@ public class PdfUploadService : IPdfUploadService
             {
                 await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
             }
+            _logger.LogInformation($"Temp file written: {tempPath}");
 
             var pdfData = ExtractInvoiceDataFromPdf(tempPath);
+            _logger.LogInformation($"PDF data extracted - Amount: {pdfData.TotalAmount}, Supplier: {pdfData.SupplierInfo?.Name}");
             
             // Generiere Rechnungsnummer im Format FAT-{Nummer}-{Jahr}
             var invoiceNumber = await GenerateInvoiceNumberAsync();
+            _logger.LogInformation($"Generated invoice number: {invoiceNumber}");
 
             // Finde oder erstelle Lieferant
             int finalSupplierId;
@@ -84,6 +92,7 @@ public class PdfUploadService : IPdfUploadService
                 var supplier = await _context.Suppliers.FindAsync(supplierId.Value);
                 if (supplier == null)
                 {
+                    _logger.LogError($"Supplier with ID {supplierId} not found");
                     throw new InvalidOperationException($"Supplier with ID {supplierId} not found");
                 }
                 finalSupplierId = supplierId.Value;
@@ -112,34 +121,70 @@ public class PdfUploadService : IPdfUploadService
                 RequiresApproval = true,
                 Description = pdfData.Description ?? $"PDF-Upload: {file.FileName}"
             };
+            _logger.LogInformation($"CreateInvoiceDto prepared - Invoice#: {createInvoiceDto.InvoiceNumber}, Total: {createInvoiceDto.TotalAmount}");
 
-            var invoice = await _invoiceService.CreateInvoiceAsync(createInvoiceDto, userId);
+            InvoiceDto invoice;
+            try
+            {
+                invoice = await _invoiceService.CreateInvoiceAsync(createInvoiceDto, userId);
+                _logger.LogInformation($"Invoice created successfully with ID: {invoice.Id}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to create invoice: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError($"Inner exception: {ex.InnerException.Message}");
+                }
+                throw new InvalidOperationException($"Failed to create invoice: {ex.Message}", ex);
+            }
 
             // Speichere PDF-Content direkt in der Datenbank
-            var invoiceDb = await _context.Invoices.FindAsync(invoice.Id);
-            if (invoiceDb != null)
+            try
             {
-                invoiceDb.PdfContent = pdfContent;
-                invoiceDb.PdfFileSize = file.Length;
-                invoiceDb.OriginalFilename = file.FileName;
-                invoiceDb.PdfFilePath = fileName; // Speichere nur den Dateinamen für Referenzen
-                await _context.SaveChangesAsync();
+                var invoiceDb = await _context.Invoices.FindAsync(invoice.Id);
+                if (invoiceDb != null)
+                {
+                    invoiceDb.PdfContent = pdfContent;
+                    invoiceDb.PdfFileSize = file.Length;
+                    invoiceDb.OriginalFilename = file.FileName;
+                    invoiceDb.PdfFilePath = fileName; // Speichere nur den Dateinamen für Referenzen
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"PDF content saved to database for invoice {invoice.Id}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to save PDF content to database: {ex.Message}");
+                throw new InvalidOperationException($"Failed to save PDF content: {ex.Message}", ex);
             }
 
             // Lösche die temporäre Datei
             try
             {
                 System.IO.File.Delete(tempPath);
+                _logger.LogInformation($"Temp file deleted: {tempPath}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, $"Failed to delete temp file: {tempPath}");
+            }
 
-            _logger.LogInformation($"Invoice PDF uploaded successfully to database: {fileName} for invoice {invoice.Id}");
+            _logger.LogInformation($"Invoice PDF uploaded successfully: {fileName} for invoice {invoice.Id}");
 
             return invoice;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error uploading invoice PDF");
+            _logger.LogError(ex, $"Error uploading invoice PDF: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                _logger.LogError($"Inner exception: {ex.InnerException.Message}");
+                if (ex.InnerException.InnerException != null)
+                {
+                    _logger.LogError($"Inner inner exception: {ex.InnerException.InnerException.Message}");
+                }
+            }
             throw;
         }
     }

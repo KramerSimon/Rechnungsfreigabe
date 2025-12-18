@@ -351,14 +351,47 @@ public class ApprovalController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
+            if (userId <= 0)
+            {
+                return Unauthorized(new { message = "Missing or invalid user context" });
+            }
+
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive);
+            if (!userExists)
+            {
+                return Unauthorized(new { message = "User does not exist or is inactive" });
+            }
+
+            // Validate JSON payloads early to avoid server errors
+            var conditionsJson = string.IsNullOrWhiteSpace(dto.Conditions) ? "[]" : dto.Conditions;
+            var actionsJson = string.IsNullOrWhiteSpace(dto.Actions) ? "[]" : dto.Actions;
+
+            try
+            {
+                System.Text.Json.JsonSerializer.Deserialize<RechnungsfreigabeAPI.Services.RuleCondition[]>(conditionsJson);
+            }
+            catch
+            {
+                return BadRequest(new { message = "Invalid JSON for conditions" });
+            }
+
+            try
+            {
+                System.Text.Json.JsonSerializer.Deserialize<RechnungsfreigabeAPI.Services.RuleAction[]>(actionsJson);
+            }
+            catch
+            {
+                return BadRequest(new { message = "Invalid JSON for actions" });
+            }
+
             var rule = new ApprovalRule
             {
                 Name = dto.Name,
                 Description = dto.Description,
                 RuleType = dto.RuleType,
                 Priority = dto.Priority ?? 10,
-                Conditions = dto.Conditions ?? "[]",
-                Actions = dto.Actions ?? "[]",
+                Conditions = conditionsJson,
+                Actions = actionsJson,
                 CreatedBy = userId
             };
 
@@ -377,7 +410,7 @@ public class ApprovalController : ControllerBase
     /// </summary>
     [HttpPut("rules/{ruleId}")]
     [Authorize(Roles = "Administrator")]
-    public async Task<ActionResult<ApprovalRule>> UpdateApprovalRule(int ruleId, [FromBody] CreateApprovalRuleDto dto)
+    public async Task<ActionResult<ApprovalRule>> UpdateApprovalRule(int ruleId, [FromBody] UpdateApprovalRuleDto dto)
     {
         try
         {
@@ -387,12 +420,21 @@ public class ApprovalController : ControllerBase
                 return NotFound(new { message = "Approval rule not found" });
             }
 
-            rule.Name = dto.Name;
-            rule.Description = dto.Description;
-            rule.RuleType = dto.RuleType;
-            rule.Priority = dto.Priority ?? rule.Priority;
-            rule.Conditions = dto.Conditions ?? rule.Conditions;
-            rule.Actions = dto.Actions ?? rule.Actions;
+            if (!string.IsNullOrEmpty(dto.Name))
+                rule.Name = dto.Name;
+            if (dto.Description != null)
+                rule.Description = dto.Description;
+            if (dto.RuleType.HasValue)
+                rule.RuleType = dto.RuleType.Value;
+            if (dto.Priority.HasValue)
+                rule.Priority = dto.Priority.Value;
+            if (dto.Conditions != null)
+                rule.Conditions = dto.Conditions;
+            if (dto.Actions != null)
+                rule.Actions = dto.Actions;
+            if (dto.IsActive.HasValue)
+                rule.IsActive = dto.IsActive.Value;
+            
             rule.UpdatedAt = DateTime.UtcNow;
 
             _context.ApprovalRules.Update(rule);
@@ -433,8 +475,28 @@ public class ApprovalController : ControllerBase
 
     private int GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid");
+        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid") ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         return userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
+    }
+
+    /// <summary>
+    /// Debug endpoint to check current user auth status
+    /// </summary>
+    [HttpGet("debug/auth")]
+    public IActionResult DebugAuth()
+    {
+        var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+        var userId = GetCurrentUserId();
+        var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+        var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+        
+        return Ok(new
+        {
+            IsAuthenticated = isAuthenticated,
+            UserId = userId,
+            Roles = roles,
+            AllClaims = claims
+        });
     }
 }
 
@@ -452,6 +514,17 @@ public class CreateApprovalRuleDto
     public int? Priority { get; set; }
     public string? Conditions { get; set; }
     public string? Actions { get; set; }
+}
+
+public class UpdateApprovalRuleDto
+{
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+    public RuleType? RuleType { get; set; }
+    public int? Priority { get; set; }
+    public string? Conditions { get; set; }
+    public string? Actions { get; set; }
+    public bool? IsActive { get; set; }
 }
 
 public class CreateApprovalWorkflowDto

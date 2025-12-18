@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Services;
+using RechnungsfreigabeAPI.Utilities;
 using Serilog;
 using System.Text;
 
@@ -62,11 +63,18 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!)),
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
+        NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier
     };
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Accept both numeric and string values for enums like RuleType
+        options.JsonSerializerOptions.Converters.Add(new FlexibleEnumConverter<RechnungsfreigabeAPI.Models.RuleType>());
+    });
 
 // Configure CORS
 builder.Services.AddCors(options =>

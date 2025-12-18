@@ -264,7 +264,9 @@ public class PdfUploadController : ControllerBase
     private int GetCurrentUserId()
     {
         // Extrahiere User ID aus dem JWT Token
-        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid");
+        var userIdClaim = User.FindFirst("sub") ?? 
+                         User.FindFirst("nameid") ?? 
+                         User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         
         if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId) && userId > 0)
         {
