@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -13,13 +13,10 @@ public interface IEmailService
 public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
-    private readonly ILogger<EmailService> _logger;
-
-    public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+    public EmailService(IConfiguration configuration)
     {
         _configuration = configuration;
-        _logger = logger;
-    }
+        }
 
     public async Task SendEmailAsync(string to, string subject, string body)
     {
@@ -33,7 +30,7 @@ public class EmailService : IEmailService
 
         if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(from))
         {
-            _logger.LogWarning("Email not sent: missing SMTP configuration (Host/From). Subject: {Subject}", subject);
+            
             return;
         }
 
@@ -51,11 +48,11 @@ public class EmailService : IEmailService
             };
 
             await client.SendMailAsync(mail);
-            _logger.LogInformation("Email sent to {Recipient}: {Subject}", to, subject);
+            
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Failed to send email to {Recipient}: {Subject}", to, subject);
+            
         }
     }
 }

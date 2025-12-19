@@ -1,4 +1,4 @@
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 using System.IdentityModel.Tokens.Jwt;
@@ -23,17 +23,15 @@ public class AuthService : IAuthService
     private readonly IUserService _userService;
     private readonly IPasswordService _passwordService;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<AuthService> _logger;
     private const int MaxFailedAttempts = 5;
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
-    public AuthService(IUserService userService, IPasswordService passwordService, IConfiguration configuration, ILogger<AuthService> logger)
+    public AuthService(IUserService userService, IPasswordService passwordService, IConfiguration configuration)
     {
         _userService = userService;
         _passwordService = passwordService;
         _configuration = configuration;
-        _logger = logger;
-    }
+        }
 
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginRequest)
     {
@@ -43,15 +41,14 @@ public class AuthService : IAuthService
             
             if (user == null || !user.IsActive)
             {
-                _logger.LogWarning("Login attempt failed for username: {Username} - User not found or inactive", loginRequest.Username);
+                
                 return null;
             }
 
             // Check if user is locked out
             if (user.LockedUntil.HasValue && user.LockedUntil.Value > DateTime.UtcNow)
             {
-                _logger.LogWarning("Login attempt failed for username: {Username} - Account locked until {LockedUntil}", 
-                    loginRequest.Username, user.LockedUntil.Value);
+                
                 return null;
             }
 
@@ -65,10 +62,9 @@ public class AuthService : IAuthService
                 if (user.FailedLoginAttempts + 1 >= MaxFailedAttempts)
                 {
                     await _userService.LockUserAccountAsync(user.Id, DateTime.UtcNow.Add(LockoutDuration));
-                    _logger.LogWarning("Account locked for username: {Username} due to too many failed attempts", loginRequest.Username);
+                    
                 }
-                
-                _logger.LogWarning("Login attempt failed for username: {Username} - Invalid password", loginRequest.Username);
+
                 return null;
             }
 
@@ -106,9 +102,9 @@ public class AuthService : IAuthService
                 Permissions = permissions
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error during login for username: {Username}", loginRequest.Username);
+            
             return null;
         }
     }
@@ -137,9 +133,9 @@ public class AuthService : IAuthService
                 CreatedAt = user.CreatedAt
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting current user from token");
+            
             return null;
         }
     }
@@ -250,14 +246,14 @@ public class AuthService : IAuthService
             // Verify current password
             if (!_passwordService.VerifyPassword(currentPassword, user.PasswordHash))
             {
-                _logger.LogWarning("Password change failed for user {UserId} - Invalid current password", userId);
+                
                 return false;
             }
 
             // Validate new password
             if (!_passwordService.IsPasswordValid(newPassword))
             {
-                _logger.LogWarning("Password change failed for user {UserId} - New password doesn't meet requirements", userId);
+                
                 return false;
             }
 
@@ -265,12 +261,11 @@ public class AuthService : IAuthService
             var newPasswordHash = _passwordService.HashPassword(newPassword);
             await _userService.UpdatePasswordAsync(userId, newPasswordHash);
 
-            _logger.LogInformation("Password successfully changed for user {UserId}", userId);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error changing password for user {UserId}", userId);
+            
             return false;
         }
     }
@@ -286,7 +281,7 @@ public class AuthService : IAuthService
             // Validate new password
             if (!_passwordService.IsPasswordValid(newPassword))
             {
-                _logger.LogWarning("Password reset failed for user {Username} - New password doesn't meet requirements", username);
+                
                 return false;
             }
 
@@ -297,12 +292,11 @@ public class AuthService : IAuthService
             // Reset failed login attempts and unlock account
             await _userService.ResetFailedLoginAttemptsAsync(user.Id);
 
-            _logger.LogInformation("Password successfully reset for user {Username}", username);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error resetting password for user {Username}", username);
+            
             return false;
         }
     }

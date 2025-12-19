@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -10,13 +10,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class SuppliersController : ControllerBase
 {
     private readonly ISupplierService _supplierService;
-    private readonly ILogger<SuppliersController> _logger;
-
-    public SuppliersController(ISupplierService supplierService, ILogger<SuppliersController> logger)
+    public SuppliersController(ISupplierService supplierService)
     {
         _supplierService = supplierService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Get all suppliers
@@ -30,9 +27,9 @@ public class SuppliersController : ControllerBase
             var suppliers = await _supplierService.GetAllSuppliersAsync();
             return Ok(suppliers);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting suppliers");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving suppliers" });
         }
     }
@@ -49,9 +46,9 @@ public class SuppliersController : ControllerBase
             var result = await _supplierService.GetSuppliersPagedAsync(pageRequest);
             return Ok(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting suppliers paged");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving suppliers" });
         }
     }
@@ -74,9 +71,9 @@ public class SuppliersController : ControllerBase
 
             return Ok(supplier);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting supplier with ID: {SupplierId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while retrieving the supplier" });
         }
     }
@@ -98,9 +95,9 @@ public class SuppliersController : ControllerBase
             
             return CreatedAtAction(nameof(GetSupplier), new { id = supplier.Id }, supplier);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating supplier: {SupplierName}", createSupplierDto.Name);
+            
             return StatusCode(500, new { message = "An error occurred while creating the supplier" });
         }
     }
@@ -127,9 +124,9 @@ public class SuppliersController : ControllerBase
 
             return Ok(supplier);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating supplier with ID: {SupplierId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while updating the supplier" });
         }
     }
@@ -151,9 +148,9 @@ public class SuppliersController : ControllerBase
 
             return NoContent();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting supplier with ID: {SupplierId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while deleting the supplier" });
         }
     }

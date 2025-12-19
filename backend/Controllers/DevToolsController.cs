@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Services;
@@ -13,19 +13,15 @@ public class DevToolsController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IPasswordService _passwordService;
     private readonly INotificationService _notificationService;
-    private readonly ILogger<DevToolsController> _logger;
-
     public DevToolsController(
         ApplicationDbContext context, 
         IPasswordService passwordService,
-        INotificationService notificationService,
-        ILogger<DevToolsController> logger)
+        INotificationService notificationService)
     {
         _context = context;
         _passwordService = passwordService;
         _notificationService = notificationService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Temporärer Endpoint zum Reparieren der Passwort-Hashes
@@ -65,7 +61,6 @@ public class DevToolsController : ControllerBase
                         success = true
                     });
 
-                    _logger.LogInformation("Updated password hash for user: {Username}", username);
                 }
                 else
                 {
@@ -87,9 +82,9 @@ public class DevToolsController : ControllerBase
                 results = results
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error fixing password hashes");
+            
             return StatusCode(500, "Fehler beim Aktualisieren der Passwort-Hashes");
         }
     }
@@ -138,9 +133,9 @@ public class DevToolsController : ControllerBase
 
             return Ok(new { message = "Backfill abgeschlossen", created });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error backfilling notifications");
+            
             return StatusCode(500, new { message = "Fehler beim Backfill der Benachrichtigungen" });
         }
     }

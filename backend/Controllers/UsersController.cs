@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -11,13 +11,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly ILogger<UsersController> _logger;
-
-    public UsersController(IUserService userService, ILogger<UsersController> logger)
+    public UsersController(IUserService userService)
     {
         _userService = userService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Get all users
@@ -30,9 +27,9 @@ public class UsersController : ControllerBase
             var users = await _userService.GetAllUsersAsync();
             return Ok(users);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting users");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving users" });
         }
     }
@@ -48,9 +45,9 @@ public class UsersController : ControllerBase
             var result = await _userService.GetUsersPagedAsync(pageRequest);
             return Ok(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting users paged");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving users" });
         }
     }
@@ -72,9 +69,9 @@ public class UsersController : ControllerBase
 
             return Ok(user);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting user with ID: {UserId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while retrieving the user" });
         }
     }
@@ -96,9 +93,9 @@ public class UsersController : ControllerBase
             
             return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating user: {Username}", createUserDto.Username);
+            
             return StatusCode(500, new { message = "An error occurred while creating the user" });
         }
     }
@@ -125,9 +122,9 @@ public class UsersController : ControllerBase
 
             return Ok(user);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating user with ID: {UserId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while updating the user" });
         }
     }
@@ -149,9 +146,9 @@ public class UsersController : ControllerBase
 
             return NoContent();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting user with ID: {UserId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while deleting the user" });
         }
     }

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using backend.DTOs;
 using backend.Services;
 
@@ -9,13 +9,10 @@ namespace backend.Controllers
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService _projectService;
-        private readonly ILogger<ProjectsController> _logger;
-
-        public ProjectsController(IProjectService projectService, ILogger<ProjectsController> logger)
+        public ProjectsController(IProjectService projectService)
         {
             _projectService = projectService;
-            _logger = logger;
-        }
+            }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ProjectDto>>> GetProjects()
@@ -25,9 +22,9 @@ namespace backend.Controllers
             var projects = await _projectService.GetAllProjectsAsync();
             return Ok(projects);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting projects");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving projects" });
         }
     }
@@ -46,9 +43,9 @@ namespace backend.Controllers
 
             return Ok(project);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting project with ID: {ProjectId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while retrieving the project" });
         }
     }
@@ -67,9 +64,9 @@ namespace backend.Controllers
             
             return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating project");
+            
             return StatusCode(500, new { message = "An error occurred while creating the project" });
         }
     }
@@ -93,9 +90,9 @@ namespace backend.Controllers
 
             return Ok(project);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating project with ID: {ProjectId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while updating the project" });
         }
     }
@@ -114,9 +111,9 @@ namespace backend.Controllers
 
             return NoContent();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting project with ID: {ProjectId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while deleting the project" });
         }
     }

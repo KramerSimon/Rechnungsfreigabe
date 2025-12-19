@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.Services;
 using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Data;
@@ -16,20 +16,17 @@ public class ApprovalController : ControllerBase
     private readonly IApprovalService _approvalService;
     private readonly IInvoiceService _invoiceService;
     private readonly INotificationService _notificationService;
-    private readonly ILogger<ApprovalController> _logger;
     private readonly ApplicationDbContext _context;
 
     public ApprovalController(
         IApprovalService approvalService,
         IInvoiceService invoiceService,
         INotificationService notificationService,
-        ILogger<ApprovalController> logger,
         ApplicationDbContext context)
     {
         _approvalService = approvalService;
         _invoiceService = invoiceService;
         _notificationService = notificationService;
-        _logger = logger;
         _context = context;
     }
 
@@ -45,9 +42,9 @@ public class ApprovalController : ControllerBase
             var approvals = await _approvalService.GetPendingApprovalsAsync(userId);
             return Ok(approvals);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting pending approvals");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving pending approvals" });
         }
     }
@@ -75,12 +72,11 @@ public class ApprovalController : ControllerBase
                 await _notificationService.NotifyApprovalStatusAsync(invoiceId, "approved");
             }
 
-            _logger.LogInformation("Invoice approved by user {UserId}, approval {ApprovalId}", userId, approvalId);
             return Ok(new { message = "Invoice approved successfully" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error approving invoice");
+            
             return StatusCode(500, new { message = "An error occurred while approving the invoice" });
         }
     }
@@ -108,12 +104,11 @@ public class ApprovalController : ControllerBase
                 await _notificationService.NotifyApprovalStatusAsync(invoiceId, "rejected");
             }
 
-            _logger.LogInformation("Invoice rejected by user {UserId}, approval {ApprovalId}", userId, approvalId);
             return Ok(new { message = "Invoice rejected successfully" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error rejecting invoice");
+            
             return StatusCode(500, new { message = "An error occurred while rejecting the invoice" });
         }
     }
@@ -130,9 +125,9 @@ public class ApprovalController : ControllerBase
             var rules = await _approvalService.GetActiveRulesAsync();
             return Ok(rules);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting approval rules");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving approval rules" });
         }
     }
@@ -149,9 +144,9 @@ public class ApprovalController : ControllerBase
             var workflows = await _approvalService.GetAllWorkflowsAsync();
             return Ok(workflows);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting approval workflows");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving approval workflows" });
         }
     }
@@ -221,9 +216,9 @@ public class ApprovalController : ControllerBase
 
             return CreatedAtAction(nameof(GetApprovalWorkflows), new { id = result.Id }, result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating approval workflow");
+            
             return StatusCode(500, new { message = "An error occurred while creating the approval workflow" });
         }
     }
@@ -310,9 +305,9 @@ public class ApprovalController : ControllerBase
 
             return Ok(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating approval workflow");
+            
             return StatusCode(500, new { message = "An error occurred while updating the approval workflow" });
         }
     }
@@ -334,9 +329,9 @@ public class ApprovalController : ControllerBase
 
             return Ok(new { message = "Approval workflow deleted successfully" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting approval workflow {WorkflowId}", workflowId);
+            
             return StatusCode(500, new { message = "An error occurred while deleting the approval workflow" });
         }
     }
@@ -398,9 +393,9 @@ public class ApprovalController : ControllerBase
             var createdRule = await _approvalService.CreateRuleAsync(rule);
             return CreatedAtAction(nameof(GetApprovalRules), new { id = createdRule.Id }, createdRule);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating approval rule");
+            
             return StatusCode(500, new { message = "An error occurred while creating the approval rule" });
         }
     }
@@ -442,9 +437,9 @@ public class ApprovalController : ControllerBase
 
             return Ok(rule);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating approval rule");
+            
             return StatusCode(500, new { message = "An error occurred while updating the approval rule" });
         }
     }
@@ -466,9 +461,9 @@ public class ApprovalController : ControllerBase
 
             return Ok(new { message = "Approval rule deleted successfully" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting approval rule");
+            
             return StatusCode(500, new { message = "An error occurred while deleting the approval rule" });
         }
     }

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
@@ -15,13 +15,10 @@ public interface IPurchaseOrderService
 public class PurchaseOrderService : IPurchaseOrderService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<PurchaseOrderService> _logger;
-
-    public PurchaseOrderService(ApplicationDbContext context, ILogger<PurchaseOrderService> logger)
+    public PurchaseOrderService(ApplicationDbContext context)
     {
         _context = context;
-        _logger = logger;
-    }
+        }
 
     public async Task<IEnumerable<PurchaseOrderDto>> GetAllPurchaseOrdersAsync()
     {
@@ -67,8 +64,6 @@ public class PurchaseOrderService : IPurchaseOrderService
 
         _context.PurchaseOrders.Add(purchaseOrder);
         await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Purchase order created successfully: {PurchaseOrderId}", purchaseOrder.Id);
 
         return await GetPurchaseOrderByIdAsync(purchaseOrder.Id) 
             ?? throw new InvalidOperationException("Failed to retrieve created purchase order");

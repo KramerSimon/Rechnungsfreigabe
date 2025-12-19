@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
@@ -24,13 +24,10 @@ public interface IApprovalService
 public class ApprovalService : IApprovalService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<ApprovalService> _logger;
-
-    public ApprovalService(ApplicationDbContext context, ILogger<ApprovalService> logger)
+    public ApprovalService(ApplicationDbContext context)
     {
         _context = context;
-        _logger = logger;
-    }
+        }
 
     public async Task CreateApprovalWorkflowAsync(int invoiceId)
     {
@@ -45,29 +42,27 @@ public class ApprovalService : IApprovalService
 
             if (invoice == null)
             {
-                _logger.LogWarning("Invoice not found: {InvoiceId}", invoiceId);
+                
                 return;
             }
-
-            _logger.LogInformation("Creating approval workflow for invoice {InvoiceId}, Amount: {Amount}", invoiceId, invoice.TotalAmount);
 
             var matchedRule = await FindMatchingRuleAsync(invoice);
             
             if (matchedRule != null)
             {
-                _logger.LogInformation("Processing matched rule: {RuleName} (Type: {RuleType})", matchedRule.Name, matchedRule.RuleType);
+                
                 await ProcessRuleActionsAsync(invoice, matchedRule);
             }
             else
             {
-                _logger.LogInformation("No matching rule found, creating default approval workflow for invoice {InvoiceId}", invoiceId);
+                
                 // Default approval workflow
                 await CreateDefaultApprovalWorkflowAsync(invoice);
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating approval workflow for invoice: {InvoiceId}", invoiceId);
+            
             throw;
         }
     }
@@ -96,9 +91,9 @@ public class ApprovalService : IApprovalService
 
             return false;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error evaluating approval rules for invoice: {InvoiceId}", invoiceId);
+            
             return false;
         }
     }
@@ -118,12 +113,11 @@ public class ApprovalService : IApprovalService
             _context.ApprovalRules.Add(rule);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Approval rule created: {RuleName}", rule.Name);
             return rule;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating approval rule: {RuleName}", rule.Name);
+            
             throw;
         }
     }
@@ -138,12 +132,11 @@ public class ApprovalService : IApprovalService
             _context.ApprovalRules.Remove(rule);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Approval rule deleted: {RuleId}", ruleId);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting approval rule: {RuleId}", ruleId);
+            
             return false;
         }
     }
@@ -151,22 +144,17 @@ public class ApprovalService : IApprovalService
     private async Task<ApprovalRule?> FindMatchingRuleAsync(Invoice invoice)
     {
         var rules = await GetActiveRulesAsync();
-        
-        _logger.LogInformation("Found {RuleCount} active rules to evaluate", rules.Count());
-        
+
         foreach (var rule in rules.OrderBy(r => r.Priority))
         {
-            _logger.LogInformation("Evaluating rule ID {RuleId}: {RuleName} (Priority: {Priority}, Type: {RuleType})", 
-                rule.Id, rule.Name, rule.Priority, rule.RuleType);
-            
+
             if (await EvaluateRuleConditionsAsync(invoice, rule))
             {
-                _logger.LogInformation("✓ Matching rule found: {RuleName} (Priority: {Priority}, Type: {RuleType})", rule.Name, rule.Priority, rule.RuleType);
+                
                 return rule;
             }
         }
 
-        _logger.LogInformation("✗ No matching approval rule found for invoice");
         return null;
     }
 
@@ -174,15 +162,12 @@ public class ApprovalService : IApprovalService
     {
         try
         {
-            _logger.LogInformation("Evaluating rule: {RuleName}, Conditions JSON: {ConditionsJson}", rule.Name, rule.Conditions);
-            
+
             var conditions = JsonSerializer.Deserialize<RuleCondition[]>(rule.Conditions);
-            
-            _logger.LogInformation("Deserialized conditions count: {Count}", conditions?.Length ?? 0);
-            
+
             if (conditions == null || !conditions.Any())
             {
-                _logger.LogInformation("No conditions defined for rule {RuleName}, rule applies to all invoices", rule.Name);
+                
                 return true; // No conditions means rule applies to all
             }
 
@@ -194,9 +179,9 @@ public class ApprovalService : IApprovalService
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error evaluating rule conditions for rule: {RuleId}", rule.Id);
+            
             return false;
         }
     }
@@ -213,10 +198,7 @@ public class ApprovalService : IApprovalService
             "currency" => EvaluateStringCondition(invoice.Currency, condition),
             _ => false
         };
-        
-        _logger.LogInformation("Condition evaluation: {Field} {Operator} {Value} => {Result}", 
-            condition.Field, condition.Operator, condition.Value, result);
-        
+
         return Task.FromResult(result);
     }
 
@@ -280,9 +262,9 @@ public class ApprovalService : IApprovalService
                 await ProcessRuleActionAsync(invoice, rule, action);
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error processing rule actions for rule: {RuleId}", rule.Id);
+            
         }
     }
 
@@ -310,7 +292,7 @@ public class ApprovalService : IApprovalService
                 }
                 else
                 {
-                    _logger.LogWarning("assign_to action value is not a valid userId: {Value}", action.Value);
+                    
                 }
                 break;
         }
@@ -323,16 +305,34 @@ public class ApprovalService : IApprovalService
         invoice.UpdatedAt = DateTime.UtcNow;
         
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Invoice auto-approved: {InvoiceId}", invoice.Id);
+        
     }
 
     private async Task CreateApprovalWorkflowStepsAsync(Invoice invoice, ApprovalRule rule, RuleAction action)
     {
         var approvers = await GetApproversForActionAsync(invoice, action);
         
+        if (!approvers.Any())
+        {
+            // Keine Approver gefunden - Auto-Approve
+            Console.WriteLine($"[WARNING] No approvers found for invoice {invoice.Id}, auto-approving");
+            invoice.Status = InvoiceStatus.Freigegeben;
+            invoice.AutoApproved = true;
+            await _context.SaveChangesAsync();
+            return;
+        }
+        
         int stepNumber = 1;
         foreach (var approverId in approvers)
         {
+            // Validiere dass der Approver existiert
+            var approverExists = await _context.Users.AnyAsync(u => u.Id == approverId && u.IsActive);
+            if (!approverExists)
+            {
+                Console.WriteLine($"[WARNING] Approver {approverId} not found or inactive, skipping");
+                continue;
+            }
+            
             var workflow = new ApprovalWorkflow
             {
                 InvoiceId = invoice.Id,
@@ -356,7 +356,7 @@ public class ApprovalService : IApprovalService
         var userExists = await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive);
         if (!userExists)
         {
-            _logger.LogWarning("Cannot assign invoice {InvoiceId} to non-existent or inactive user {UserId}", invoice.Id, userId);
+            
             return;
         }
 
@@ -384,14 +384,22 @@ public class ApprovalService : IApprovalService
         // Add cost center manager if available
         if (invoice.CostCenter?.ManagerId.HasValue == true)
         {
-            approvers.Add(invoice.CostCenter.ManagerId.Value);
+            var managerExists = await _context.Users.AnyAsync(u => u.Id == invoice.CostCenter.ManagerId.Value && u.IsActive);
+            if (managerExists)
+            {
+                approvers.Add(invoice.CostCenter.ManagerId.Value);
+            }
         }
 
         // Add project manager if available and different from cost center manager
         if (invoice.Project?.ProjectManagerId.HasValue == true && 
             invoice.Project.ProjectManagerId != invoice.CostCenter?.ManagerId)
         {
-            approvers.Add(invoice.Project.ProjectManagerId.Value);
+            var pmExists = await _context.Users.AnyAsync(u => u.Id == invoice.Project.ProjectManagerId.Value && u.IsActive);
+            if (pmExists)
+            {
+                approvers.Add(invoice.Project.ProjectManagerId.Value);
+            }
         }
 
         // If no specific approvers, find users with approval permissions
@@ -432,6 +440,7 @@ public class ApprovalService : IApprovalService
         else
         {
             // No approvers found, auto-approve
+            Console.WriteLine($"[WARNING] No approvers found for invoice {invoice.Id}, auto-approving");
             invoice.Status = InvoiceStatus.Freigegeben;
             invoice.AutoApproved = true;
         }
@@ -520,9 +529,9 @@ public class ApprovalService : IApprovalService
 
             return workflows;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting pending approvals for user: {UserId}", userId);
+            
             return new List<ApprovalWorkflowDto>();
         }
     }
@@ -540,7 +549,7 @@ public class ApprovalService : IApprovalService
 
             if (approval.ApproverId != userId)
             {
-                _logger.LogWarning("Unauthorized approval attempt by user {UserId} for approval {ApprovalId}", userId, approvalId);
+                
                 return false;
             }
 
@@ -558,16 +567,16 @@ public class ApprovalService : IApprovalService
             {
                 // All approvals done, set invoice as approved
                 invoice.Status = InvoiceStatus.Freigegeben;
-                _logger.LogInformation("Invoice {InvoiceId} fully approved", invoice.Id);
+                
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Approval {ApprovalId} approved by user {UserId}", approvalId, userId);
+            
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error approving invoice approval: {ApprovalId}", approvalId);
+            
             return false;
         }
     }
@@ -585,7 +594,7 @@ public class ApprovalService : IApprovalService
 
             if (approval.ApproverId != userId)
             {
-                _logger.LogWarning("Unauthorized rejection attempt by user {UserId} for approval {ApprovalId}", userId, approvalId);
+                
                 return false;
             }
 
@@ -608,12 +617,12 @@ public class ApprovalService : IApprovalService
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Invoice {InvoiceId} rejected by user {UserId}", invoice.Id, userId);
+            
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error rejecting invoice approval: {ApprovalId}", approvalId);
+            
             return false;
         }
     }
@@ -627,9 +636,9 @@ public class ApprovalService : IApprovalService
 
             return approval?.InvoiceId ?? 0;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting invoice ID from approval: {ApprovalId}", approvalId);
+            
             return 0;
         }
     }
@@ -658,9 +667,9 @@ public class ApprovalService : IApprovalService
 
             return workflows;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting all approval workflows");
+            
             return Enumerable.Empty<ApprovalWorkflowDto>();
         }
     }
@@ -675,12 +684,11 @@ public class ApprovalService : IApprovalService
             _context.ApprovalWorkflows.Remove(workflow);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Approval workflow deleted: {WorkflowId}", workflowId);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting approval workflow: {WorkflowId}", workflowId);
+            
             return false;
         }
     }

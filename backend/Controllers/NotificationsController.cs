@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -12,13 +12,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class NotificationsController : ControllerBase
 {
     private readonly INotificationService _notificationService;
-    private readonly ILogger<NotificationsController> _logger;
-
-    public NotificationsController(INotificationService notificationService, ILogger<NotificationsController> logger)
+    public NotificationsController(INotificationService notificationService)
     {
         _notificationService = notificationService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Get notifications for current user
@@ -32,9 +29,9 @@ public class NotificationsController : ControllerBase
             var notifications = await _notificationService.GetUserNotificationsAsync(userId, unreadOnly);
             return Ok(notifications);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting notifications");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving notifications" });
         }
     }
@@ -51,9 +48,9 @@ public class NotificationsController : ControllerBase
             var count = await _notificationService.GetUnreadCountAsync(userId);
             return Ok(new { count });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting unread count");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving unread count" });
         }
     }
@@ -76,9 +73,9 @@ public class NotificationsController : ControllerBase
 
             return Ok(new { message = "Notification marked as read" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error marking notification as read: {NotificationId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while marking notification as read" });
         }
     }
@@ -101,9 +98,9 @@ public class NotificationsController : ControllerBase
 
             return Ok(new { message = "All notifications marked as read" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error marking all notifications as read");
+            
             return StatusCode(500, new { message = "An error occurred while marking all notifications as read" });
         }
     }

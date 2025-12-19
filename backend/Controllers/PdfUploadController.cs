@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.Services;
 using RechnungsfreigabeAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -13,16 +13,13 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class PdfUploadController : ControllerBase
 {
     private readonly IPdfUploadService _pdfUploadService;
-    private readonly ILogger<PdfUploadController> _logger;
     private readonly ApplicationDbContext _context;
 
     public PdfUploadController(
         IPdfUploadService pdfUploadService,
-        ILogger<PdfUploadController> logger,
         ApplicationDbContext context)
     {
         _pdfUploadService = pdfUploadService;
-        _logger = logger;
         _context = context;
     }
 
@@ -61,17 +58,14 @@ public class PdfUploadController : ControllerBase
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Validation error during PDF upload");
             return BadRequest(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Operation error during PDF upload");
             return BadRequest(new { message = ex.Message });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error uploading PDF");
             return StatusCode(500, new { message = "An error occurred while uploading the file" });
         }
     }
@@ -95,7 +89,7 @@ public class PdfUploadController : ControllerBase
             if (invoice.PdfContent != null && invoice.PdfContent.Length > 0)
             {
                 var fileName = invoice.OriginalFilename ?? $"invoice_{invoiceId}.pdf";
-                _logger.LogInformation($"Serving PDF from database for invoice {invoiceId}, size: {invoice.PdfContent.Length} bytes");
+                
                 return File(invoice.PdfContent, "application/pdf", fileName);
             }
 
@@ -114,7 +108,7 @@ public class PdfUploadController : ControllerBase
                 {
                     var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
                     var fileName = invoice.OriginalFilename ?? Path.GetFileName(filePath);
-                    _logger.LogInformation($"Serving PDF from filesystem for invoice {invoiceId} (legacy): {filePath}");
+                    
                     return File(fileBytes, "application/pdf", fileName);
                 }
             }
@@ -123,7 +117,6 @@ public class PdfUploadController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error downloading PDF for invoice {invoiceId}");
             return StatusCode(500, new { message = ex.Message });
         }
     }
@@ -150,12 +143,11 @@ public class PdfUploadController : ControllerBase
             }
 
             var fileName = invoice.OriginalFilename ?? "invoice.pdf";
-            _logger.LogInformation($"Serving PDF from database, size: {invoice.PdfContent.Length} bytes");
+            
             return File(invoice.PdfContent, "application/pdf", fileName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error downloading PDF by path");
             return StatusCode(500, new { message = ex.Message });
         }
     }
@@ -177,9 +169,9 @@ public class PdfUploadController : ControllerBase
 
             return Ok(new { message = "PDF deleted successfully" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, $"Error deleting PDF for invoice {invoiceId}");
+            
             return StatusCode(500, new { message = "An error occurred while deleting the PDF" });
         }
     }
@@ -195,9 +187,9 @@ public class PdfUploadController : ControllerBase
             var status = await _pdfUploadService.GetUploadStatusAsync();
             return Ok(status);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting upload status");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving upload status" });
         }
     }
@@ -254,9 +246,9 @@ public class PdfUploadController : ControllerBase
 
             return Ok(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error during bulk PDF upload");
+            
             return StatusCode(500, new { message = "An error occurred during bulk upload" });
         }
     }
@@ -274,7 +266,7 @@ public class PdfUploadController : ControllerBase
         }
         
         // Fallback to user ID 1 (default admin) when auth is disabled for testing
-        _logger.LogWarning("No valid user ID found in token, using default user ID 1");
+        
         return 1;
     }
 }

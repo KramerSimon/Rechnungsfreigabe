@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -11,13 +11,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class CostCentersController : ControllerBase
 {
     private readonly ICostCenterService _costCenterService;
-    private readonly ILogger<CostCentersController> _logger;
-
-    public CostCentersController(ICostCenterService costCenterService, ILogger<CostCentersController> logger)
+    public CostCentersController(ICostCenterService costCenterService)
     {
         _costCenterService = costCenterService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Get all cost centers
@@ -30,9 +27,9 @@ public class CostCentersController : ControllerBase
             var costCenters = await _costCenterService.GetAllCostCentersAsync();
             return Ok(costCenters);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting cost centers");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving cost centers" });
         }
     }
@@ -54,9 +51,9 @@ public class CostCentersController : ControllerBase
 
             return Ok(costCenter);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting cost center with ID: {CostCenterId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while retrieving the cost center" });
         }
     }
@@ -72,9 +69,9 @@ public class CostCentersController : ControllerBase
             var projects = await _costCenterService.GetCostCenterProjectsAsync(id);
             return Ok(projects);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting projects for cost center: {CostCenterId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while retrieving projects" });
         }
     }
@@ -90,9 +87,9 @@ public class CostCentersController : ControllerBase
             var allProjects = await _costCenterService.GetAllProjectsAsync();
             return Ok(allProjects);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting all projects");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving all projects" });
         }
     }
@@ -117,9 +114,9 @@ public class CostCentersController : ControllerBase
             
             return Created($"/api/costcenters/{costCenterId}/projects/{project.Id}", project);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating project for cost center: {CostCenterId}", costCenterId);
+            
             return StatusCode(500, new { message = "An error occurred while creating the project" });
         }
     }
@@ -141,9 +138,9 @@ public class CostCentersController : ControllerBase
             
             return CreatedAtAction(nameof(GetCostCenter), new { id = costCenter.Id }, costCenter);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating cost center: {CostCenterId}", createCostCenterDto.Id);
+            
             return StatusCode(500, new { message = "An error occurred while creating the cost center" });
         }
     }
@@ -170,9 +167,9 @@ public class CostCentersController : ControllerBase
 
             return Ok(costCenter);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating cost center with ID: {CostCenterId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while updating the cost center" });
         }
     }
@@ -194,9 +191,9 @@ public class CostCentersController : ControllerBase
 
             return NoContent();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting cost center with ID: {CostCenterId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while deleting the cost center" });
         }
     }

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
@@ -26,13 +26,10 @@ public interface IUserService
 public class UserService : IUserService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<UserService> _logger;
-
-    public UserService(ApplicationDbContext context, ILogger<UserService> logger)
+    public UserService(ApplicationDbContext context)
     {
         _context = context;
-        _logger = logger;
-    }
+        }
 
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
     {
@@ -110,12 +107,11 @@ public class UserService : IUserService
                 .ThenInclude(ur => ur.Role)
                 .FirstAsync(u => u.Id == user.Id);
 
-            _logger.LogInformation("User created successfully: {Username}", user.Username);
             return MapToDto(createdUser);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating user: {Username}", createUserDto.Username);
+            
             throw;
         }
     }
@@ -169,12 +165,11 @@ public class UserService : IUserService
                 .ThenInclude(ur => ur.Role)
                 .FirstAsync(u => u.Id == id);
 
-            _logger.LogInformation("User updated successfully: {Username}", user.Username);
             return MapToDto(updatedUser);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating user with ID: {UserId}", id);
+            
             throw;
         }
     }
@@ -192,12 +187,11 @@ public class UserService : IUserService
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("User soft deleted: {Username}", user.Username);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting user with ID: {UserId}", id);
+            
             throw;
         }
     }

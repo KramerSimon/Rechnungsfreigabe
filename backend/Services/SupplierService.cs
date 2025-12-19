@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
@@ -18,13 +18,10 @@ public interface ISupplierService
 public class SupplierService : ISupplierService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<SupplierService> _logger;
-
-    public SupplierService(ApplicationDbContext context, ILogger<SupplierService> logger)
+    public SupplierService(ApplicationDbContext context)
     {
         _context = context;
-        _logger = logger;
-    }
+        }
 
     public async Task<IEnumerable<SupplierDto>> GetAllSuppliersAsync()
     {
@@ -70,12 +67,11 @@ public class SupplierService : ISupplierService
             _context.Suppliers.Add(supplier);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Supplier created successfully: {SupplierName}", supplier.Name);
             return MapToDto(supplier);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating supplier: {SupplierName}", createSupplierDto.Name);
+            
             throw;
         }
     }
@@ -106,12 +102,11 @@ public class SupplierService : ISupplierService
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Supplier updated successfully: {SupplierId}", id);
             return MapToDto(supplier);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating supplier with ID: {SupplierId}", id);
+            
             throw;
         }
     }
@@ -127,12 +122,11 @@ public class SupplierService : ISupplierService
             _context.Suppliers.Remove(supplier);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Supplier deleted permanently: {SupplierId}", id);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting supplier with ID: {SupplierId}", id);
+            
             throw;
         }
     }

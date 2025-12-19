@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -11,15 +11,11 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class EscalationRulesController : ControllerBase
 {
     private readonly IEscalationRuleService _escalationRuleService;
-    private readonly ILogger<EscalationRulesController> _logger;
-
     public EscalationRulesController(
-        IEscalationRuleService escalationRuleService,
-        ILogger<EscalationRulesController> logger)
+        IEscalationRuleService escalationRuleService)
     {
         _escalationRuleService = escalationRuleService;
-        _logger = logger;
-    }
+        }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EscalationRuleDto>>> GetRules()
@@ -29,9 +25,9 @@ public class EscalationRulesController : ControllerBase
             var rules = await _escalationRuleService.GetAllAsync();
             return Ok(rules);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error retrieving escalation rules");
+            
             return StatusCode(500, new { message = "Fehler beim Laden der Eskalationsregeln" });
         }
     }
@@ -45,9 +41,9 @@ public class EscalationRulesController : ControllerBase
             if (rule == null) return NotFound(new { message = "Regel nicht gefunden" });
             return Ok(rule);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error retrieving escalation rule {RuleId}", id);
+            
             return StatusCode(500, new { message = "Fehler beim Laden der Eskalationsregel" });
         }
     }
@@ -65,9 +61,9 @@ public class EscalationRulesController : ControllerBase
             var created = await _escalationRuleService.CreateAsync(dto);
             return CreatedAtAction(nameof(GetRule), new { id = created.Id }, created);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating escalation rule");
+            
             return StatusCode(500, new { message = "Fehler beim Anlegen der Eskalationsregel" });
         }
     }
@@ -86,9 +82,9 @@ public class EscalationRulesController : ControllerBase
             if (updated == null) return NotFound(new { message = "Regel nicht gefunden" });
             return Ok(updated);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating escalation rule {RuleId}", id);
+            
             return StatusCode(500, new { message = "Fehler beim Aktualisieren der Eskalationsregel" });
         }
     }
@@ -102,9 +98,9 @@ public class EscalationRulesController : ControllerBase
             if (!deleted) return NotFound(new { message = "Regel nicht gefunden" });
             return NoContent();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting escalation rule {RuleId}", id);
+            
             return StatusCode(500, new { message = "Fehler beim Löschen der Eskalationsregel" });
         }
     }

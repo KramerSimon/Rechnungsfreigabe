@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
@@ -24,20 +24,17 @@ public class InvoiceHistoryService : IInvoiceHistoryService
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
-    private readonly ILogger<InvoiceHistoryService> _logger;
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
 
     public InvoiceHistoryService(
         ApplicationDbContext context,
         IMapper mapper,
-        ILogger<InvoiceHistoryService> logger,
         IEmailService emailService,
         INotificationService notificationService)
     {
         _context = context;
         _mapper = mapper;
-        _logger = logger;
         _emailService = emailService;
         _notificationService = notificationService;
     }
@@ -57,8 +54,8 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             Action = createHistoryDto.Action,
             ActionType = actionType,
             ActionSource = actionSource,
-            OldStatus = createHistoryDto.OldStatus,
-            NewStatus = createHistoryDto.NewStatus,
+            OldStatus = TruncateStatus(createHistoryDto.OldStatus),
+            NewStatus = TruncateStatus(createHistoryDto.NewStatus),
             FieldChanges = fieldChangesJson,
             Comments = createHistoryDto.Comments,
             PolicyReference = createHistoryDto.PolicyReference,
@@ -71,7 +68,6 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         _context.InvoiceHistories.Add(history);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Created history entry for invoice {InvoiceId}: {Action}", createHistoryDto.InvoiceId, createHistoryDto.Action);
     }
 
     public async Task<List<InvoiceHistoryDto>> GetInvoiceHistoryAsync(int invoiceId)
@@ -248,5 +244,12 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             "GESTERN" => DateTime.Today.AddDays(-1),
             _ => DateTime.ParseExact(timelineDate, "dd. MMMM yyyy", new System.Globalization.CultureInfo("de-DE"))
         };
+    }
+
+    private static string? TruncateStatus(string? status)
+    {
+        // Truncate status to 20 characters to fit database column
+        if (status == null) return null;
+        return status.Length > 20 ? status.Substring(0, 20) : status;
     }
 }

@@ -5,18 +5,20 @@ using Microsoft.OpenApi.Models;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Services;
 using RechnungsfreigabeAPI.Utilities;
-using Serilog;
+using Microsoft.Extensions.Logging;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/rechnungsfreigabe-.txt", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
-
-builder.Host.UseSerilog();
+// Restrict logging to startup and database events only
+builder.Logging.ClearProviders();
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.SingleLine = true;
+    options.TimestampFormat = "HH:mm:ss ";
+});
+builder.Logging.AddFilter((category, level) =>
+    category == "Startup" || category == "Database");
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -133,6 +135,12 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+var startupLogger = loggerFactory.CreateLogger("Startup");
+var dbLogger = loggerFactory.CreateLogger("Database");
+
+startupLogger.LogInformation("Server starting.");
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -166,11 +174,11 @@ using (var scope = app.Services.CreateScope())
     try
     {
         context.Database.EnsureCreated();
-        Log.Information("Database connection established successfully.");
+        dbLogger.LogInformation("Database connection established successfully.");
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "An error occurred while connecting to the database.");
+        dbLogger.LogError(ex, "An error occurred while connecting to the database.");
     }
 }
 

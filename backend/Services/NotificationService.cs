@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
@@ -22,13 +22,10 @@ public interface INotificationService
 public class NotificationService : INotificationService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<NotificationService> _logger;
-
-    public NotificationService(ApplicationDbContext context, ILogger<NotificationService> logger)
+    public NotificationService(ApplicationDbContext context)
     {
         _context = context;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Ensure the approver has a pending approval notification for a given invoice.
@@ -58,9 +55,9 @@ public class NotificationService : INotificationService
                 NotificationPriority.Normal
             );
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error ensuring approver notification for invoice {InvoiceId} and user {UserId}", invoiceId, approverId);
+            
         }
     }
 
@@ -115,12 +112,11 @@ public class NotificationService : INotificationService
                 .ThenInclude(i => i!.Supplier)
                 .FirstAsync(n => n.Id == notification.Id);
 
-            _logger.LogInformation("Notification created for user {UserId}: {Title}", userId, title);
             return MapToDto(createdNotification);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating notification for user {UserId}", userId);
+            
             throw;
         }
     }
@@ -140,9 +136,9 @@ public class NotificationService : INotificationService
             await _context.SaveChangesAsync();
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error marking notification as read: {NotificationId}", notificationId);
+            
             return false;
         }
     }
@@ -162,12 +158,12 @@ public class NotificationService : INotificationService
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Marked {Count} notifications as read for user {UserId}", unreadNotifications.Count, userId);
+            
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error marking all notifications as read for user {UserId}", userId);
+            
             return false;
         }
     }
@@ -254,9 +250,9 @@ public class NotificationService : INotificationService
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error sending invoice created notifications for invoice {InvoiceId}", invoiceId);
+            
         }
     }
 
@@ -308,9 +304,9 @@ public class NotificationService : INotificationService
                 );
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error sending invoice approval notifications for invoice {InvoiceId}", invoiceId);
+            
         }
     }
 
@@ -358,11 +354,10 @@ public class NotificationService : INotificationService
                 }
             }
 
-            _logger.LogInformation("Processed {Count} overdue invoices", overdueInvoices.Count);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error processing overdue invoices notifications");
+            
         }
     }
 
@@ -422,9 +417,9 @@ public class NotificationService : INotificationService
                 );
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error notifying approval status for invoice: {InvoiceId}", invoiceId);
+            
         }
     }
 }

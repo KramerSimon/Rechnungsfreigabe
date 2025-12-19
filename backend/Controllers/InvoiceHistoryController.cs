@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -11,13 +11,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class HistoryController : ControllerBase
 {
     private readonly IInvoiceHistoryService _historyService;
-    private readonly ILogger<HistoryController> _logger;
-
-    public HistoryController(IInvoiceHistoryService historyService, ILogger<HistoryController> logger)
+    public HistoryController(IInvoiceHistoryService historyService)
     {
         _historyService = historyService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Get invoice history as timeline
@@ -29,14 +26,13 @@ public class HistoryController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Getting history timeline for invoice {InvoiceId}", invoiceId);
-            
+
             var timeline = await _historyService.GetInvoiceHistoryTimelineAsync(invoiceId);
             return Ok(timeline);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error retrieving invoice history timeline for invoice {InvoiceId}", invoiceId);
+            
             return StatusCode(500, "Fehler beim Laden der Rechnungshistorie");
         }
     }
@@ -54,9 +50,9 @@ public class HistoryController : ControllerBase
             var history = await _historyService.GetInvoiceHistoryAsync(invoiceId);
             return Ok(history);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error retrieving invoice history for invoice {InvoiceId}", invoiceId);
+            
             return StatusCode(500, "Fehler beim Laden der Rechnungshistorie");
         }
     }
@@ -77,9 +73,9 @@ public class HistoryController : ControllerBase
             await _historyService.CreateHistoryEntryAsync(createHistoryDto);
             return Ok(new { message = "Historie-Eintrag erfolgreich erstellt" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating history entry for invoice {InvoiceId}", invoiceId);
+            
             return StatusCode(500, "Fehler beim Erstellen des Historie-Eintrags");
         }
     }

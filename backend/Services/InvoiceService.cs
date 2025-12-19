@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
@@ -30,22 +30,19 @@ public interface IInvoiceService
 public class InvoiceService : IInvoiceService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<InvoiceService> _logger;
     private readonly IApprovalService _approvalService;
     private readonly INotificationService _notificationService;
     private readonly IInvoiceHistoryService _historyService;
     private readonly IUserService _userService;
 
     public InvoiceService(
-        ApplicationDbContext context, 
-        ILogger<InvoiceService> logger,
+        ApplicationDbContext context,
         IApprovalService approvalService,
         INotificationService notificationService,
         IInvoiceHistoryService historyService,
         IUserService userService)
     {
         _context = context;
-        _logger = logger;
         _approvalService = approvalService;
         _notificationService = notificationService;
         _historyService = historyService;
@@ -169,7 +166,27 @@ public class InvoiceService : IInvoiceService
             };
 
             _context.Invoices.Add(invoice);
-            await _context.SaveChangesAsync();
+            
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException dbEx)
+            {
+                // Mehr Details bei Datenbankfehlern
+                var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+                var fullMessage = $"Database error: {dbEx.Message}";
+                if (dbEx.InnerException != null)
+                {
+                    fullMessage += $" | Inner: {innerMessage}";
+                    if (dbEx.InnerException.InnerException != null)
+                    {
+                        fullMessage += $" | InnerInner: {dbEx.InnerException.InnerException.Message}";
+                    }
+                }
+                Console.WriteLine($"[ERROR] {fullMessage}");
+                throw new InvalidOperationException(fullMessage, dbEx);
+            }
 
             // Create approval workflows based on rules
             if (createInvoiceDto.RequiresApproval)
@@ -184,7 +201,7 @@ public class InvoiceService : IInvoiceService
                 Action = "Rechnung importiert",
                 ActionType = HistoryActionType.Created.ToString(),
                 ActionSource = HistoryActionSource.Import.ToString(),
-                NewStatus = invoice.Status.ToString(),
+                NewStatus = TruncateStatus(invoice.Status.ToString()),
                 ImportChannel = "E-Mail", // Default, can be parameterized later
                 ChangedBy = createdBy
             });
@@ -194,15 +211,13 @@ public class InvoiceService : IInvoiceService
             // Send notifications
             await _notificationService.NotifyInvoiceCreatedAsync(invoice.Id);
 
-            _logger.LogInformation("Invoice created successfully: {InvoiceNumber}", invoice.InvoiceNumber);
-
             // Return the created invoice with full details
             return await GetInvoiceByIdInternalAsync(invoice.Id) ?? throw new InvalidOperationException("Failed to retrieve created invoice");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error creating invoice: {InvoiceNumber}", createInvoiceDto.InvoiceNumber);
+            
             throw;
         }
     }
@@ -327,13 +342,12 @@ public class InvoiceService : IInvoiceService
 
             await transaction.CommitAsync();
 
-            _logger.LogInformation("Invoice updated successfully: {InvoiceId}", id);
             return await GetInvoiceByIdInternalAsync(id);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error updating invoice with ID: {InvoiceId}", id);
+            
             throw;
         }
     }
@@ -370,12 +384,11 @@ public class InvoiceService : IInvoiceService
             _context.Invoices.Remove(invoice);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Invoice hard deleted: {InvoiceId}", id);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting invoice with ID: {InvoiceId}", id);
+            
             throw;
         }
     }
@@ -472,9 +485,6 @@ public class InvoiceService : IInvoiceService
 
                     await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, true);
 
-                    _logger.LogInformation("Invoice {InvoiceId} approved by admin (all workflows) - user {UserId}", 
-                        invoiceId, approverId);
-
                     return true;
                 }
                 else
@@ -488,9 +498,6 @@ public class InvoiceService : IInvoiceService
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
                     await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, true);
-
-                    _logger.LogInformation("Invoice {InvoiceId} approved by admin override (no workflows) - user {UserId}", 
-                        invoiceId, approverId);
 
                     return true;
                 }
@@ -518,8 +525,6 @@ public class InvoiceService : IInvoiceService
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, false);
-
-                _logger.LogInformation("Invoice {InvoiceId} rejected by admin - user {UserId}", invoiceId, approverId);
 
                 return true;
             }
@@ -571,16 +576,12 @@ public class InvoiceService : IInvoiceService
             // Send notifications
             await _notificationService.NotifyInvoiceApprovalAsync(invoiceId, approveDto.Approved);
 
-            _logger.LogInformation("Invoice {InvoiceId} {Action} by user {UserId}", 
-                invoiceId, approveDto.Approved ? "approved" : "rejected", approverId);
-
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error processing approval for invoice {InvoiceId} by user {UserId}", 
-                invoiceId, approverId);
+            
             throw;
         }
     }
@@ -601,14 +602,11 @@ public class InvoiceService : IInvoiceService
 
             await _historyService.CreateStatusChangeAsync(id, oldStatus, status.ToString(), updatedBy);
 
-            _logger.LogInformation("Invoice status updated: {InvoiceId} from {OldStatus} to {NewStatus}", 
-                id, oldStatus, status);
-
             return await GetInvoiceByIdInternalAsync(id);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating invoice status for ID: {InvoiceId}", id);
+            
             throw;
         }
     }
@@ -856,5 +854,11 @@ public class InvoiceService : IInvoiceService
             "PurchaseOrderId" => "Bestellung",
             _ => fieldName
         };
+    }
+
+    private static string TruncateStatus(string status)
+    {
+        // Truncate status to 20 characters to fit database column
+        return status.Length > 20 ? status.Substring(0, 20) : status;
     }
 }

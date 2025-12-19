@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -13,14 +13,11 @@ public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
     private readonly IUserService _userService;
-    private readonly ILogger<InvoicesController> _logger;
-
-    public InvoicesController(IInvoiceService invoiceService, IUserService userService, ILogger<InvoicesController> logger)
+    public InvoicesController(IInvoiceService invoiceService, IUserService userService)
     {
         _invoiceService = invoiceService;
         _userService = userService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Get all invoices with pagination
@@ -35,9 +32,9 @@ public class InvoicesController : ControllerBase
             var result = await _invoiceService.GetInvoicesPagedAsync(pageRequest, userId, userPermissions);
             return Ok(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting invoices");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving invoices" });
         }
     }
@@ -61,9 +58,9 @@ public class InvoicesController : ControllerBase
 
             return Ok(invoice);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting invoice with ID: {InvoiceId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while retrieving the invoice" });
         }
     }
@@ -86,9 +83,9 @@ public class InvoicesController : ControllerBase
             
             return CreatedAtAction(nameof(GetInvoice), new { id = invoice.Id }, invoice);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating invoice: {InvoiceNumber}", createInvoiceDto.InvoiceNumber);
+            
             return StatusCode(500, new { message = "An error occurred while creating the invoice" });
         }
     }
@@ -116,9 +113,9 @@ public class InvoicesController : ControllerBase
 
             return Ok(invoice);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating invoice with ID: {InvoiceId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while updating the invoice" });
         }
     }
@@ -140,9 +137,9 @@ public class InvoicesController : ControllerBase
 
             return NoContent();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting invoice with ID: {InvoiceId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while deleting the invoice" });
         }
     }
@@ -158,9 +155,9 @@ public class InvoicesController : ControllerBase
             var stats = await _invoiceService.GetDashboardStatsAsync();
             return Ok(stats);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting dashboard stats");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving dashboard statistics" });
         }
     }
@@ -177,9 +174,9 @@ public class InvoicesController : ControllerBase
             var invoices = await _invoiceService.GetPendingApprovalsAsync(userId);
             return Ok(invoices);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting pending approvals");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving pending approvals" });
         }
     }
@@ -207,9 +204,9 @@ public class InvoicesController : ControllerBase
 
             return Ok(new { message = approveDto.Approved ? "Invoice approved successfully" : "Invoice rejected successfully" });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error processing approval for invoice with ID: {InvoiceId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while processing the approval" });
         }
     }
@@ -237,9 +234,9 @@ public class InvoicesController : ControllerBase
 
             return Ok(invoice);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating status for invoice with ID: {InvoiceId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while updating the invoice status" });
         }
     }

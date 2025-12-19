@@ -1,4 +1,4 @@
-using BC = BCrypt.Net.BCrypt;
+﻿using BC = BCrypt.Net.BCrypt;
 
 namespace RechnungsfreigabeAPI.Services;
 
@@ -13,13 +13,10 @@ public interface IPasswordService
 public class PasswordService : IPasswordService
 {
     private readonly IConfiguration _configuration;
-    private readonly ILogger<PasswordService> _logger;
-    
-    public PasswordService(IConfiguration configuration, ILogger<PasswordService> logger)
+    public PasswordService(IConfiguration configuration)
     {
         _configuration = configuration;
-        _logger = logger;
-    }
+        }
 
     public string HashPassword(string password)
     {
@@ -39,9 +36,9 @@ public class PasswordService : IPasswordService
         {
             return BC.Verify(password, hash);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogWarning(ex, "Error verifying password hash");
+            
             return false;
         }
     }

@@ -1,4 +1,4 @@
-using RechnungsfreigabeAPI.Models;
+﻿using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +22,6 @@ public interface IPdfUploadService
 public class PdfUploadService : IPdfUploadService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<PdfUploadService> _logger;
     private readonly IInvoiceService _invoiceService;
     private readonly string _uploadDirectory;
     private readonly long _maxFileSize = 50 * 1024 * 1024; // 50 MB
@@ -30,12 +29,10 @@ public class PdfUploadService : IPdfUploadService
 
     public PdfUploadService(
         ApplicationDbContext context,
-        ILogger<PdfUploadService> logger,
         IInvoiceService invoiceService,
         IWebHostEnvironment webHostEnvironment)
     {
         _context = context;
-        _logger = logger;
         _invoiceService = invoiceService;
         _uploadDirectory = Path.Combine(webHostEnvironment.ContentRootPath, "uploads", "invoices");
         
@@ -50,11 +47,16 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            _logger.LogInformation($"Starting PDF upload: {file.FileName}, userId: {userId}");
 
             // Validiere die Datei
             ValidateFile(file);
-            _logger.LogInformation($"File validation passed");
+
+            // Validiere dass der User existiert
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+            {
+                throw new InvalidOperationException($"User with ID {userId} not found");
+            }
 
             // Lies die PDF-Datei in den Speicher
             byte[] pdfContent;
@@ -63,11 +65,9 @@ public class PdfUploadService : IPdfUploadService
                 await file.CopyToAsync(memoryStream);
                 pdfContent = memoryStream.ToArray();
             }
-            _logger.LogInformation($"PDF read into memory: {pdfContent.Length} bytes");
 
             // Generiere eindeutigen Dateinamen
             var fileName = GenerateUniqueFileName(file.FileName);
-            _logger.LogInformation($"Generated filename: {fileName}");
 
             // Extrahiere Daten aus dem PDF
             var tempPath = Path.Combine(_uploadDirectory, fileName);
@@ -75,14 +75,11 @@ public class PdfUploadService : IPdfUploadService
             {
                 await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
             }
-            _logger.LogInformation($"Temp file written: {tempPath}");
 
             var pdfData = ExtractInvoiceDataFromPdf(tempPath);
-            _logger.LogInformation($"PDF data extracted - Amount: {pdfData.TotalAmount}, Supplier: {pdfData.SupplierInfo?.Name}");
-            
+
             // Generiere Rechnungsnummer im Format FAT-{Nummer}-{Jahr}
             var invoiceNumber = await GenerateInvoiceNumberAsync();
-            _logger.LogInformation($"Generated invoice number: {invoiceNumber}");
 
             // Finde oder erstelle Lieferant
             int finalSupplierId;
@@ -92,17 +89,49 @@ public class PdfUploadService : IPdfUploadService
                 var supplier = await _context.Suppliers.FindAsync(supplierId.Value);
                 if (supplier == null)
                 {
-                    _logger.LogError($"Supplier with ID {supplierId} not found");
+                    
                     throw new InvalidOperationException($"Supplier with ID {supplierId} not found");
                 }
                 finalSupplierId = supplierId.Value;
-                _logger.LogInformation($"Using provided supplier: {supplier.Name} (ID: {finalSupplierId})");
+                
             }
             else
             {
                 // Extrahiere und erstelle/finde Lieferant aus PDF
                 finalSupplierId = await FindOrCreateSupplierAsync(pdfData.SupplierInfo, tempPath);
-                _logger.LogInformation($"Found or created supplier from PDF (ID: {finalSupplierId})");
+                
+            }
+
+            // Validiere Purchase Order ID falls angegeben
+            string? validatedPurchaseOrderId = null;
+            if (!string.IsNullOrWhiteSpace(purchaseOrderId))
+            {
+                var purchaseOrderExists = await _context.PurchaseOrders.AnyAsync(po => po.Id == purchaseOrderId);
+                if (!purchaseOrderExists)
+                {
+                    // Log warnung aber blockiere nicht - setze einfach null
+                    Console.WriteLine($"Warning: Purchase Order '{purchaseOrderId}' not found, setting to null");
+                }
+                else
+                {
+                    validatedPurchaseOrderId = purchaseOrderId;
+                }
+            }
+
+            // Validiere Cost Center ID falls angegeben
+            string? validatedCostCenterId = null;
+            if (!string.IsNullOrWhiteSpace(costCenterId))
+            {
+                var costCenterExists = await _context.CostCenters.AnyAsync(cc => cc.Id == costCenterId);
+                if (!costCenterExists)
+                {
+                    // Log warnung aber blockiere nicht - setze einfach null
+                    Console.WriteLine($"Warning: Cost Center '{costCenterId}' not found, setting to null");
+                }
+                else
+                {
+                    validatedCostCenterId = costCenterId;
+                }
             }
 
             // Erstelle Invoice-Eintrag in der Datenbank mit extrahierten Daten
@@ -110,8 +139,8 @@ public class PdfUploadService : IPdfUploadService
             {
                 InvoiceNumber = invoiceNumber,
                 SupplierId = finalSupplierId,
-                PurchaseOrderId = purchaseOrderId,
-                CostCenterId = costCenterId,
+                PurchaseOrderId = validatedPurchaseOrderId,
+                CostCenterId = validatedCostCenterId,
                 NetAmount = pdfData.NetAmount ?? 0,
                 TaxAmount = pdfData.TaxAmount ?? 0,
                 TotalAmount = pdfData.TotalAmount ?? 0,
@@ -121,22 +150,27 @@ public class PdfUploadService : IPdfUploadService
                 RequiresApproval = true,
                 Description = pdfData.Description ?? $"PDF-Upload: {file.FileName}"
             };
-            _logger.LogInformation($"CreateInvoiceDto prepared - Invoice#: {createInvoiceDto.InvoiceNumber}, Total: {createInvoiceDto.TotalAmount}");
 
             InvoiceDto invoice;
             try
             {
                 invoice = await _invoiceService.CreateInvoiceAsync(createInvoiceDto, userId);
-                _logger.LogInformation($"Invoice created successfully with ID: {invoice.Id}");
+                
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to create invoice: {ex.Message}");
+                // Preserve context but surface the failure message with full exception details
+                var innerMessage = ex.InnerException?.Message ?? ex.Message;
+                var fullMessage = $"Failed to create invoice: {ex.Message}";
                 if (ex.InnerException != null)
                 {
-                    _logger.LogError($"Inner exception: {ex.InnerException.Message}");
+                    fullMessage += $" | Inner: {innerMessage}";
+                    if (ex.InnerException.InnerException != null)
+                    {
+                        fullMessage += $" | InnerInner: {ex.InnerException.InnerException.Message}";
+                    }
                 }
-                throw new InvalidOperationException($"Failed to create invoice: {ex.Message}", ex);
+                throw new InvalidOperationException(fullMessage, ex);
             }
 
             // Speichere PDF-Content direkt in der Datenbank
@@ -150,12 +184,11 @@ public class PdfUploadService : IPdfUploadService
                     invoiceDb.OriginalFilename = file.FileName;
                     invoiceDb.PdfFilePath = fileName; // Speichere nur den Dateinamen für Referenzen
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation($"PDF content saved to database for invoice {invoice.Id}");
+                    
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to save PDF content to database: {ex.Message}");
                 throw new InvalidOperationException($"Failed to save PDF content: {ex.Message}", ex);
             }
 
@@ -163,28 +196,17 @@ public class PdfUploadService : IPdfUploadService
             try
             {
                 System.IO.File.Delete(tempPath);
-                _logger.LogInformation($"Temp file deleted: {tempPath}");
+                
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger.LogWarning(ex, $"Failed to delete temp file: {tempPath}");
+                // Best-effort cleanup; ignore delete failures
             }
-
-            _logger.LogInformation($"Invoice PDF uploaded successfully: {fileName} for invoice {invoice.Id}");
 
             return invoice;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, $"Error uploading invoice PDF: {ex.Message}");
-            if (ex.InnerException != null)
-            {
-                _logger.LogError($"Inner exception: {ex.InnerException.Message}");
-                if (ex.InnerException.InnerException != null)
-                {
-                    _logger.LogError($"Inner inner exception: {ex.InnerException.InnerException.Message}");
-                }
-            }
             throw;
         }
     }
@@ -206,9 +228,9 @@ public class PdfUploadService : IPdfUploadService
 
             return await File.ReadAllBytesAsync(invoice.PdfFilePath);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, $"Error retrieving PDF for invoice {invoiceId}");
+            
             throw;
         }
     }
@@ -233,12 +255,11 @@ public class PdfUploadService : IPdfUploadService
             invoice.OriginalFilename = null;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Invoice PDF deleted: {invoiceId}");
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, $"Error deleting PDF for invoice {invoiceId}");
+            
             throw;
         }
     }
@@ -270,9 +291,9 @@ public class PdfUploadService : IPdfUploadService
                 MaxFileSize = _maxFileSize
             };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting upload status");
+            
             throw;
         }
     }
@@ -294,9 +315,7 @@ public class PdfUploadService : IPdfUploadService
                 {
                     text += PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(i), strategy);
                 }
-                
-                _logger.LogInformation($"Extracted text from PDF: {text.Substring(0, Math.Min(500, text.Length))}...");
-                
+
                 // Extrahiere Rechnungsnummer
                 extractedData.InvoiceNumber = ExtractInvoiceNumberFromText(text);
                 
@@ -327,9 +346,9 @@ public class PdfUploadService : IPdfUploadService
             
             return extractedData;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogWarning(ex, "Error extracting data from PDF, using default values");
+            
             return new ExtractedInvoiceData();
         }
     }
@@ -367,8 +386,6 @@ public class PdfUploadService : IPdfUploadService
         decimal? taxAmount = null;
         decimal? totalAmount = null;
 
-        _logger.LogInformation($"=== Starting amount extraction ===\nText sample:\n{text.Substring(0, Math.Min(1500, text.Length))}");
-
         // Finde alle Beträge mit € Symbol
         var allAmountsPattern = @"€\s*(\d+[.,]\d{2})";
         var amountMatches = Regex.Matches(text, allAmountsPattern);
@@ -383,7 +400,7 @@ public class PdfUploadService : IPdfUploadService
                 if (parsedAmount.HasValue)
                 {
                     foundAmounts.Add((amountStr, parsedAmount.Value));
-                    _logger.LogInformation($"Found amount with €: {amountStr} = {parsedAmount}");
+                    
                 }
             }
         }
@@ -394,7 +411,7 @@ public class PdfUploadService : IPdfUploadService
             // Der größte Betrag ist wahrscheinlich das Total
             var maxAmount = foundAmounts.OrderByDescending(x => x.value).FirstOrDefault();
             totalAmount = maxAmount.value;
-            _logger.LogInformation($"✓ Set total amount from € symbols: {totalAmount}");
+            
         }
         else
         {
@@ -413,11 +430,11 @@ public class PdfUploadService : IPdfUploadService
                 if (match.Success && match.Groups.Count > 1)
                 {
                     var amountStr = match.Groups[1].Value.Trim();
-                    _logger.LogInformation($"Trying pattern: {pattern}\nFound: {amountStr}");
+                    
                     totalAmount = ParseAmount(amountStr);
                     if (totalAmount.HasValue)
                     {
-                        _logger.LogInformation($"✓ Matched with pattern: {totalAmount}");
+                        
                         break;
                     }
                 }
@@ -439,7 +456,7 @@ public class PdfUploadService : IPdfUploadService
                 netAmount = ParseAmount(match.Groups[1].Value.Trim());
                 if (netAmount.HasValue)
                 {
-                    _logger.LogInformation($"✓ Found net amount: {netAmount}");
+                    
                     break;
                 }
             }
@@ -463,7 +480,7 @@ public class PdfUploadService : IPdfUploadService
                 if (potentialTaxAmount.HasValue)
                 {
                     taxAmount = potentialTaxAmount;
-                    _logger.LogInformation($"✓ Found tax amount: {taxAmount}");
+                    
                     break;
                 }
             }
@@ -479,7 +496,7 @@ public class PdfUploadService : IPdfUploadService
                 decimal factor = 1 + (ivaPct / 100m);
                 netAmount = totalAmount.Value / factor;
                 taxAmount = totalAmount.Value - netAmount.Value;
-                _logger.LogInformation($"Calculated from total with IVA {ivaPct}% - Net: {netAmount:F2}, Tax: {taxAmount:F2}");
+                
             }
             else
             {
@@ -490,19 +507,17 @@ public class PdfUploadService : IPdfUploadService
                     decimal factor = 1 + (mwstPct / 100m);
                     netAmount = totalAmount.Value / factor;
                     taxAmount = totalAmount.Value - netAmount.Value;
-                    _logger.LogInformation($"Calculated from total with MwSt {mwstPct}% - Net: {netAmount:F2}, Tax: {taxAmount:F2}");
+                    
                 }
                 else
                 {
                     // Fallback: Annahme 19% MwSt
                     netAmount = totalAmount.Value / 1.19m;
                     taxAmount = totalAmount.Value - netAmount.Value;
-                    _logger.LogInformation($"Calculated from total with default 19% - Net: {netAmount:F2}, Tax: {taxAmount:F2}");
+                    
                 }
             }
         }
-
-        _logger.LogInformation($"=== Final amounts ===\nNet: {netAmount}, Tax: {taxAmount}, Total: {totalAmount}");
 
         return (netAmount, taxAmount, totalAmount);
     }
@@ -511,18 +526,16 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            _logger.LogInformation($"Parsing amount string: '{amountStr}'");
-            
+
             if (string.IsNullOrWhiteSpace(amountStr))
             {
-                _logger.LogWarning("Amount string is empty or whitespace");
+                
                 return null;
             }
 
             // Entferne Währungssymbole und führende/nachfolgende Spaces
             amountStr = Regex.Replace(amountStr, @"[€$£\s]", "").Trim();
-            _logger.LogInformation($"After removing currency: '{amountStr}'");
-            
+
             // Bestimme, ob Punkt oder Komma als Dezimaltrennzeichen verwendet wird
             var lastComma = amountStr.LastIndexOf(',');
             var lastDot = amountStr.LastIndexOf('.');
@@ -531,28 +544,28 @@ public class PdfUploadService : IPdfUploadService
             {
                 // Deutsches Format: 1.234,56
                 amountStr = amountStr.Replace(".", "").Replace(",", ".");
-                _logger.LogInformation($"German format detected: '{amountStr}'");
+                
             }
             else if (lastDot > lastComma && lastDot >= 0)
             {
                 // Englisches Format: 1,234.56 oder 500.00
                 amountStr = amountStr.Replace(",", "");
-                _logger.LogInformation($"English format detected: '{amountStr}'");
+                
             }
             
             if (decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal result))
             {
-                _logger.LogInformation($"✓ Successfully parsed to: {result}");
+                
                 return result;
             }
             else
             {
-                _logger.LogWarning($"Failed to parse as decimal: '{amountStr}'");
+                
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogWarning(ex, $"Exception parsing amount: {amountStr}");
+            
         }
         
         return null;
@@ -727,7 +740,7 @@ public class PdfUploadService : IPdfUploadService
     {
         if (supplierInfo == null || string.IsNullOrWhiteSpace(supplierInfo.Name))
         {
-            _logger.LogWarning("No supplier information found in PDF, using default supplier");
+            
             // Suche oder erstelle einen Standard-Lieferanten
             var defaultSupplier = await _context.Suppliers.FirstOrDefaultAsync(s => s.Name == "Unbekannter Lieferant");
             if (defaultSupplier == null)
@@ -739,7 +752,7 @@ public class PdfUploadService : IPdfUploadService
                 };
                 _context.Suppliers.Add(defaultSupplier);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation($"Created default supplier: {defaultSupplier.Name}");
+                
             }
             return defaultSupplier.Id;
         }
@@ -753,7 +766,7 @@ public class PdfUploadService : IPdfUploadService
 
         if (existingSupplier != null)
         {
-            _logger.LogInformation($"Found existing supplier: {existingSupplier.Name} (ID: {existingSupplier.Id})");
+            
             return existingSupplier.Id;
         }
 
@@ -773,15 +786,12 @@ public class PdfUploadService : IPdfUploadService
         _context.Suppliers.Add(newSupplier);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation($"✓ Created new supplier: {newSupplier.Name} (ID: {newSupplier.Id})");
         return newSupplier.Id;
     }
 
     private SupplierInfo? ExtractSupplierInfo(string text)
     {
         var supplierInfo = new SupplierInfo();
-
-        _logger.LogInformation("=== Extracting supplier information ===");
 
         // Suche nach Fornitore (Italienisch für Lieferant/Anbieter)
         var fornitoPattern = @"Fornitore\s+(.*?)(?=\n|Cliente|P\.\s*IVA)";
@@ -794,8 +804,7 @@ public class PdfUploadService : IPdfUploadService
             if (lines.Length > 0)
             {
                 supplierInfo.Name = lines[0];
-                _logger.LogInformation($"Found supplier name (Fornitore): {supplierInfo.Name}");
-                
+
                 // Versuche Adresse zu finden
                 if (lines.Length > 1)
                 {
@@ -812,7 +821,7 @@ public class PdfUploadService : IPdfUploadService
             if (nameMatch.Success)
             {
                 supplierInfo.Name = nameMatch.Groups[1].Value.Trim();
-                _logger.LogInformation($"Found supplier name (after FATTURA): {supplierInfo.Name}");
+                
             }
         }
 
@@ -823,7 +832,7 @@ public class PdfUploadService : IPdfUploadService
         {
             supplierInfo.VatNumber = vatMatch.Groups[1].Value.Trim();
             supplierInfo.TaxNumber = supplierInfo.VatNumber;
-            _logger.LogInformation($"Found VAT number: {supplierInfo.VatNumber}");
+            
         }
 
         // Suche nach Adresse und PLZ/Stadt
@@ -832,7 +841,7 @@ public class PdfUploadService : IPdfUploadService
         if (addressMatch.Success)
         {
             supplierInfo.Address = $"Via {addressMatch.Groups[1].Value.Trim()} {addressMatch.Groups[2].Value}";
-            _logger.LogInformation($"Found address: {supplierInfo.Address}");
+            
         }
 
         // Suche nach PLZ und Stadt (italienisches Format: 00100 Roma)
@@ -842,7 +851,7 @@ public class PdfUploadService : IPdfUploadService
         {
             supplierInfo.PostalCode = cityMatch.Groups[1].Value;
             supplierInfo.City = cityMatch.Groups[2].Value.Replace("(RM)", "").Replace("(MI)", "").Trim();
-            _logger.LogInformation($"Found postal code and city: {supplierInfo.PostalCode} {supplierInfo.City}");
+            
         }
 
         // Bestimme Land basierend auf Indizien
@@ -854,8 +863,6 @@ public class PdfUploadService : IPdfUploadService
         {
             supplierInfo.Country = "Deutschland";
         }
-
-        _logger.LogInformation($"=== Extracted supplier: {supplierInfo.Name ?? "(none)"}, VAT: {supplierInfo.VatNumber ?? "(none)"}, Country: {supplierInfo.Country ?? "(none)"} ===");
 
         return string.IsNullOrWhiteSpace(supplierInfo.Name) ? null : supplierInfo;
     }

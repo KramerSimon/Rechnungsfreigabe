@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -12,15 +12,11 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class PurchaseOrdersController : ControllerBase
 {
     private readonly IPurchaseOrderService _purchaseOrderService;
-    private readonly ILogger<PurchaseOrdersController> _logger;
-
     public PurchaseOrdersController(
-        IPurchaseOrderService purchaseOrderService,
-        ILogger<PurchaseOrdersController> logger)
+        IPurchaseOrderService purchaseOrderService)
     {
         _purchaseOrderService = purchaseOrderService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Get all purchase orders
@@ -33,9 +29,9 @@ public class PurchaseOrdersController : ControllerBase
             var purchaseOrders = await _purchaseOrderService.GetAllPurchaseOrdersAsync();
             return Ok(purchaseOrders);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting purchase orders");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving purchase orders" });
         }
     }
@@ -57,9 +53,9 @@ public class PurchaseOrdersController : ControllerBase
 
             return Ok(purchaseOrder);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting purchase order with ID: {PurchaseOrderId}", id);
+            
             return StatusCode(500, new { message = "An error occurred while retrieving the purchase order" });
         }
     }
@@ -82,9 +78,9 @@ public class PurchaseOrdersController : ControllerBase
 
             return CreatedAtAction(nameof(GetPurchaseOrder), new { id = purchaseOrder.Id }, purchaseOrder);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating purchase order: {PurchaseOrderId}", createDto.Id);
+            
             return StatusCode(500, new { message = "An error occurred while creating the purchase order" });
         }
     }

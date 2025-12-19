@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Models;
 using backend.DTOs;
@@ -17,13 +17,10 @@ namespace backend.Services
 public class ProjectService : IProjectService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<ProjectService> _logger;
-
-    public ProjectService(ApplicationDbContext context, ILogger<ProjectService> logger)
+    public ProjectService(ApplicationDbContext context)
     {
         _context = context;
-        _logger = logger;
-    }
+        }
 
     public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync()
     {
@@ -61,13 +58,11 @@ public class ProjectService : IProjectService
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Created new project with ID {ProjectId}", project.Id);
-
             return MapToDto(project);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating project");
+            
             throw;
         }
     }
@@ -77,7 +72,7 @@ public class ProjectService : IProjectService
         var project = await _context.Projects.FindAsync(id);
         if (project == null)
         {
-            _logger.LogWarning("Project with ID {ProjectId} not found for update", id);
+            
             return null;
         }
 
@@ -85,8 +80,6 @@ public class ProjectService : IProjectService
         project.Description = updateProjectDto.Description;
 
         await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Updated project with ID {ProjectId}", project.Id);
 
         return MapToDto(project);
     }
@@ -96,15 +89,13 @@ public class ProjectService : IProjectService
         var project = await _context.Projects.FindAsync(id);
         if (project == null)
         {
-            _logger.LogWarning("Project with ID {ProjectId} not found for deletion", id);
+            
             return false;
         }
 
         _context.Projects.Remove(project);
 
         await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Soft deleted project with ID {ProjectId}", project.Id);
 
         return true;
     }

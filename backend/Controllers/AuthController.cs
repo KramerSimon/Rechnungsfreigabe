@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
@@ -10,13 +10,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly ILogger<AuthController> _logger;
-
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService)
     {
         _authService = authService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// User login
@@ -40,9 +37,9 @@ public class AuthController : ControllerBase
 
             return Ok(result);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error during login for user: {Username}", loginRequest.Username);
+            
             return StatusCode(500, new { message = "An error occurred during login" });
         }
     }
@@ -72,9 +69,9 @@ public class AuthController : ControllerBase
 
             return Ok(user);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting current user");
+            
             return StatusCode(500, new { message = "An error occurred while getting user information" });
         }
     }
@@ -90,9 +87,9 @@ public class AuthController : ControllerBase
             var isValid = await _authService.ValidateTokenAsync(token);
             return Ok(new { valid = isValid });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error validating token");
+            
             return StatusCode(500, new { message = "An error occurred while validating token" });
         }
     }
@@ -132,9 +129,9 @@ public class AuthController : ControllerBase
 
             return BadRequest(new { message = "Failed to change password. Please check your current password." });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error changing password");
+            
             return StatusCode(500, new { message = "An error occurred while changing password" });
         }
     }
@@ -162,9 +159,9 @@ public class AuthController : ControllerBase
 
             return BadRequest(new { message = "Failed to reset password. User not found or inactive." });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error resetting password");
+            
             return StatusCode(500, new { message = "An error occurred while resetting password" });
         }
     }

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 
@@ -10,13 +10,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 public class DashboardController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
-    private readonly ILogger<DashboardController> _logger;
-
-    public DashboardController(IInvoiceService invoiceService, ILogger<DashboardController> logger)
+    public DashboardController(IInvoiceService invoiceService)
     {
         _invoiceService = invoiceService;
-        _logger = logger;
-    }
+        }
 
     /// <summary>
     /// Get system status with actual auto-approval statistics
@@ -42,9 +39,9 @@ public class DashboardController : ControllerBase
 
             return Ok(systemStatus);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting system status");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving system status" });
         }
     }
@@ -68,9 +65,9 @@ public class DashboardController : ControllerBase
 
             return Ok(summary);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting user task summary");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving user task summary" });
         }
     }
@@ -100,9 +97,9 @@ public class DashboardController : ControllerBase
 
             return Ok(overview);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error getting accounting overview");
+            
             return StatusCode(500, new { message = "An error occurred while retrieving accounting overview" });
         }
     }

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
@@ -20,13 +20,10 @@ public interface ICostCenterService
 public class CostCenterService : ICostCenterService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<CostCenterService> _logger;
-
-    public CostCenterService(ApplicationDbContext context, ILogger<CostCenterService> logger)
+    public CostCenterService(ApplicationDbContext context)
     {
         _context = context;
-        _logger = logger;
-    }
+        }
 
     public async Task<IEnumerable<CostCenterDto>> GetAllCostCentersAsync()
     {
@@ -71,12 +68,11 @@ public class CostCenterService : ICostCenterService
                 .Include(cc => cc.Manager)
                 .FirstAsync(cc => cc.Id == costCenter.Id);
 
-            _logger.LogInformation("Cost center created successfully: {CostCenterId}", costCenter.Id);
             return MapToDto(createdCostCenter);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating cost center: {CostCenterId}", createCostCenterDto.Id);
+            
             throw;
         }
     }
@@ -103,12 +99,11 @@ public class CostCenterService : ICostCenterService
                 .Include(cc => cc.Manager)
                 .FirstAsync(cc => cc.Id == id);
 
-            _logger.LogInformation("Cost center updated successfully: {CostCenterId}", id);
             return MapToDto(updatedCostCenter);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error updating cost center with ID: {CostCenterId}", id);
+            
             throw;
         }
     }
@@ -137,12 +132,11 @@ public class CostCenterService : ICostCenterService
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Cost center deleted: {CostCenterId}", id);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error deleting cost center with ID: {CostCenterId}", id);
+            
             throw;
         }
     }
@@ -199,9 +193,9 @@ public class CostCenterService : ICostCenterService
 
             return MapProjectToDto(createdProject!);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Error creating project: {ProjectName}", createProjectDto.Name);
+            
             throw;
         }
     }

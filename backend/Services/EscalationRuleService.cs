@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
@@ -17,13 +17,10 @@ public interface IEscalationRuleService
 public class EscalationRuleService : IEscalationRuleService
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<EscalationRuleService> _logger;
-
-    public EscalationRuleService(ApplicationDbContext context, ILogger<EscalationRuleService> logger)
+    public EscalationRuleService(ApplicationDbContext context)
     {
         _context = context;
-        _logger = logger;
-    }
+        }
 
     public async Task<IEnumerable<EscalationRuleDto>> GetAllAsync()
     {
@@ -71,7 +68,6 @@ public class EscalationRuleService : IEscalationRuleService
             .Include(r => r.NotifyUser)
             .FirstAsync(r => r.Id == rule.Id);
 
-        _logger.LogInformation("Escalation rule created: {RuleName}", rule.Name);
         return MapToDto(created);
     }
 
@@ -98,7 +94,6 @@ public class EscalationRuleService : IEscalationRuleService
             .Include(r => r.NotifyUser)
             .FirstAsync(r => r.Id == id);
 
-        _logger.LogInformation("Escalation rule updated: {RuleId}", id);
         return MapToDto(updated);
     }
 
@@ -112,7 +107,6 @@ public class EscalationRuleService : IEscalationRuleService
         rule.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Escalation rule deactivated: {RuleId}", id);
         return true;
     }
 
