@@ -118,6 +118,7 @@ export class RuleDashboardComponent implements OnInit {
   // Verfügbare Aktionen
   availableActions = [
     { value: 'auto_approve', label: 'Automatisch freigeben' },
+    { value: 'require_approval', label: 'Mehrstufige Freigabe' },
     { value: 'set_status', label: 'Status setzen' },
     { value: 'assign_to', label: 'Zuweisen an' }
   ];
@@ -192,26 +193,17 @@ export class RuleDashboardComponent implements OnInit {
   // Regel-Management
   onCreateRule() {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
-      width: '800px',
+      width: '1100px',
+      maxWidth: '95vw',
       data: { mode: 'create' } as RuleDialogData
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        const dto = {
-          name: result.name,
-          description: result.description,
-          // Convert ruleType to string as required by CreateApprovalRuleDto
-          ruleType: typeof result.ruleType === 'number'
-            ? (result.ruleType === 0 ? 'automatic' : 'manual')
-            : result.ruleType,
-          priority: result.priority,
-          conditions: JSON.stringify(result.conditions || []),
-          actions: JSON.stringify(result.actions || [])
-        };
+        const dto = this.buildRuleDto(result);
 
         this.approvalService.createApprovalRule(dto).subscribe({
-          next: (createdRule) => {
+          next: () => {
             this.snackBar.open('Regel erfolgreich erstellt', 'Schließen', { duration: 3000 });
             this.loadApprovalRules();
           },
@@ -232,25 +224,17 @@ export class RuleDashboardComponent implements OnInit {
 
   onEditRule(rule: any) {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
-      width: '800px',
+      width: '1100px',
+      maxWidth: '95vw',
       data: { rule: { ...rule }, mode: 'edit' } as RuleDialogData
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        const dto = {
-          name: result.name,
-          description: result.description,
-          ruleType: typeof result.ruleType === 'number'
-            ? (result.ruleType === 0 ? 'automatic' : 'manual')
-            : result.ruleType,
-          priority: result.priority,
-          conditions: JSON.stringify(result.conditions || []),
-          actions: JSON.stringify(result.actions || [])
-        };
+        const dto = this.buildRuleDto(result);
 
         this.approvalService.updateApprovalRule(rule.id, dto).subscribe({
-          next: (updatedRule) => {
+          next: () => {
             this.snackBar.open('Regel erfolgreich aktualisiert', 'Schließen', { duration: 3000 });
             this.loadApprovalRules();
           },
@@ -280,17 +264,7 @@ export class RuleDashboardComponent implements OnInit {
 
   onToggleRule(rule: any) {
     const newIsActive = !rule.isActive;
-    const dto = {
-      name: rule.name,
-      description: rule.description,
-      ruleType: typeof rule.ruleType === 'number'
-        ? (rule.ruleType === 0 ? 'automatic' : 'manual')
-        : rule.ruleType,
-      priority: rule.priority,
-      conditions: JSON.stringify(rule.conditions || []),
-      actions: JSON.stringify(rule.actions || []),
-      isActive: newIsActive
-    };
+    const dto = this.buildRuleDto({ ...rule, isActive: newIsActive });
 
     this.approvalService.updateApprovalRule(rule.id, dto).subscribe({
       next: () => {
@@ -324,6 +298,10 @@ export class RuleDashboardComponent implements OnInit {
         const name = user ? `${user.firstName} ${user.lastName}` : action.value;
         return `Zuweisen an ${name}`;
       }
+      if (action.type === 'require_approval') {
+        const count = action.stages?.length || 0;
+        return `Mehrstufige Freigabe (${count} Stufen)`;
+      }
       return action.description;
     }).join(', ');
   }
@@ -338,5 +316,31 @@ export class RuleDashboardComponent implements OnInit {
 
   getCostCenterName(costCenterId: string): string {
     return this.costCenters.find(c => c.id === costCenterId)?.name || costCenterId;
+  }
+
+  private buildRuleDto(rule: any) {
+    const ruleType = typeof rule.ruleType === 'number'
+      ? (rule.ruleType === 0 ? 'automatic' : 'manual')
+      : String(rule.ruleType || 'manual');
+
+    const normalizeConditions = (rule.conditions || []).map((c: any) => ({
+      ...c,
+      value: c?.value !== undefined && c?.value !== null ? String(c.value) : ''
+    }));
+
+    const normalizeActions = (rule.actions || []).map((a: any) => ({
+      ...a,
+      value: a?.value !== undefined && a?.value !== null ? String(a.value) : ''
+    }));
+
+    return {
+      name: rule.name,
+      description: rule.description,
+      ruleType,
+      priority: rule.priority,
+      conditions: JSON.stringify(normalizeConditions),
+      actions: JSON.stringify(normalizeActions),
+      isActive: rule.isActive
+    };
   }
 }

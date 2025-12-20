@@ -24,10 +24,21 @@ public interface IApprovalService
 public class ApprovalService : IApprovalService
 {
     private readonly ApplicationDbContext _context;
-    public ApprovalService(ApplicationDbContext context)
+    private readonly IInvoiceHistoryService _historyService;
+    private readonly INotificationService? _notificationService;
+    public ApprovalService(ApplicationDbContext context, IInvoiceHistoryService historyService)
     {
         _context = context;
+        _historyService = historyService;
         }
+
+    // Optional constructor overload to support notification service without breaking existing registrations
+    public ApprovalService(ApplicationDbContext context, IInvoiceHistoryService historyService, INotificationService notificationService)
+    {
+        _context = context;
+        _historyService = historyService;
+        _notificationService = notificationService;
+    }
 
     public async Task CreateApprovalWorkflowAsync(int invoiceId)
     {
@@ -305,46 +316,101 @@ public class ApprovalService : IApprovalService
         invoice.UpdatedAt = DateTime.UtcNow;
         
         await _context.SaveChangesAsync();
-        
+        // Write history entry for automatic approval
+        await _historyService.CreateSystemActionAsync(
+            invoice.Id,
+            "Automatisch freigegeben",
+            HistoryActionType.Approved,
+            systemReason: "Automatische Freigabe durch Regel"
+        );
     }
 
     private async Task CreateApprovalWorkflowStepsAsync(Invoice invoice, ApprovalRule rule, RuleAction action)
     {
-        var approvers = await GetApproversForActionAsync(invoice, action);
-        
-        if (!approvers.Any())
+        // If explicit staged workflow is provided in rule action, honor it
+        if (action.Stages != null && action.Stages.Count > 0)
         {
-            // Keine Approver gefunden - Auto-Approve
-            Console.WriteLine($"[WARNING] No approvers found for invoice {invoice.Id}, auto-approving");
-            invoice.Status = InvoiceStatus.Freigegeben;
-            invoice.AutoApproved = true;
-            await _context.SaveChangesAsync();
-            return;
-        }
-        
-        int stepNumber = 1;
-        foreach (var approverId in approvers)
-        {
-            // Validiere dass der Approver existiert
-            var approverExists = await _context.Users.AnyAsync(u => u.Id == approverId && u.IsActive);
-            if (!approverExists)
+            int stepNumber = 1;
+            foreach (var stage in action.Stages)
             {
-                Console.WriteLine($"[WARNING] Approver {approverId} not found or inactive, skipping");
-                continue;
-            }
-            
-            var workflow = new ApprovalWorkflow
-            {
-                InvoiceId = invoice.Id,
-                RuleId = rule.Id,
-                StepNumber = stepNumber++,
-                ApproverId = approverId,
-                ApprovalLevel = GetApprovalLevelForAction(action),
-                Status = ApprovalStatus.Pending,
-                CreatedAt = DateTime.UtcNow
-            };
+                var approverId = await ResolveStageApproverAsync(invoice, stage);
+                if (!approverId.HasValue)
+                {
+                    Console.WriteLine($"[WARNING] No approver resolved for stage '{stage.Role}', skipping stage {stepNumber}");
+                    stepNumber++;
+                    continue;
+                }
 
-            _context.ApprovalWorkflows.Add(workflow);
+                // ensure approver exists and active
+                var approverExists = await _context.Users.AnyAsync(u => u.Id == approverId.Value && u.IsActive);
+                if (!approverExists)
+                {
+                    Console.WriteLine($"[WARNING] Approver {approverId.Value} not found or inactive, skipping stage {stepNumber}");
+                    stepNumber++;
+                    continue;
+                }
+
+                var workflow = new ApprovalWorkflow
+                {
+                    InvoiceId = invoice.Id,
+                    RuleId = rule.Id,
+                    StepNumber = stepNumber,
+                    ApproverId = approverId.Value,
+                    ApprovalLevel = stage.ApprovalLevel ?? stepNumber,
+                    Status = (stepNumber == 1) ? ApprovalStatus.Pending : ApprovalStatus.Waiting,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.ApprovalWorkflows.Add(workflow);
+                stepNumber++;
+            }
+        }
+        else
+        {
+            // Fallback to value-based resolution
+            var approvers = await GetApproversForActionAsync(invoice, action);
+
+            if (!approvers.Any())
+            {
+                // Keine Approver gefunden - Auto-Approve
+                Console.WriteLine($"[WARNING] No approvers found for invoice {invoice.Id}, auto-approving");
+                invoice.Status = InvoiceStatus.Freigegeben;
+                invoice.AutoApproved = true;
+                await _context.SaveChangesAsync();
+                await _historyService.CreateSystemActionAsync(
+                    invoice.Id,
+                    "Automatisch freigegeben",
+                    HistoryActionType.Approved,
+                    systemReason: "Keine Approver gefunden (Regel)"
+                );
+                return;
+            }
+
+            int stepNumber = 1;
+            foreach (var approverId in approvers)
+            {
+                // Validiere dass der Approver existiert
+                var approverExists = await _context.Users.AnyAsync(u => u.Id == approverId && u.IsActive);
+                if (!approverExists)
+                {
+                    Console.WriteLine($"[WARNING] Approver {approverId} not found or inactive, skipping");
+                    continue;
+                }
+
+                var workflow = new ApprovalWorkflow
+                {
+                    InvoiceId = invoice.Id,
+                    RuleId = rule.Id,
+                    StepNumber = stepNumber,
+                    ApproverId = approverId,
+                    ApprovalLevel = GetApprovalLevelForAction(action),
+                    Status = (stepNumber == 1) ? ApprovalStatus.Pending : ApprovalStatus.Waiting,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.ApprovalWorkflows.Add(workflow);
+                stepNumber++;
+            }
         }
 
         invoice.Status = InvoiceStatus.Freigabe_Erforderlich;
@@ -426,7 +492,7 @@ public class ApprovalService : IApprovalService
                 StepNumber = stepNumber++,
                 ApproverId = approverId,
                 ApprovalLevel = 1,
-                Status = ApprovalStatus.Pending,
+                Status = (stepNumber == 2) ? ApprovalStatus.Pending : ApprovalStatus.Waiting,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -443,6 +509,12 @@ public class ApprovalService : IApprovalService
             Console.WriteLine($"[WARNING] No approvers found for invoice {invoice.Id}, auto-approving");
             invoice.Status = InvoiceStatus.Freigegeben;
             invoice.AutoApproved = true;
+            await _historyService.CreateSystemActionAsync(
+                invoice.Id,
+                "Automatisch freigegeben",
+                HistoryActionType.Approved,
+                systemReason: "Keine Approver gefunden (Standard-Workflow)"
+            );
         }
 
         await _context.SaveChangesAsync();
@@ -475,13 +547,60 @@ public class ApprovalService : IApprovalService
                     approvers.Add(adminUser.Id);
                 break;
             default:
-                // Standard approval - cost center manager
-                if (invoice.CostCenter?.ManagerId.HasValue == true)
+                // Support comma-separated roles (e.g., "manager,administrator")
+                var parts = action.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var part in parts)
+                {
+                    if (part.Equals("manager", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (invoice.CostCenter?.ManagerId.HasValue == true)
+                            approvers.Add(invoice.CostCenter.ManagerId.Value);
+                    }
+                    else if (part.Equals("project_manager", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (invoice.Project?.ProjectManagerId.HasValue == true)
+                            approvers.Add(invoice.Project.ProjectManagerId.Value);
+                    }
+                    else if (part.Equals("administrator", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var admin = await _context.Users
+                            .Include(u => u.UserRoles)
+                            .ThenInclude(ur => ur.Role)
+                            .FirstOrDefaultAsync(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Administrator"));
+                        if (admin != null) approvers.Add(admin.Id);
+                    }
+                }
+                // Standard approval - cost center manager if none resolved
+                if (!approvers.Any() && invoice.CostCenter?.ManagerId.HasValue == true)
                     approvers.Add(invoice.CostCenter.ManagerId.Value);
                 break;
         }
 
         return approvers.ToArray();
+    }
+
+    private async Task<int?> ResolveStageApproverAsync(Invoice invoice, StageDefinition stage)
+    {
+        if (stage.UserId.HasValue)
+            return stage.UserId.Value;
+
+        var role = stage.Role?.ToLower();
+        switch (role)
+        {
+            case "manager":
+                return invoice.CostCenter?.ManagerId;
+            case "project_manager":
+                return invoice.Project?.ProjectManagerId;
+            case "administrator":
+                var admin = await _context.Users
+                    .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Administrator"));
+                return admin?.Id;
+            default:
+                // Fallback: cost center manager
+                return invoice.CostCenter?.ManagerId;
+        }
     }
 
     private int GetApprovalLevelForAction(RuleAction action)
@@ -556,18 +675,32 @@ public class ApprovalService : IApprovalService
             approval.Status = ApprovalStatus.Approved;
             approval.ApprovedAt = DateTime.UtcNow;
             approval.Comments = comments;
-
-            // Check if all approvals are done
             var invoice = approval.Invoice;
-            var pendingApprovals = await _context.ApprovalWorkflows
-                .Where(w => w.InvoiceId == invoice.Id && w.Status == ApprovalStatus.Pending && w.Id != approvalId)
+
+            // Activate the next waiting step (sequential progression)
+            var nextStep = await _context.ApprovalWorkflows
+                .Where(w => w.InvoiceId == invoice.Id && w.Status == ApprovalStatus.Waiting && w.StepNumber > approval.StepNumber)
+                .OrderBy(w => w.StepNumber)
+                .FirstOrDefaultAsync();
+
+            if (nextStep != null)
+            {
+                nextStep.Status = ApprovalStatus.Pending;
+                // Notify next approver if notification service is available
+                if (_notificationService != null)
+                {
+                    try { await _notificationService.EnsureApprovalNotificationForApproverAsync(nextStep.InvoiceId, nextStep.ApproverId); } catch { }
+                }
+            }
+
+            // If no pending or waiting approvals remain, finalize invoice approval
+            var remainingOpen = await _context.ApprovalWorkflows
+                .Where(w => w.InvoiceId == invoice.Id && (w.Status == ApprovalStatus.Pending || w.Status == ApprovalStatus.Waiting))
                 .CountAsync();
 
-            if (pendingApprovals == 0)
+            if (remainingOpen == 0)
             {
-                // All approvals done, set invoice as approved
                 invoice.Status = InvoiceStatus.Freigegeben;
-                
             }
 
             await _context.SaveChangesAsync();
@@ -606,14 +739,14 @@ public class ApprovalService : IApprovalService
             var invoice = approval.Invoice;
             invoice.Status = InvoiceStatus.Abgelehnt;
 
-            // Reject all pending approvals for this invoice
-            var pendingApprovals = await _context.ApprovalWorkflows
-                .Where(w => w.InvoiceId == invoice.Id && w.Status == ApprovalStatus.Pending)
+            // Reject all open approvals (pending or waiting) for this invoice
+            var openApprovals = await _context.ApprovalWorkflows
+                .Where(w => w.InvoiceId == invoice.Id && (w.Status == ApprovalStatus.Pending || w.Status == ApprovalStatus.Waiting))
                 .ToListAsync();
 
-            foreach (var pending in pendingApprovals)
+            foreach (var open in openApprovals)
             {
-                pending.Status = ApprovalStatus.Rejected;
+                open.Status = ApprovalStatus.Rejected;
             }
 
             await _context.SaveChangesAsync();
@@ -720,4 +853,24 @@ public class RuleAction
     
     [System.Text.Json.Serialization.JsonPropertyName("description")]
     public string? Description { get; set; }
+
+    // Optional explicit staged workflow definition
+    [System.Text.Json.Serialization.JsonPropertyName("stages")]
+    public List<StageDefinition>? Stages { get; set; }
 }
+
+public class StageDefinition
+{
+    // Role-based resolution (e.g., "manager", "project_manager", "administrator")
+    [System.Text.Json.Serialization.JsonPropertyName("role")]
+    public string? Role { get; set; }
+
+    // Direct assignment to specific user
+    [System.Text.Json.Serialization.JsonPropertyName("userId")]
+    public int? UserId { get; set; }
+
+    // Optional explicit approval level; if omitted, step index is used
+    [System.Text.Json.Serialization.JsonPropertyName("approvalLevel")]
+    public int? ApprovalLevel { get; set; }
+}
+

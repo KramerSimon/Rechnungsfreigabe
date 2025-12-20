@@ -47,14 +47,27 @@ public class PdfUploadController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
-            var invoice = await _pdfUploadService.UploadInvoicePdfAsync(
+            var result = await _pdfUploadService.UploadInvoicePdfAsync(
                 file,
                 supplierId,
                 purchaseOrderId,
                 costCenterId,
                 userId);
 
-            return CreatedAtAction("GetInvoice", "Invoices", new { id = invoice.Id }, invoice);
+            // Check if data was extracted
+            var hasExtractedData = result.TotalAmount > 0 || (result.Supplier != null && !string.IsNullOrEmpty(result.Supplier.Name));
+            
+            if (!hasExtractedData)
+            {
+                return Ok(new
+                {
+                    invoice = result,
+                    warning = "PDF hochgeladen, aber keine Daten extrahiert. Das PDF enthält möglicherweise nur Bilder (gescanntes Dokument). Bitte Rechnungsdaten manuell vervollständigen.",
+                    requiresManualEntry = true
+                });
+            }
+
+            return CreatedAtAction("GetInvoice", "Invoices", new { id = result.Id }, result);
         }
         catch (ArgumentException ex)
         {
@@ -226,13 +239,25 @@ public class PdfUploadController : ControllerBase
                         costCenterId,
                         userId);
 
-                    result.SuccessfulUploads.Add(new UploadedFileDto
+                    // Check if data was extracted
+                    var hasExtractedData = invoice.TotalAmount > 0 || (invoice.Supplier != null && !string.IsNullOrEmpty(invoice.Supplier.Name));
+
+                    var uploadedFile = new UploadedFileDto
                     {
                         FileName = file.FileName,
                         InvoiceId = invoice.Id,
                         InvoiceNumber = invoice.InvoiceNumber,
                         Size = file.Length
-                    });
+                    };
+
+                    // Add warning if no data was extracted
+                    if (!hasExtractedData)
+                    {
+                        uploadedFile.Warning = "Keine Daten extrahiert - gescanntes PDF?";
+                        uploadedFile.RequiresManualEntry = true;
+                    }
+
+                    result.SuccessfulUploads.Add(uploadedFile);
                 }
                 catch (Exception ex)
                 {
@@ -288,6 +313,8 @@ public class UploadedFileDto
     public int InvoiceId { get; set; }
     public string InvoiceNumber { get; set; } = string.Empty;
     public long Size { get; set; }
+    public string? Warning { get; set; }
+    public bool RequiresManualEntry { get; set; }
 }
 
 public class FailedFileDto

@@ -34,6 +34,13 @@ export class ApprovalService {
     return this.http.get<ApprovalWorkflow[]>(`${this.apiUrl}/workflows`);
   }
 
+  getApprovalWorkflowsForInvoice(invoiceId: number): Observable<ApprovalWorkflow[]> {
+    // Prefer server-side filter if supported; otherwise client can filter
+    return this.http.get<ApprovalWorkflow[]>(`${this.apiUrl}/workflows`, {
+      params: { invoiceId: String(invoiceId) }
+    });
+  }
+
   getApprovalWorkflowById(id: number): Observable<ApprovalWorkflow> {
     return this.http.get<ApprovalWorkflow>(`${this.apiUrl}/workflows/${id}`);
   }

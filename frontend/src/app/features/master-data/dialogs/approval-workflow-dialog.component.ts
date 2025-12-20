@@ -75,6 +75,7 @@ export interface ApprovalWorkflowDialogData {
             <mat-label>Status</mat-label>
             <mat-select formControlName="status">
               <mat-option value="Pending">Ausstehend</mat-option>
+              <mat-option value="Waiting">Wartend</mat-option>
               <mat-option value="Approved">Genehmigt</mat-option>
               <mat-option value="Rejected">Abgelehnt</mat-option>
               <mat-option value="Skipped">Übersprungen</mat-option>

@@ -125,13 +125,6 @@ export class AdminDashboardComponent implements OnInit {
       icon: 'schedule',
       route: '/admin/escalation'
     },
-    {
-      id: 'approval-rules',
-      title: 'Regel-Einstellungen',
-      description: 'Regeln für automatische Freigabe und Workflows',
-      icon: 'schedule',
-      route: '/admin/approval_workflows'
-    },
   ];
 
   constructor(

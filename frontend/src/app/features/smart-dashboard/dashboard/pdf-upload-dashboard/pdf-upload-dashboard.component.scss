@@ -218,3 +218,168 @@ mat-card {
 mat-progress-spinner {
   margin: 0 auto;
 }
+// Progress Section Styles
+.progress-section {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 24px;
+  border: 1px solid #e0e0e0;
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .progress-info {
+      h4 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .phase-label {
+        margin: 0;
+        font-size: 14px;
+        color: #666;
+        font-style: italic;
+      }
+    }
+
+    .progress-percentage {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1976d2;
+      min-width: 60px;
+      text-align: right;
+    }
+  }
+
+  .main-progress-bar {
+    margin-bottom: 24px;
+    height: 8px;
+    border-radius: 4px;
+  }
+}
+
+.file-progress-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border-radius: 4px;
+}
+
+.file-progress-item {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+
+  .file-progress-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      transition: color 0.3s ease;
+      flex-shrink: 0;
+
+      &.status-pending {
+        color: #999;
+      }
+
+      &.status-uploading {
+        color: #ff9800;
+        animation: pulse 1s infinite;
+      }
+
+      &.status-processing {
+        color: #2196f3;
+        animation: pulse 1s infinite;
+      }
+
+      &.status-complete {
+        color: #4caf50;
+      }
+    }
+
+    .file-info-detail {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+
+      .file-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #333;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      .file-status-text {
+        font-size: 11px;
+        color: #666;
+        font-style: italic;
+      }
+    }
+
+    .file-percentage {
+      min-width: 45px;
+      text-align: right;
+      color: #1976d2;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+  }
+
+  .file-progress-bar {
+    height: 4px;
+    border-radius: 2px;
+
+    &.status-pending {
+      background-color: #e0e0e0;
+
+      ::ng-deep .mdc-linear-progress__bar-inner {
+        background-color: #bdbdbd;
+      }
+    }
+
+    &.status-uploading {
+      ::ng-deep .mdc-linear-progress__bar-inner {
+        background: linear-gradient(90deg, #ff9800, #ffb74d);
+      }
+    }
+
+    &.status-processing {
+      ::ng-deep .mdc-linear-progress__bar-inner {
+        background: linear-gradient(90deg, #2196f3, #64b5f6);
+      }
+    }
+
+    &.status-complete {
+      ::ng-deep .mdc-linear-progress__bar-inner {
+        background: linear-gradient(90deg, #4caf50, #81c784);
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}

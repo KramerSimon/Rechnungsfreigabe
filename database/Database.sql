@@ -104,7 +104,7 @@ CREATE TABLE `approval_workflows` (
   `step_number` int NOT NULL,
   `approver_id` int NOT NULL,
   `approval_level` int NOT NULL,
-  `status` enum('Pending','Approved','Rejected','Skipped') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
+  `status` enum('Pending','Approved','Rejected','Skipped','Waiting') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
   `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `approved_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,

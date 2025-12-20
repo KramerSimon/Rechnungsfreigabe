@@ -6,6 +6,21 @@
         </mat-card-header>
 
         <mat-card-content>
+          <!-- Info Banner for scanned PDFs -->
+          <div class="info-banner" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: start; gap: 8px;">
+              <mat-icon style="color: #ff9800;">info</mat-icon>
+              <div style="flex: 1;">
+                <strong>Hinweis zu gescannten PDFs:</strong>
+                <p style="margin: 4px 0 0 0; font-size: 14px;">
+                  Das System kann nur Daten aus PDFs mit selektierbarem Text extrahieren.
+                  Bei <strong>gescannten Dokumenten</strong> (nur Bilder) werden keine Daten automatisch ausgelesen.
+                  In diesem Fall wird die Rechnung mit Standardwerten angelegt und muss <strong>manuell vervollständigt</strong> werden.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <form [formGroup]="uploadForm">
             <div class="form-row">
               <mat-form-field appearance="fill" class="form-field">
@@ -80,7 +95,62 @@
               </button>
             </div>
 
-            <mat-progress-bar *ngIf="isUploading" mode="indeterminate"></mat-progress-bar>
+            <!-- Progress Bar Section -->
+            <div *ngIf="isUploading" class="progress-section">
+              <div class="progress-header">
+                <div class="progress-info">
+                  <h4>Upload-Fortschritt</h4>
+                  <p class="phase-label">
+                    <span *ngIf="uploadPhase === 'uploading'">📤 Dateien werden hochgeladen...</span>
+                    <span *ngIf="uploadPhase === 'processing'">🔍 OCR-Texterkennung läuft...</span>
+                    <span *ngIf="uploadPhase === 'saving'">💾 Rechnungsdaten werden gespeichert...</span>
+                    <span *ngIf="uploadPhase === 'complete'">✅ Upload abgeschlossen!</span>
+                  </p>
+                </div>
+                <div class="progress-percentage">{{ uploadProgress | number:'1.0-0' }}%</div>
+              </div>
+
+              <!-- Main Progress Bar -->
+              <mat-progress-bar
+                mode="determinate"
+                [value]="uploadProgress"
+                class="main-progress-bar">
+              </mat-progress-bar>
+
+              <!-- Detailed File Progress -->
+              <div class="file-progress-list" *ngIf="fileProgressDetails.length > 0">
+                <div class="file-progress-item" *ngFor="let file of fileProgressDetails; let i = index">
+                  <div class="file-progress-header">
+                    <mat-icon
+                      [ngSwitch]="file.status"
+                      [class.status-pending]="file.status === 'pending'"
+                      [class.status-uploading]="file.status === 'uploading'"
+                      [class.status-processing]="file.status === 'processing'"
+                      [class.status-complete]="file.status === 'complete'">
+                      <span *ngSwitchCase="'pending'">schedule</span>
+                      <span *ngSwitchCase="'uploading'">cloud_upload</span>
+                      <span *ngSwitchCase="'processing'">scanner</span>
+                      <span *ngSwitchCase="'complete'">check_circle</span>
+                      <span *ngSwitchDefault>schedule</span>
+                    </mat-icon>
+                    <div class="file-info-detail">
+                      <span class="file-name">{{ file.name }}</span>
+                      <span class="file-status-text" *ngIf="file.status === 'uploading'">Upload läuft...</span>
+                      <span class="file-status-text" *ngIf="file.status === 'processing'">OCR-Texterkennung...</span>
+                      <span class="file-status-text" *ngIf="file.status === 'complete'">Abgeschlossen</span>
+                      <span class="file-status-text" *ngIf="file.status === 'pending'">Warten...</span>
+                    </div>
+                    <span class="file-percentage">{{ file.progress | number:'1.0-0' }}%</span>
+                  </div>
+                  <mat-progress-bar
+                    mode="determinate"
+                    [value]="file.progress"
+                    [ngClass]="'status-' + file.status"
+                    class="file-progress-bar">
+                  </mat-progress-bar>
+                </div>
+              </div>
+            </div>
           </form>
         </mat-card-content>
       </mat-card>

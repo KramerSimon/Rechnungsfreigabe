@@ -42,7 +42,7 @@ export interface CreateApprovalWorkflowDto {
   stepNumber?: number;
   approverId: number;
   approvalLevel?: number;
-  status?: string; // Pending | Approved | Rejected | Skipped
+  status?: string; // Pending | Waiting | Approved | Rejected | Skipped
   comments?: string;
 }
 
@@ -52,6 +52,6 @@ export interface UpdateApprovalWorkflowDto {
   stepNumber?: number;
   approverId?: number;
   approvalLevel?: number;
-  status?: string; // Pending | Approved | Rejected | Skipped
+  status?: string; // Pending | Waiting | Approved | Rejected | Skipped
   comments?: string;
 }

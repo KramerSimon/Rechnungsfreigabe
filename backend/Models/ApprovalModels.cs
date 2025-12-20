@@ -254,7 +254,8 @@ public enum ApprovalStatus
     Pending,
     Approved,
     Rejected,
-    Skipped
+    Skipped,
+    Waiting
 }
 
 public enum NotificationPriority

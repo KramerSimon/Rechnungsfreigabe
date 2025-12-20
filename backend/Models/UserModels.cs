@@ -187,5 +187,6 @@ public enum ProjectStatus
     Geplant,
     Aktiv,
     Pausiert,
-    Abgeschlossen
+    Abgeschlossen,
+    Abgebrochen
 }

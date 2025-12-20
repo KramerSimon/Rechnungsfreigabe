@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData } from '../../../../../core/models';
+import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData, StageDefinition } from '../../../../../core/models';
 import { User } from '../../../../../core/models/user.models';
 import { UserService } from '../../../../../core/services/user.service';
 
@@ -56,12 +56,20 @@ export class RuleDialogComponent implements OnInit {
 
   availableActions = [
     { value: 'auto_approve', label: 'Automatisch freigeben' },
+    { value: 'require_approval', label: 'Mehrstufige Freigabe' },
     { value: 'set_status', label: 'Status setzen' },
     { value: 'assign_to', label: 'Zuweisen an' }
   ];
 
+  stageRoles = [
+    { value: 'cost_center_manager', label: 'Kostenstellenleiter' },
+    { value: 'project_manager', label: 'Projektleiter' },
+    { value: 'manager', label: 'Manager' },
+    { value: 'admin', label: 'Admin' }
+  ];
+
   getActionOptions() {
-    // Manual: no auto_approve; Automatic: no assign_to
+    // Manual: no auto_approve; Automatic: allow all but assign_to if you want stricter separation
     return this.rule.ruleType === 'automatic'
       ? this.availableActions.filter(a => a.value !== 'assign_to')
       : this.availableActions.filter(a => a.value !== 'auto_approve');
@@ -140,39 +148,32 @@ export class RuleDialogComponent implements OnInit {
         action.description = 'Automatisch freigeben';
         action.value = 'approved';
         break;
+      case 'require_approval':
+        action.description = 'Mehrstufige Freigabe';
+        action.value = '';
+        action.stages = action.stages && action.stages.length ? action.stages : [this.createDefaultStage()];
+        break;
       case 'set_status':
         action.description = 'Status setzen auf';
         action.value = '';
+        action.stages = undefined;
         break;
       case 'assign_to':
         action.description = 'Zuweisen an Benutzer';
         action.value = '';
+        action.stages = undefined;
         break;
     }
   }
 
   onRuleTypeChange(newType: string) {
     this.rule.ruleType = newType as any;
-    // Ensure manual rules have at least one assign_to action
+    // Clean up actions that are incompatible per mode
     if (newType === 'manual') {
-      // Remove invalid actions for manual rules
       this.rule.actions = this.rule.actions.filter(a => a.type !== 'auto_approve');
-      const hasAssign = this.rule.actions.some(a => a.type === 'assign_to');
-      if (!hasAssign) {
-        this.rule.actions.unshift({ type: 'assign_to', value: '', description: 'Zuweisen an Benutzer' } as any);
-      }
-    }
-    // For automatic rules, set first action to auto_approve if none
-    if (newType === 'automatic' && this.rule.actions.length === 0) {
-      this.rule.actions.push({ type: 'auto_approve', value: 'approved', description: 'Automatisch freigeben' } as any);
     }
     if (newType === 'automatic') {
-      // Remove invalid actions for automatic rules
       this.rule.actions = this.rule.actions.filter(a => a.type !== 'assign_to');
-      const hasAuto = this.rule.actions.some(a => a.type === 'auto_approve');
-      if (!hasAuto) {
-        this.rule.actions.unshift({ type: 'auto_approve', value: 'approved', description: 'Automatisch freigeben' } as any);
-      }
     }
   }
 
@@ -183,27 +184,47 @@ export class RuleDialogComponent implements OnInit {
       this.rule.conditions.length > 0 &&
       this.rule.actions.length > 0 &&
       this.rule.conditions.every((c: RuleCondition) => c.field && c.operator && c.value !== '') &&
-      this.rule.actions.every((a: RuleAction) => {
-        if (!a.type || !a.description) return false;
-        if (a.type === 'set_status') return a.value !== '';
-        if (a.type === 'assign_to') return a.value !== '';
-        return true;
-      })
+      this.rule.actions.every((a: RuleAction) => this.isActionValid(a))
     );
 
-    // Manual rules must assign to a specific user
-    if (this.rule.ruleType === 'manual') {
-      const hasAssign = this.rule.actions.some(a => a.type === 'assign_to' && a.value !== '');
-      if (!hasAssign) return false;
-    }
-
-    // Automatic rules must auto-approve
-    if (this.rule.ruleType === 'automatic') {
-      const hasAuto = this.rule.actions.some(a => a.type === 'auto_approve');
-      if (!hasAuto) return false;
-    }
-
     return baseValid;
+  }
+
+  private isActionValid(action: RuleAction): boolean {
+    if (!action.type || !action.description) return false;
+    if (action.type === 'set_status') return action.value !== '';
+    if (action.type === 'assign_to') return action.value !== '';
+    if (action.type === 'require_approval') {
+      const stages = action.stages || [];
+      if (!stages.length) return false;
+      return stages.every(s => this.isStageValid(s));
+    }
+    return true; // auto_approve has no extra validation beyond presence
+  }
+
+  private isStageValid(stage: StageDefinition): boolean {
+    if (!stage) return false;
+    if (stage.stepNumber === undefined || stage.stepNumber === null) return false;
+    if (stage.approvalLevel === undefined || stage.approvalLevel === null) return false;
+    const hasRoleOrUser = !!stage.role || !!stage.userId;
+    return stage.stepNumber >= 1 && stage.approvalLevel >= 1 && hasRoleOrUser;
+  }
+
+  addStage(action: RuleAction) {
+    if (action.type !== 'require_approval') return;
+    if (!action.stages) action.stages = [];
+    const nextStep = (action.stages[action.stages.length - 1]?.stepNumber || 0) + 1;
+    const nextLevel = (action.stages[action.stages.length - 1]?.approvalLevel || 0) + 1;
+    action.stages.push({ stepNumber: nextStep, approvalLevel: nextLevel, role: 'manager' });
+  }
+
+  removeStage(action: RuleAction, index: number) {
+    if (action.type !== 'require_approval' || !action.stages) return;
+    action.stages.splice(index, 1);
+  }
+
+  private createDefaultStage(): StageDefinition {
+    return { stepNumber: 1, approvalLevel: 1, role: 'cost_center_manager' };
   }
 
   onCancel() {

@@ -276,6 +276,9 @@
           <div class="status-info">
             <strong>Status:</strong> {{ invoice.status }}
           </div>
+
+          <!-- Approval Timeline -->
+          <app-approval-timeline [invoiceId]="invoiceId"></app-approval-timeline>
         </mat-card-content>
       </mat-card>
     </div>

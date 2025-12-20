@@ -17,76 +17,7 @@
   </div>
 
   <!-- Workflow Regeln -->
-  <div class="workflow-section">
-    <h2>WORKFLOW REGELN (POLICIES)</h2>
-    <p class="section-description">Definiere, wie Rechnungen durch das System laufen.</p>
-
-    <div class="rules-cards">
-      <!-- Automatische Freigabe -->
-      <mat-card class="rule-card auto-approval">
-        <mat-card-header>
-          <div mat-card-avatar class="card-avatar auto">🤖</div>
-          <mat-card-title>AUTOMATISCHE FREIGABE</mat-card-title>
-          <mat-card-subtitle>(Pinke Boxen im Diagramm)</mat-card-subtitle>
-        </mat-card-header>
-
-        <mat-card-content>
-          <div class="rules-list">
-            <div *ngFor="let rule of autoApprovalRules" class="rule-item">
-              <div class="rule-info">
-                <div class="rule-name">{{ rule.name }}</div>
-                <div class="rule-condition">{{ rule.description }}</div>
-              </div>
-              <div class="rule-toggle"
-                   [class.active]="rule.isActive"
-                   (click)="toggleAutoRule(rule)">
-                <mat-icon>{{ rule.isActive ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-              </div>
-            </div>
-          </div>
-        </mat-card-content>
-
-        <mat-card-actions>
-          <button mat-button class="manage-btn" (click)="onManageAutoRules()">
-            <mat-icon>settings</mat-icon>
-            Regeln verwalten
-          </button>
-        </mat-card-actions>
-      </mat-card>
-
-      <!-- Zuweisungs-Regeln -->
-      <mat-card class="rule-card assignment">
-        <mat-card-header>
-          <div mat-card-avatar class="card-avatar assignment">👤</div>
-          <mat-card-title>ZUWEISUNGS-REGELN</mat-card-title>
-          <mat-card-subtitle>(Orange Boxen im Diagr.)</mat-card-subtitle>
-        </mat-card-header>
-
-        <mat-card-content>
-          <div class="rules-list">
-            <div *ngFor="let rule of assignmentRules" class="rule-item">
-              <div class="rule-info">
-                <div class="rule-name">{{ rule.costCenter }}</div>
-                <div class="rule-condition">{{ rule.assignedTo }}</div>
-              </div>
-              <div class="rule-toggle"
-                   [class.active]="rule.isActive"
-                   (click)="toggleAssignmentRule(rule)">
-                <mat-icon>{{ rule.isActive ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-              </div>
-            </div>
-          </div>
-        </mat-card-content>
-
-        <mat-card-actions>
-          <button mat-button class="manage-btn" (click)="onManageAssignmentRules()">
-            <mat-icon>assignment_ind</mat-icon>
-            Zuweisung verwalten
-          </button>
-        </mat-card-actions>
-      </mat-card>
-    </div>
-  </div>
+  <!-- Workflow-Regeln entfernt -->
 
   <!-- Stammdaten Verwaltung -->
   <div class="masterdata-section">

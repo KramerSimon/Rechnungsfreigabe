@@ -61,6 +61,13 @@ export class PdfUploadDashboardComponent implements OnInit {
   uploadResults: any = null;
   uploadStatus: any = null;
 
+  // Progress tracking
+  uploadProgress = 0;
+  currentFileProgress = 0;
+  currentFileName = '';
+  uploadPhase = ''; // 'uploading', 'processing', 'complete'
+  fileProgressDetails: any[] = []; // Array to track progress of each file
+
   displayedSuccessColumns = ['fileName', 'invoiceNumber', 'invoiceId', 'size'];
   displayedErrorColumns = ['fileName', 'errorMessage'];
 
@@ -174,12 +181,79 @@ export class PdfUploadDashboardComponent implements OnInit {
     }
 
     this.isUploading = true;
+    this.uploadProgress = 0;
+    this.uploadPhase = 'uploading';
+    this.fileProgressDetails = this.selectedFiles.map(f => ({
+      name: f.name,
+      progress: 0,
+      status: 'pending' // pending, uploading, processing, complete, error
+    }));
+
     const supplierIdValue = this.uploadForm.get('supplierId')?.value;
     const supplierId = supplierIdValue && supplierIdValue !== '' ? Number(supplierIdValue) : undefined;
     const costCenterIdValue = this.uploadForm.get('costCenterId')?.value;
     const costCenterId = costCenterIdValue && costCenterIdValue !== '' ? costCenterIdValue : undefined;
     const purchaseOrderIdValue = this.uploadForm.get('purchaseOrderId')?.value;
     const purchaseOrderId = purchaseOrderIdValue && purchaseOrderIdValue !== '' ? purchaseOrderIdValue : undefined;
+
+    const fileCount = this.selectedFiles.length;
+    let currentFileIndex = 0;
+
+    // Detaillierte Progress-Simulation mit realistischen Phasen
+    const progressInterval = setInterval(() => {
+      const progressPerFile = 100 / fileCount;
+      const baseProgress = currentFileIndex * progressPerFile;
+
+      // Phase 1: Upload (0-20% pro Datei)
+      if (this.uploadPhase === 'uploading' && this.uploadProgress < baseProgress + progressPerFile * 0.2) {
+        this.uploadProgress += Math.random() * 3;
+
+        // Aktualisiere aktuelles File
+        if (this.fileProgressDetails[currentFileIndex]) {
+          this.fileProgressDetails[currentFileIndex].status = 'uploading';
+          this.fileProgressDetails[currentFileIndex].progress = Math.min(
+            ((this.uploadProgress - baseProgress) / (progressPerFile * 0.2)) * 20,
+            20
+          );
+        }
+      }
+      // Phase 2: OCR Processing (20-80% pro Datei)
+      else if (this.uploadProgress >= baseProgress + progressPerFile * 0.2 &&
+               this.uploadProgress < baseProgress + progressPerFile * 0.8) {
+        this.uploadPhase = 'processing';
+        this.uploadProgress += Math.random() * 2;
+
+        if (this.fileProgressDetails[currentFileIndex]) {
+          this.fileProgressDetails[currentFileIndex].status = 'processing';
+          const ocrProgress = ((this.uploadProgress - baseProgress - progressPerFile * 0.2) /
+                              (progressPerFile * 0.6)) * 60;
+          this.fileProgressDetails[currentFileIndex].progress = Math.min(20 + ocrProgress, 80);
+        }
+      }
+      // Phase 3: Saving (80-100% pro Datei)
+      else if (this.uploadProgress >= baseProgress + progressPerFile * 0.8 &&
+               this.uploadProgress < baseProgress + progressPerFile) {
+        this.uploadPhase = 'saving';
+        this.uploadProgress += Math.random() * 4;
+
+        if (this.fileProgressDetails[currentFileIndex]) {
+          const saveProgress = ((this.uploadProgress - baseProgress - progressPerFile * 0.8) /
+                               (progressPerFile * 0.2)) * 20;
+          this.fileProgressDetails[currentFileIndex].progress = Math.min(80 + saveProgress, 100);
+        }
+      }
+      // Nächste Datei
+      else if (this.uploadProgress >= baseProgress + progressPerFile && currentFileIndex < fileCount - 1) {
+        if (this.fileProgressDetails[currentFileIndex]) {
+          this.fileProgressDetails[currentFileIndex].status = 'complete';
+          this.fileProgressDetails[currentFileIndex].progress = 100;
+        }
+        currentFileIndex++;
+        this.uploadPhase = 'uploading';
+      }
+
+      this.uploadProgress = Math.min(this.uploadProgress, 95);
+    }, 150);
 
     this.pdfUploadService.bulkUploadInvoicePdfs(
       this.selectedFiles,
@@ -188,21 +262,66 @@ export class PdfUploadDashboardComponent implements OnInit {
       costCenterId
     ).subscribe(
       (results) => {
+        clearInterval(progressInterval);
+        this.uploadProgress = 100;
+        this.uploadPhase = 'complete';
         this.uploadResults = results;
         this.isUploading = false;
 
-        const message = `${results.successfulUploads.length} PDFs hochgeladen, ${results.failedUploads.length} Fehler`;
-        this.snackBar.open(message, 'Schließen', { duration: 5000 });
+        // Mark files as complete
+        this.fileProgressDetails.forEach(fp => {
+          if (fp.status === 'pending' || fp.status === 'uploading' || fp.status === 'processing') {
+            fp.status = 'complete';
+            fp.progress = 100;
+          }
+        });
+
+        // Scroll to results after a short delay
+        setTimeout(() => {
+          const resultsElement = document.querySelector('.results-section');
+          if (resultsElement) {
+            resultsElement.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 500);
+
+        // Check for warnings about missing data extraction
+        const hasWarnings = results.successfulUploads.some((upload: any) => upload.warning || upload.requiresManualEntry);
+
+        let message = `${results.successfulUploads.length} PDFs hochgeladen, ${results.failedUploads.length} Fehler`;
+        if (hasWarnings) {
+          message += ' ⚠️ Einige PDFs enthalten keine extrahierbaren Daten (gescannte Dokumente)';
+        }
+
+        this.snackBar.open(message, 'Schließen', { duration: 8000 });
+
+        if (hasWarnings) {
+          // Show additional warning
+          setTimeout(() => {
+            this.snackBar.open(
+              'Bitte Rechnungsdaten für gescannte PDFs manuell vervollständigen',
+              'OK',
+              { duration: 10000 }
+            );
+          }, 1000);
+        }
 
         if (results.failedUploads.length === 0) {
           this.selectedFiles = [];
           this.uploadForm.reset();
+          // Reset progress after 2 seconds
+          setTimeout(() => {
+            this.uploadProgress = 0;
+            this.uploadPhase = '';
+            this.fileProgressDetails = [];
+          }, 2000);
         }
 
         this.loadUploadStatus();
       },
       (error) => {
+        clearInterval(progressInterval);
         this.isUploading = false;
+        this.uploadPhase = '';
         this.snackBar.open('Fehler beim Upload: ' + (error.message || 'Unbekannter Fehler'), 'Schließen', { duration: 5000 });
       }
     );

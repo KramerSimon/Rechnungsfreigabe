@@ -20,6 +20,14 @@ export interface RuleAction {
   type: 'auto_approve' | 'require_approval' | 'set_status' | 'assign_to';
   value: string;
   description: string;
+  stages?: StageDefinition[]; // Used when type === 'require_approval'
+}
+
+export interface StageDefinition {
+  stepNumber: number;
+  approvalLevel: number;
+  role?: 'cost_center_manager' | 'project_manager' | 'manager' | 'admin';
+  userId?: number;
 }
 
 export interface RuleDialogData {

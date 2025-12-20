@@ -122,7 +122,49 @@
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="flex-grow">
+          <!-- Multi-stage approval definition -->
+          <div class="stage-list" *ngIf="action.type === 'require_approval'">
+            <div class="stage-row" *ngFor="let stage of action.stages; let si = index">
+              <mat-form-field appearance="outline">
+                <mat-label>Schritt</mat-label>
+                <input matInput type="number" min="1" [(ngModel)]="stage.stepNumber" required>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Stufe</mat-label>
+                <input matInput type="number" min="1" [(ngModel)]="stage.approvalLevel" required>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Rolle</mat-label>
+                <mat-select [(ngModel)]="stage.role">
+                  <mat-option [value]="undefined">—</mat-option>
+                  <mat-option *ngFor="let r of stageRoles" [value]="r.value">{{ r.label }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Benutzer (optional)</mat-label>
+                <mat-select [(ngModel)]="stage.userId">
+                  <mat-option [value]="undefined">—</mat-option>
+                  <mat-option *ngFor="let u of users" [value]="u.id">
+                    {{ u.firstName }} {{ u.lastName }} ({{ u.username }})
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <button mat-icon-button color="warn" (click)="removeStage(action, si)" [disabled]="(action.stages?.length || 0) <= 1">
+                <mat-icon>remove_circle</mat-icon>
+              </button>
+            </div>
+
+            <button mat-stroked-button color="primary" type="button" (click)="addStage(action)">
+              <mat-icon>add</mat-icon>
+              Stufe hinzufügen
+            </button>
+          </div>
+
+          <mat-form-field appearance="outline" class="flex-grow full-line">
             <mat-label>Beschreibung</mat-label>
             <input matInput [(ngModel)]="action.description" required>
           </mat-form-field>
