@@ -199,7 +199,7 @@ public class PdfUploadService : IPdfUploadService
                 throw new InvalidOperationException(fullMessage, ex);
             }
 
-            // Speichere PDF-Content direkt in der Datenbank
+            // Speichere PDF-Content direkt in der Datenbank (kein dauerhaftes Filesystem mehr)
             try
             {
                 var invoiceDb = await _context.Invoices.FindAsync(invoice.Id);
@@ -208,7 +208,7 @@ public class PdfUploadService : IPdfUploadService
                     invoiceDb.PdfContent = pdfContent;
                     invoiceDb.PdfFileSize = file.Length;
                     invoiceDb.OriginalFilename = file.FileName;
-                    invoiceDb.PdfFilePath = fileName; // Speichere nur den Dateinamen für Referenzen
+                    invoiceDb.PdfFilePath = null; // keine lokale Ablage mehr
                     await _context.SaveChangesAsync();
                     Console.WriteLine($"[PDF Upload] PDF content saved to database for invoice {invoice.Id}");
                 }
@@ -246,21 +246,15 @@ public class PdfUploadService : IPdfUploadService
         try
         {
             var invoice = await _context.Invoices.FindAsync(invoiceId);
-            if (invoice == null || string.IsNullOrEmpty(invoice.PdfFilePath))
+            if (invoice?.PdfContent == null || invoice.PdfContent.Length == 0)
             {
-                throw new FileNotFoundException($"PDF for invoice {invoiceId} not found");
+                throw new FileNotFoundException($"PDF for invoice {invoiceId} not found in database");
             }
 
-            if (!File.Exists(invoice.PdfFilePath))
-            {
-                throw new FileNotFoundException($"PDF file not found: {invoice.PdfFilePath}");
-            }
-
-            return await File.ReadAllBytesAsync(invoice.PdfFilePath);
+            return invoice.PdfContent;
         }
         catch (Exception)
         {
-            
             throw;
         }
     }
@@ -275,11 +269,8 @@ public class PdfUploadService : IPdfUploadService
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(invoice.PdfFilePath) && File.Exists(invoice.PdfFilePath))
-            {
-                File.Delete(invoice.PdfFilePath);
-            }
-
+            // Entferne ausschließlich die DB-Inhalte
+            invoice.PdfContent = null;
             invoice.PdfFilePath = null;
             invoice.PdfFileSize = null;
             invoice.OriginalFilename = null;
@@ -289,7 +280,6 @@ public class PdfUploadService : IPdfUploadService
         }
         catch (Exception)
         {
-            
             throw;
         }
     }
@@ -300,30 +290,25 @@ public class PdfUploadService : IPdfUploadService
         {
             var totalInvoices = await _context.Invoices.CountAsync();
             var invoicesWithPdf = await _context.Invoices
-                .Where(i => !string.IsNullOrEmpty(i.PdfFilePath))
+                .Where(i => i.PdfContent != null && i.PdfContent.Length > 0)
                 .CountAsync();
             
             var totalPdfSize = await _context.Invoices
                 .Where(i => i.PdfFileSize.HasValue)
                 .SumAsync(i => i.PdfFileSize!.Value);
 
-            var dirInfo = new DirectoryInfo(_uploadDirectory);
-            var diskUsage = dirInfo.GetFiles("*", SearchOption.AllDirectories)
-                .Sum(f => f.Length);
-
             return new PdfUploadStatusDto
             {
                 TotalInvoices = totalInvoices,
                 InvoicesWithPdf = invoicesWithPdf,
                 TotalPdfSize = totalPdfSize,
-                DiskUsageBytes = diskUsage,
-                UploadDirectory = _uploadDirectory,
+                DiskUsageBytes = 0,
+                UploadDirectory = "database",
                 MaxFileSize = _maxFileSize
             };
         }
         catch (Exception)
         {
-            
             throw;
         }
     }
@@ -355,6 +340,13 @@ public class PdfUploadService : IPdfUploadService
                     Console.WriteLine($"[PDF Extract] No text found, trying OCR...");
                     text = ExtractTextWithOcr(filePath);
                     Console.WriteLine($"[OCR] Extracted text length: {text.Length} characters");
+                    
+                    // Debug: Print first 500 characters to see what OCR extracted
+                    if (text.Length > 0)
+                    {
+                        var preview = text.Length > 500 ? text.Substring(0, 500) : text;
+                        Console.WriteLine($"[OCR] Text preview: {preview.Replace("\n", " | ").Replace("\r", "")}");
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(text))
@@ -526,6 +518,9 @@ public class PdfUploadService : IPdfUploadService
         // Suche nach verschiedenen Rechnungsnummer-Mustern
         var patterns = new[]
         {
+            @"Rechnung\s+Nr\.?\s*([A-Z]{3}\d{10})",  // "Rechnung Nr. AEL2400398577" (Alperia)
+            @"Nr\.?\s*([A-Z]{3}\d{10})\b",  // "Nr. AEL2400398577" or "Nr AEL2400398577"
+            @"\b([A-Z]{3}\d{10})\b",  // Generic pattern for Alperia invoice numbers
             @"Numero\s+fattura[\s\r\n]+(\d+\-\d+)",  // "Numero fattura 12-139856"
             @"Numero\s+fattura[^\d]{0,30}(\d{2}\-\d{3,})", // erlaubt Trennzeichen (|, -, .) zwischen Label und Nummer
             @"CONTO\s+LINKEM\s*[—-]\s*(\d{2}\-\d{3,})",   // "CONTO LINKEM — 12-139856"
@@ -567,6 +562,8 @@ public class PdfUploadService : IPdfUploadService
         // Suche zuerst nach dem Rechnungsbetrag direkt (am wichtigsten!)
         var invoiceAmountPatterns = new[]
         {
+            @"Rechnungsbetrag[\s\r\n]+([\d]+\s*[.,]\s*\d{2})\s*euro",  // "Rechnungsbetrag 200,39 euro" or "200 , 39 euro" (Alperia)
+            @"([\d]{2,}[.,]\d{2})\s*euro",  // Any amount followed by "euro" (Alperia fallback)
             @"TOTALE\s+CONTO\s+LINKEM[\s\r\n]+([\d]+[.,]\d{2})",  // "TOTALE CONTO LINKEM 80,73"
             @"TOTALE\s+(?:CONTO|fattura|Rechnung)[\s\r\n]+([\d]+[.,]\d{2})",
             @"Euro\s+(\d+[.,]\d{2})", // z.B. "è di Euro 80,73"
@@ -585,7 +582,7 @@ public class PdfUploadService : IPdfUploadService
             if (match.Success && match.Groups.Count > 1)
             {
                 var parsed = ParseAmount(match.Groups[1].Value);
-                if (parsed.HasValue && parsed.Value > 10)
+                if (parsed.HasValue && parsed.Value > 1) // Lowered threshold from 10 to 1
                 {
                     totalAmount = parsed.Value;
                     foundExplicitInvoiceAmount = true;
@@ -849,6 +846,7 @@ public class PdfUploadService : IPdfUploadService
     {
         var datePatterns = new[]
         {
+            @"innerhalb[\s\r\n]+(\d{1,2})[\/](\d{1,2})[\/](\d{4})",  // "innerhalb 13/11/2024" (Alperia)
             @"(?:Fälligkeitsdatum|Due\s+Date|Scadenza)[:\s]+(\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4})",
             @"(?:Zahlbar\s+bis|Payment\s+due)[:\s]+(\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4})"
         };
@@ -856,9 +854,21 @@ public class PdfUploadService : IPdfUploadService
         foreach (var pattern in datePatterns)
         {
             var match = Regex.Match(text, pattern, RegexOptions.IgnoreCase);
-            if (match.Success && match.Groups.Count > 1)
+            if (match.Success)
             {
-                if (TryParseDate(match.Groups[1].Value, out DateTime date))
+                // Handle captured groups for day/month/year separately (Alperia format)
+                if (match.Groups.Count > 3 && int.TryParse(match.Groups[1].Value, out int day) 
+                    && int.TryParse(match.Groups[2].Value, out int month) 
+                    && int.TryParse(match.Groups[3].Value, out int year))
+                {
+                    try
+                    {
+                        return new DateTime(year, month, day);
+                    }
+                    catch { }
+                }
+                // Standard single group capture
+                else if (match.Groups.Count > 1 && TryParseDate(match.Groups[1].Value, out DateTime date))
                 {
                     return date;
                 }
@@ -1023,14 +1033,16 @@ public class PdfUploadService : IPdfUploadService
         // Erstelle neuen Lieferanten
         var newSupplier = new Supplier
         {
-            Name = supplierInfo.Name,
-            LegalName = supplierInfo.LegalName ?? supplierInfo.Name,
-            VatNumber = supplierInfo.VatNumber,
-            TaxNumber = supplierInfo.TaxNumber,
-            AddressLine1 = supplierInfo.Address,
-            City = supplierInfo.City,
-            PostalCode = supplierInfo.PostalCode,
-            Country = supplierInfo.Country ?? "Italien"
+            Name = supplierInfo.Name?.Length > 100 ? supplierInfo.Name.Substring(0, 100) : supplierInfo.Name ?? "Unknown",
+            LegalName = (supplierInfo.LegalName ?? supplierInfo.Name)?.Length > 150 
+                ? (supplierInfo.LegalName ?? supplierInfo.Name)!.Substring(0, 150) 
+                : supplierInfo.LegalName ?? supplierInfo.Name,
+            VatNumber = supplierInfo.VatNumber?.Length > 30 ? supplierInfo.VatNumber.Substring(0, 30) : supplierInfo.VatNumber,
+            TaxNumber = supplierInfo.TaxNumber?.Length > 30 ? supplierInfo.TaxNumber.Substring(0, 30) : supplierInfo.TaxNumber,
+            AddressLine1 = supplierInfo.Address?.Length > 100 ? supplierInfo.Address.Substring(0, 100) : supplierInfo.Address,
+            City = supplierInfo.City?.Length > 50 ? supplierInfo.City.Substring(0, 50) : supplierInfo.City,
+            PostalCode = supplierInfo.PostalCode?.Length > 10 ? supplierInfo.PostalCode.Substring(0, 10) : supplierInfo.PostalCode,
+            Country = (supplierInfo.Country ?? "Italien").Length > 50 ? (supplierInfo.Country ?? "Italien").Substring(0, 50) : supplierInfo.Country ?? "Italien"
         };
 
         _context.Suppliers.Add(newSupplier);
@@ -1042,6 +1054,18 @@ public class PdfUploadService : IPdfUploadService
     private SupplierInfo? ExtractSupplierInfo(string text)
     {
         var supplierInfo = new SupplierInfo();
+
+        // Spezialfall: Alperia - check for "ALPERIA" brand
+        if (Regex.IsMatch(text, @"\bALPERIA\b", RegexOptions.IgnoreCase))
+        {
+            supplierInfo.Name = "ALPERIA";
+            Console.WriteLine($"[PDF Extract] Found supplier name: ALPERIA");
+            
+            // Alperia hat normalerweise keine explizite P.IVA im Hauptbereich
+            supplierInfo.Country = "Italien";
+            
+            return supplierInfo;
+        }
 
         // Spezialfall: "CONTO LINKEM" deutet auf Linkem als Lieferant hin
         if (Regex.IsMatch(text, @"CONTO\s+LINKEM", RegexOptions.IgnoreCase))
@@ -1087,38 +1111,7 @@ public class PdfUploadService : IPdfUploadService
             }
         }
 
-        // Suche nach Firmenname in ersten Zeilen (typisch bei Rechnungen)
-        // Muster für Firmennamen mit optionalen Großbuchstaben am Anfang
-        var firstLinesPattern = @"^\s*([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\s&\-\.®©]+(?:GMBH|GmbH|SMBH|GMBH & CO\.? KG|AG|SRL|SPA|INC|LLC|LTD)?)[\s®©:]*[\r\n]";
-        var firstLineMatches = Regex.Matches(text, firstLinesPattern, RegexOptions.Multiline);
-        
-        foreach (Match match in firstLineMatches)
-        {
-            var name = match.Groups[1].Value.Trim();
-            
-            // Prüfe ob dieser Name VOR der Kundenposition ist
-            if (kundenPosition > 0 && match.Index >= kundenPosition)
-            {
-                Console.WriteLine($"[PDF Extract] Skipping '{name}' - appears after customer section");
-                continue; // Überspringe Namen die nach "Kunde" kommen
-            }
-            
-            // Ignoriere Personennamen (Vorname Nachname) - das sind Kunden, keine Firmen
-            if (Regex.IsMatch(name, @"^[A-Z][a-z]+\s+[A-Z][a-z]+$"))
-            {
-                Console.WriteLine($"[PDF Extract] Skipping '{name}' - looks like a person name");
-                continue;
-            }
-            
-            if (!string.IsNullOrEmpty(name) && name.Length > 3)
-            {
-                supplierInfo.Name = name;
-                Console.WriteLine($"[PDF Extract] Found supplier name: {name}");
-                break;
-            }
-        }
-
-        // Suche nach Fornitore (Italienisch für Lieferant/Anbieter)
+        // 1) Bevorzugt: expliziter Fornitore-Block nutzen
         if (string.IsNullOrWhiteSpace(supplierInfo.Name))
         {
             var fornitoPattern = @"Fornitore\s+(.*?)(?=\n|Cliente|P\.\s*IVA)";
@@ -1130,26 +1123,71 @@ public class PdfUploadService : IPdfUploadService
                 
                 if (lines.Length > 0)
                 {
-                    supplierInfo.Name = lines[0];
+                    var cleaned = CleanSupplierName(lines[0]);
+                    if (!string.IsNullOrWhiteSpace(cleaned))
+                    {
+                        supplierInfo.Name = cleaned.Length > 100 ? cleaned.Substring(0, 100) : cleaned;
+                    }
 
                     // Versuche Adresse zu finden
                     if (lines.Length > 1)
                     {
-                        supplierInfo.Address = lines[1];
+                        var address = lines[1];
+                        supplierInfo.Address = address.Length > 100 ? address.Substring(0, 100) : address;
                     }
                 }
             }
         }
 
-        // Fallback: Suche nach Name am Anfang des Dokuments (erste paar Zeilen nach "FATTURA")
+        // 2) Firmenname in ersten Zeilen (typisch bei Rechnungen)
+        if (string.IsNullOrWhiteSpace(supplierInfo.Name))
+        {
+            var firstLinesPattern = @"^\s*([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\s&\-\.®©]+(?:GMBH|GmbH|SMBH|GMBH & CO\.? KG|AG|SRL|SPA|INC|LLC|LTD)?)[\s®©:]*[\r\n]";
+            var firstLineMatches = Regex.Matches(text, firstLinesPattern, RegexOptions.Multiline);
+            
+            foreach (Match match in firstLineMatches)
+            {
+                var rawName = match.Groups[1].Value.Trim();
+                var name = CleanSupplierName(rawName);
+                
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    Console.WriteLine($"[PDF Extract] Skipping '{rawName}' - filtered out");
+                    continue;
+                }
+
+                // Prüfe ob dieser Name VOR der Kundenposition ist
+                if (kundenPosition > 0 && match.Index >= kundenPosition)
+                {
+                    Console.WriteLine($"[PDF Extract] Skipping '{name}' - appears after customer section");
+                    continue; // Überspringe Namen die nach "Kunde" kommen
+                }
+                
+                // Ignoriere Personennamen (Vorname Nachname) - das sind Kunden, keine Firmen
+                if (Regex.IsMatch(name, @"^[A-Z][a-z]+\s+[A-Z][a-z]+$"))
+                {
+                    Console.WriteLine($"[PDF Extract] Skipping '{name}' - looks like a person name");
+                    continue;
+                }
+                
+                supplierInfo.Name = name.Length > 100 ? name.Substring(0, 100) : name;
+                Console.WriteLine($"[PDF Extract] Found supplier name: {supplierInfo.Name}");
+                break;
+            }
+        }
+
+        // 3) Fallback: Name nach FATTURA-Header
         if (string.IsNullOrWhiteSpace(supplierInfo.Name))
         {
             var namePattern = @"FATTURA\s+(?:Numero fattura:.*?\s+Data:.*?\s+Fornitore\s+)?([\w\s]+(?:SRL|SpA|GmbH|AG|Inc|LLC|Ltd))";
             var nameMatch = Regex.Match(text, namePattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
             if (nameMatch.Success)
             {
-                supplierInfo.Name = nameMatch.Groups[1].Value.Trim();
-                
+                var name = CleanSupplierName(nameMatch.Groups[1].Value.Trim());
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    supplierInfo.Name = name.Length > 100 ? name.Substring(0, 100) : name;
+                }
             }
         }
 
@@ -1177,8 +1215,8 @@ public class PdfUploadService : IPdfUploadService
         var addressMatch = Regex.Match(text, addressPattern, RegexOptions.IgnoreCase);
         if (addressMatch.Success)
         {
-            supplierInfo.Address = $"Via {addressMatch.Groups[1].Value.Trim()} {addressMatch.Groups[2].Value}";
-            
+            var address = $"Via {addressMatch.Groups[1].Value.Trim()} {addressMatch.Groups[2].Value}";
+            supplierInfo.Address = address.Length > 100 ? address.Substring(0, 100) : address;
         }
 
         // Suche nach PLZ und Stadt (italienisches Format: 00100 Roma)
@@ -1202,6 +1240,27 @@ public class PdfUploadService : IPdfUploadService
         }
 
         return string.IsNullOrWhiteSpace(supplierInfo.Name) ? null : supplierInfo;
+    }
+
+    private string CleanSupplierName(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+        // Entferne Zeilenumbrüche und doppelte Separatoren
+        var cleaned = raw.Replace("\r", " ").Replace("\n", " ");
+        cleaned = string.Join(" ", cleaned.Split('|').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)));
+        cleaned = Regex.Replace(cleaned, "\\s{2,}", " ").Trim();
+
+        // Filtere bekannte Header wie "FATTURA"
+        if (Regex.IsMatch(cleaned, @"^FATTURA\b", RegexOptions.IgnoreCase)) return string.Empty;
+
+        // Schneide alles ab, was nach einer PLZ aussieht (vermeidet dass Adresse Teil des Namens wird)
+        cleaned = Regex.Replace(cleaned, @"\b\d{4,5}\b.*", "").Trim();
+
+        // Entferne trailing Länder-/Orts-Kürzel in Klammern
+        cleaned = Regex.Replace(cleaned, @"\s*\([A-Z]{2}\)\s*$", "").Trim();
+
+        return cleaned;
     }
 }
 

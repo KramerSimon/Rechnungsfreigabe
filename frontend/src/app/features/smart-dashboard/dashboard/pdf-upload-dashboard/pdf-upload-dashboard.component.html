@@ -6,21 +6,6 @@
         </mat-card-header>
 
         <mat-card-content>
-          <!-- Info Banner for scanned PDFs -->
-          <div class="info-banner" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
-            <div style="display: flex; align-items: start; gap: 8px;">
-              <mat-icon style="color: #ff9800;">info</mat-icon>
-              <div style="flex: 1;">
-                <strong>Hinweis zu gescannten PDFs:</strong>
-                <p style="margin: 4px 0 0 0; font-size: 14px;">
-                  Das System kann nur Daten aus PDFs mit selektierbarem Text extrahieren.
-                  Bei <strong>gescannten Dokumenten</strong> (nur Bilder) werden keine Daten automatisch ausgelesen.
-                  In diesem Fall wird die Rechnung mit Standardwerten angelegt und muss <strong>manuell vervollständigt</strong> werden.
-                </p>
-              </div>
-            </div>
-          </div>
-
           <form [formGroup]="uploadForm">
             <div class="form-row">
               <mat-form-field appearance="fill" class="form-field">

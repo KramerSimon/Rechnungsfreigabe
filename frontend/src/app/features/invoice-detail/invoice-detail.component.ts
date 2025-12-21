@@ -22,9 +22,11 @@ import { Invoice, InvoiceDetail } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CostCenterService } from '../../core/services/cost-center.service';
 import { PurchaseOrderService } from '../../core/services/purchase-order.service';
+import { SupplierService } from '../../core/services/supplier.service';
 import { CostCenter } from '../../core/models/cost-center.model';
 import { Project } from '../../core/models/project.model';
 import { PurchaseOrder } from '../../core/models/purchaseOrder.model';
+import { Supplier } from '../../core/models/supplier.model';
 
 @Component({
   selector: 'app-invoice-detail',
@@ -94,6 +96,7 @@ export class InvoiceDetailComponent implements OnInit {
   costCenters: CostCenter[] = [];
   projects: Project[] = [];
   purchaseOrders: PurchaseOrder[] = [];
+  suppliers: Supplier[] = [];
 
   note: string = '';
   saving = false;
@@ -108,12 +111,14 @@ export class InvoiceDetailComponent implements OnInit {
     private invoiceService: InvoiceService,
     private costCenterService: CostCenterService,
     private purchaseOrderService: PurchaseOrderService,
+    private supplierService: SupplierService,
     private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit() {
     this.invoiceId = parseInt(this.route.snapshot.params['id']) || 1;
     this.loadCostCenters();
+    this.loadSuppliers();
     this.loadInvoice();
   }
 
@@ -184,6 +189,17 @@ export class InvoiceDetailComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error loading cost centers', error);
+        }
+      });
+  }
+
+  private loadSuppliers() {
+    this.supplierService.getSuppliers().subscribe({
+        next: (suppliers) => {
+          this.suppliers = suppliers;
+        },
+        error: (error) => {
+          console.error('Error loading suppliers', error);
         }
       });
   }
@@ -270,6 +286,7 @@ export class InvoiceDetailComponent implements OnInit {
 
     this.saving = true;
     const payload = {
+      supplierId: this.invoice.supplier?.id,
       projectId: this.invoice.projectId?.trim() || undefined,
       costCenterId: this.invoice.costCenterId || undefined,
       purchaseOrderId: this.invoice.purchaseOrderId || undefined,
@@ -335,12 +352,17 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   canApprove(): boolean {
-    return this.invoice !== null && !this.loading;
+    const hasCostCenter = !!this.invoice?.costCenterId;
+    const hasProject = !!this.invoice?.projectId;
+    return !!this.invoice && !this.loading && hasCostCenter && hasProject;
   }
 
   onApprove() {
     if (!this.invoice || !this.canApprove()) {
-      this.snackBar.open('Rechnung kann nicht freigegeben werden', 'OK', { duration: 3000 });
+      const msg = (!this.invoice?.costCenterId || !this.invoice?.projectId)
+        ? 'Bitte Kostenstelle und Projekt ergänzen, erst dann freigeben.'
+        : 'Rechnung kann nicht freigegeben werden';
+      this.snackBar.open(msg, 'OK', { duration: 3000 });
       return;
     }
 

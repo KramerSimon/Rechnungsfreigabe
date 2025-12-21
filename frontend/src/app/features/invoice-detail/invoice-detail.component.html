@@ -93,6 +93,16 @@
               <h3>Rechnungsinformationen</h3>
 
               <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Lieferant</mat-label>
+                <mat-select [(ngModel)]="invoice.supplier" (change)="onInvoiceFieldChange()">
+                  <mat-option *ngFor="let supplier of suppliers" [value]="supplier">
+                    {{ supplier.name }}
+                  </mat-option>
+                  <mat-option *ngIf="suppliers.length === 0" [disabled]="true">Lieferanten werden geladen...</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Rechnungsnummer</mat-label>
                 <input matInput [(ngModel)]="invoice.invoiceNumber" (change)="onInvoiceFieldChange()" disabled>
               </mat-form-field>
@@ -194,6 +204,10 @@
           <div class="view-mode" *ngIf="!isEditMode">
             <div class="info-grid">
               <div class="info-item">
+                <strong>Lieferant:</strong>
+                <span>{{ invoice.supplier.name || '—' }}</span>
+              </div>
+              <div class="info-item">
                 <strong>Rechnungsnummer:</strong>
                 <span>{{ invoice.invoiceNumber }}</span>
               </div>
@@ -278,7 +292,7 @@
           </div>
 
           <!-- Approval Timeline -->
-          <app-approval-timeline [invoiceId]="invoiceId"></app-approval-timeline>
+          <app-approval-timeline [invoiceId]="invoiceId" [workflows]="invoice.pendingApprovals ?? null"></app-approval-timeline>
         </mat-card-content>
       </mat-card>
     </div>

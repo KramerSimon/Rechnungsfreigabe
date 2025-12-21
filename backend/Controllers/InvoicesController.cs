@@ -195,6 +195,19 @@ public class InvoicesController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
+
+            // Pre-check: Block approval when required data is missing
+            var userPermissions = await _userService.GetUserPermissionsAsync(userId);
+            var invoice = await _invoiceService.GetInvoiceByIdAsync(id, userId, userPermissions);
+            if (invoice == null)
+            {
+                return NotFound(new { message = $"Invoice with ID {id} not found" });
+            }
+            if (string.IsNullOrWhiteSpace(invoice.CostCenterId) || string.IsNullOrWhiteSpace(invoice.ProjectId))
+            {
+                return BadRequest(new { message = "Rechnung kann nicht freigegeben werden: fehlende Daten (Kostenstelle und/oder Projekt)." });
+            }
+
             var success = await _invoiceService.ApproveInvoiceAsync(id, userId, approveDto);
             
             if (!success)

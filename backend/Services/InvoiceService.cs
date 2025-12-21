@@ -165,11 +165,21 @@ public class InvoiceService : IInvoiceService
                 UpdatedAt = DateTime.UtcNow
             };
 
+            Console.WriteLine($"[InvoiceService] Setting Status to: {invoice.Status} (enum value: {(int)invoice.Status})");
+            Console.WriteLine($"[InvoiceService] Status string representation: '{invoice.Status.ToString()}'");
+
             _context.Invoices.Add(invoice);
+            
+            // Check what EF is about to send
+            var entry = _context.Entry(invoice);
+            var statusProperty = entry.Property("Status");
+            Console.WriteLine($"[InvoiceService] EF Status current value: {statusProperty.CurrentValue}, Type: {statusProperty.CurrentValue?.GetType().Name}");
             
             try
             {
+                Console.WriteLine($"[InvoiceService] About to call SaveChangesAsync...");
                 await _context.SaveChangesAsync();
+                Console.WriteLine($"[InvoiceService] SaveChangesAsync completed successfully");
             }
             catch (DbUpdateException dbEx)
             {
@@ -710,7 +720,7 @@ public class InvoiceService : IInvoiceService
             RequiresApproval = invoice.RequiresApproval,
             ApprovalLevel = invoice.ApprovalLevel,
             AutoApproved = invoice.AutoApproved,
-            PdfFilePath = invoice.PdfFilePath,
+            PdfFilePath = null,
             PdfFileSize = invoice.PdfFileSize,
             OriginalFilename = invoice.OriginalFilename,
             Description = invoice.Description,
@@ -735,13 +745,18 @@ public class InvoiceService : IInvoiceService
                        invoice.Status != InvoiceStatus.Bezahlt && 
                        invoice.Status != InvoiceStatus.Storniert,
             DaysOverdue = invoice.DueDate < DateTime.UtcNow ? (DateTime.UtcNow - invoice.DueDate).Days : 0,
+            // Exponiere den gesamten Genehmigungsablauf (nicht nur offene Schritte),
+            // damit das UI den vollständigen Verlauf darstellen kann.
             PendingApprovals = invoice.ApprovalWorkflows
-                .Where(aw => aw.Status == ApprovalStatus.Pending)
+                .OrderBy(aw => aw.StepNumber)
                 .Select(aw => new ApprovalWorkflowDto
                 {
                     Id = aw.Id,
                     InvoiceId = aw.InvoiceId,
+                    InvoiceNumber = aw.Invoice?.InvoiceNumber ?? string.Empty,
                     StepNumber = aw.StepNumber,
+                    ApproverId = aw.Approver.Id,
+                    ApproverName = $"{aw.Approver.FirstName} {aw.Approver.LastName}".Trim(),
                     Approver = new UserDto
                     {
                         Id = aw.Approver.Id,
@@ -751,6 +766,8 @@ public class InvoiceService : IInvoiceService
                     },
                     ApprovalLevel = aw.ApprovalLevel,
                     Status = aw.Status.ToString(),
+                    Comments = aw.Comments,
+                    ApprovedAt = aw.ApprovedAt,
                     CreatedAt = aw.CreatedAt
                 })
                 .ToArray()

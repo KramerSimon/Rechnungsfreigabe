@@ -149,6 +149,15 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(i => i.ProcessedBy)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // Configure Invoice Status enum to string conversion with max length
+        modelBuilder.Entity<Invoice>()
+            .Property(i => i.Status)
+            .HasConversion(
+                v => v.ToString(),
+                v => (InvoiceStatus)Enum.Parse(typeof(InvoiceStatus), v))
+            .HasMaxLength(30)
+            .HasColumnType("varchar(30)");
+
         modelBuilder.Entity<ApprovalRule>()
             .HasOne(ar => ar.Creator)
             .WithMany()
@@ -261,9 +270,7 @@ public class ApplicationDbContext : DbContext
             .Property(po => po.Status)
             .HasConversion<string>();
 
-        modelBuilder.Entity<Invoice>()
-            .Property(i => i.Status)
-            .HasConversion<string>();
+        // Invoice Status already configured above with HasMaxLength(30)
 
         modelBuilder.Entity<ApprovalRule>()
             .Property(ar => ar.RuleType)

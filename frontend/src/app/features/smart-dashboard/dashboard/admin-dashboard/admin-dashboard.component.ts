@@ -37,51 +37,6 @@ export class AdminDashboardComponent implements OnInit {
   loading = false;
   systemStatus?: SystemStatus;
 
-  autoApprovalRules: AutoApprovalRule[] = [
-    {
-      id: 1,
-      name: 'Kleinbeträge',
-      description: 'Betrag < 50€',
-      isActive: true,
-      condition: 'amount < 50'
-    },
-    {
-      id: 2,
-      name: 'Bekannte Lieferanten',
-      description: 'Lieferant "Büro"',
-      isActive: true,
-      condition: 'supplier.category = "office"'
-    },
-    {
-      id: 3,
-      name: 'Wiederkehrende Rechnungen',
-      description: 'Monatliche Abos',
-      isActive: true,
-      condition: 'isRecurring = true'
-    }
-  ];
-
-  assignmentRules: AssignmentRule[] = [
-    {
-      id: 1,
-      costCenter: 'KST 4020',
-      assignedTo: 'M. Müller (IT)',
-      isActive: true
-    },
-    {
-      id: 2,
-      costCenter: 'KST 1010',
-      assignedTo: 'S. Schmidt (Marketing)',
-      isActive: true
-    },
-    {
-      id: 3,
-      costCenter: 'KST 2030',
-      assignedTo: 'A. Weber (Einkauf)',
-      isActive: true
-    }
-  ];
-
   masterDataSections: MasterDataSection[] = [
     {
       id: 'suppliers',
@@ -92,7 +47,7 @@ export class AdminDashboardComponent implements OnInit {
     },
     {
       id: 'costcenters',
-      title: 'Kostenstellen & Projekte',
+      title: 'Kostenstellen',
       description: 'Auswahllisten pflegen',
       icon: 'account_tree',
       route: '/admin/cost-centers'

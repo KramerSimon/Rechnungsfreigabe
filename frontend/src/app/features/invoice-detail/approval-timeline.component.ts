@@ -102,19 +102,14 @@ export class ApprovalTimelineComponent implements OnInit {
       this.steps = [...this.workflows].sort((a, b) => a.stepNumber - b.stepNumber);
       return;
     }
-    if (!this.invoiceId) return;
-    this.loading = true;
-    this.approvalService.getApprovalWorkflows().subscribe({
-      next: (wf) => {
-        // Prefer server-side filter if available; fall back to client-side
-        this.steps = (wf || []).filter(w => w.invoiceId === this.invoiceId).sort((a, b) => a.stepNumber - b.stepNumber);
-        this.loading = false;
-      },
-      error: () => {
-        this.steps = [];
-        this.loading = false;
-      }
-    });
+    // If no workflows provided as input and no invoiceId, just show empty state
+    if (!this.invoiceId) {
+      this.steps = [];
+      return;
+    }
+    // Don't try to load all workflows via admin endpoint
+    // The workflows should be provided via the invoice's pendingApprovals
+    this.steps = [];
   }
 
   statusClass(status?: string): string {

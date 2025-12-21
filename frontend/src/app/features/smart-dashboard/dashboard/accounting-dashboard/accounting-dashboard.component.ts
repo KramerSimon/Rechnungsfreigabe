@@ -123,7 +123,7 @@ export class AccountingDashboardComponent implements OnInit {
       case 'rejected':
         statusDisplay = '❌ Abgelehnt (KO)';
         statusClass = 'status-rejected';
-        assignedTo = '--';
+        assignedTo = this.getPendingApproverName(invoice) ?? '--';
         reason = 'Falsche KST';
         break;
       case 'freigegeben':
@@ -143,26 +143,26 @@ export class AccountingDashboardComponent implements OnInit {
         } else {
           statusDisplay = '⏳ In Freigabe';
           statusClass = 'status-pending';
-          assignedTo = invoice.processor ? `${invoice.processor.firstName} ${invoice.processor.lastName}` : 'Unzugewiesen';
+          assignedTo = this.getPendingApproverName(invoice) ?? 'Unzugewiesen';
         }
         break;
       case 'eingegangen':
       case 'draft':
         statusDisplay = '📋 Erfasst';
         statusClass = 'status-draft';
-        assignedTo = 'Buchhaltung';
+        assignedTo = this.getPendingApproverName(invoice) ?? 'Buchhaltung';
         break;
       case 'ueberfaellig':
       case 'overdue':
         statusDisplay = '⚠️ Überfällig';
         statusClass = 'status-overdue';
-        assignedTo = invoice.processor ? `${invoice.processor.firstName} ${invoice.processor.lastName}` : 'Unzugewiesen';
+        assignedTo = this.getPendingApproverName(invoice) ?? 'Unzugewiesen';
         reason = 'Frist überschritten';
         break;
       default:
         statusDisplay = '📋 Erfasst';
         statusClass = 'status-draft';
-        assignedTo = 'Buchhaltung';
+        assignedTo = this.getPendingApproverName(invoice) ?? 'Buchhaltung';
         break;
     }
 
@@ -178,6 +178,24 @@ export class AccountingDashboardComponent implements OnInit {
       reason,
       originalInvoice: invoice
     };
+  }
+
+  private getPendingApproverName(invoice: Invoice): string | null {
+    const pending = (invoice.pendingApprovals || [])
+      .filter(aw => aw?.status?.toLowerCase() === 'pending')
+      .sort((a, b) => (a.stepNumber ?? 0) - (b.stepNumber ?? 0) ||
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    const next = pending[0];
+    if (!next) {
+      return null;
+    }
+
+    if (next.approver) {
+      return `${next.approver.firstName} ${next.approver.lastName}`.trim();
+    }
+
+    return next.approverName || null;
   }
 
   private calculateOverview(): void {

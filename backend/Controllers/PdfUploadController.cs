@@ -98,35 +98,13 @@ public class PdfUploadController : ControllerBase
                 return NotFound(new { message = "Invoice not found" });
             }
 
-            // Wenn PDF in Datenbank gespeichert ist, von dort servieren
             if (invoice.PdfContent != null && invoice.PdfContent.Length > 0)
             {
                 var fileName = invoice.OriginalFilename ?? $"invoice_{invoiceId}.pdf";
-                
                 return File(invoice.PdfContent, "application/pdf", fileName);
             }
 
-            // Fallback: Versuche PDF vom Dateisystem zu laden (für alte Rechnungen)
-            if (!string.IsNullOrEmpty(invoice.PdfFilePath))
-            {
-                var filePath = invoice.PdfFilePath;
-                
-                // Prüfe ob absoluter Pfad oder nur Dateiname
-                if (!Path.IsPathRooted(filePath))
-                {
-                    filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "invoices", filePath);
-                }
-
-                if (System.IO.File.Exists(filePath))
-                {
-                    var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
-                    var fileName = invoice.OriginalFilename ?? Path.GetFileName(filePath);
-                    
-                    return File(fileBytes, "application/pdf", fileName);
-                }
-            }
-
-            return NotFound(new { message = "PDF not found in database or filesystem" });
+            return NotFound(new { message = "PDF not found in database" });
         }
         catch (Exception ex)
         {
@@ -148,7 +126,7 @@ public class PdfUploadController : ControllerBase
 
             // Versuche PDF von Datenbank basierend auf Dateiname zu finden
             var invoice = await _context.Invoices
-                .FirstOrDefaultAsync(i => i.OriginalFilename == path || i.PdfFilePath == path);
+                .FirstOrDefaultAsync(i => i.OriginalFilename == path);
 
             if (invoice?.PdfContent == null)
             {
@@ -156,7 +134,6 @@ public class PdfUploadController : ControllerBase
             }
 
             var fileName = invoice.OriginalFilename ?? "invoice.pdf";
-            
             return File(invoice.PdfContent, "application/pdf", fileName);
         }
         catch (Exception ex)

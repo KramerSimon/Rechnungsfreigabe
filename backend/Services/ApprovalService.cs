@@ -672,6 +672,12 @@ public class ApprovalService : IApprovalService
                 return false;
             }
 
+            // Block approval if required data is missing
+            if (string.IsNullOrWhiteSpace(approval.Invoice.CostCenterId) || string.IsNullOrWhiteSpace(approval.Invoice.ProjectId))
+            {
+                return false;
+            }
+
             approval.Status = ApprovalStatus.Approved;
             approval.ApprovedAt = DateTime.UtcNow;
             approval.Comments = comments;
