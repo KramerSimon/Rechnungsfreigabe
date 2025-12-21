@@ -470,8 +470,8 @@
       </div>
     </mat-tab>
 
-    <!-- Genehmigungsworkflows -->
-    <mat-tab label="Genehmigungsworkflows">
+    <!-- Genehmigungsregeln -->
+    <mat-tab label="Genehmigungsregeln">
       <div class="tab-content">
         <div class="header-actions">
           <button mat-raised-button color="primary" (click)="createApprovalRule()">
@@ -484,8 +484,6 @@
         </div>
 
         <!-- Approval Rules Section -->
-        <div class="section">
-          <h3>Genehmigungsregeln</h3>
           <mat-card>
             <table mat-table [dataSource]="approvalRules" class="data-table">
               <ng-container matColumnDef="id">
@@ -548,23 +546,24 @@
               <p>Keine Genehmigungsregeln vorhanden</p>
             </div>
           </mat-card>
-        </div>
+      </div>
+    </mat-tab>
 
-        <!-- Approval Workflows Section -->
-        <div class="section">
-          <div class="header-actions">
-            <h3 style="margin: 0; flex: 1">Genehmigungsworkflows</h3>
-            <span style="flex: 1 0 auto"></span>
-            <button mat-raised-button color="primary" (click)="createApprovalWorkflow()">
-              <mat-icon>add</mat-icon>
-              Neuer Workflow
-            </button>
-            <button mat-icon-button (click)="loadApprovalWorkflows()" matTooltip="Aktualisieren">
-              <mat-icon>refresh</mat-icon>
-            </button>
-          </div>
-          <mat-card>
-            <table mat-table [dataSource]="approvalWorkflows" class="data-table">
+    <!-- Genehmigungsworkflows -->
+    <mat-tab label="Genehmigungsworkflows">
+      <div class="tab-content">
+        <div class="header-actions">
+          <button mat-raised-button color="primary" (click)="createApprovalWorkflow()">
+            <mat-icon>add</mat-icon>
+            Neuer Workflow
+          </button>
+          <button mat-icon-button (click)="loadApprovalWorkflows()" matTooltip="Aktualisieren">
+            <mat-icon>refresh</mat-icon>
+          </button>
+      </div>
+
+        <mat-card>
+          <table mat-table [dataSource]="approvalWorkflows" class="data-table">
               <ng-container matColumnDef="id">
                 <th mat-header-cell *matHeaderCellDef>ID</th>
                 <td mat-cell *matCellDef="let element">{{element.id}}</td>
@@ -624,7 +623,6 @@
               <mat-icon>workflow</mat-icon>
               <p>Keine Genehmigungsworkflows vorhanden</p>
             </div>
-          </mat-card>
-        </div>
+        </mat-card>
       </div>
     </mat-tab>

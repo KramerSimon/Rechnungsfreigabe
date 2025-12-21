@@ -101,7 +101,8 @@ export class MasterDataComponent implements OnInit {
     { id: 'invoices', label: 'Rechnungen', index: 3 },
     { id: 'users', label: 'Benutzer & Rollen', index: 4 },
     { id: 'escalation', label: 'Eskalations-Einstellungen', index: 5 },
-    { id: 'approval_workflows', label: 'Genehmigungsworkflows', index: 6 },
+    { id: 'rules', label: 'Genehmigungsregeln', index: 6 },
+    { id: 'workflows', label: 'Genehmigungsworkflows', index: 7 },
   ];
 
   invoiceStatuses = [

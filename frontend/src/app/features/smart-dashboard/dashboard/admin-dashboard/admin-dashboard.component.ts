@@ -80,6 +80,20 @@ export class AdminDashboardComponent implements OnInit {
       icon: 'schedule',
       route: '/admin/escalation'
     },
+    {
+      id: 'rules',
+      title: 'Genehmigungs-Regeln',
+      description: 'Automatisierungen verwalten',
+      icon: 'schedule',
+      route: '/admin/rules'
+    },
+    {
+      id: 'workflows',
+      title: 'Genehmigungs-Workflows',
+      description: 'Abläufe konfigurieren',
+      icon: 'schedule',
+      route: '/admin/workflows'
+    },
   ];
 
   constructor(

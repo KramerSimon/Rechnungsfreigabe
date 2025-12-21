@@ -30,7 +30,8 @@ export const routes: Routes = [
   { path: 'admin/invoices', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'invoices' } },
   { path: 'admin/escalation', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'escalation' } },
   { path: 'admin/projects', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'projects' } },
-  { path: 'admin/approval_workflows', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'approval_workflows' } },
+  { path: 'admin/rules', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'rules' } },
+  { path: 'admin/workflows', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'workflows' } },
 
   { path: 'invoice/:id', component: InvoiceDetailComponent, canActivate: [authGuard] },
   { path: 'admin/rules', component: RuleDashboardComponent, canActivate: [authGuard] },
