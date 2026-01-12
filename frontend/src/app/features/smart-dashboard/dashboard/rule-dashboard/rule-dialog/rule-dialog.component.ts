@@ -12,6 +12,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData, StageDefinition } from '../../../../../core/models';
 import { User } from '../../../../../core/models/user.models';
 import { UserService } from '../../../../../core/services/user.service';
+import { SupplierService } from '../../../../../core/services/supplier.service';
+import { CostCenterService } from '../../../../../core/services/cost-center.service';
+import { ProjectService } from '../../../../../core/services/project.service';
+import { Supplier } from '../../../../../core/models/supplier.model';
+import { CostCenter } from '../../../../../core/models/cost-center.model';
+import { Project } from '../../../../../core/models/project.model';
 
 @Component({
   selector: 'app-rule-dialog',
@@ -34,6 +40,9 @@ import { UserService } from '../../../../../core/services/user.service';
 export class RuleDialogComponent implements OnInit {
   rule: ApprovalRule;
   users: User[] = [];
+  suppliers: Supplier[] = [];
+  costCenters: CostCenter[] = [];
+  projects: Project[] = [];
 
   availableFields = [
     { value: 'amount', label: 'Betrag' },
@@ -52,6 +61,15 @@ export class RuleDialogComponent implements OnInit {
     { value: '>=', label: 'größer oder gleich' },
     { value: '<=', label: 'kleiner oder gleich' },
     { value: 'contains', label: 'enthält' }
+  ];
+
+  dateOperators = [
+    { value: '<', label: 'vor' },
+    { value: '<=', label: 'vor oder am' },
+    { value: '=', label: 'am' },
+    { value: '>=', label: 'am oder nach' },
+    { value: '>', label: 'nach' },
+    { value: '!=', label: 'ungleich' }
   ];
 
   availableActions = [
@@ -78,7 +96,10 @@ export class RuleDialogComponent implements OnInit {
   constructor(
     public dialogRef: MatDialogRef<RuleDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: RuleDialogData,
-    private userService: UserService
+    private userService: UserService,
+    private supplierService: SupplierService,
+    private costCenterService: CostCenterService,
+    private projectService: ProjectService
   ) {
     this.rule = data.rule ? { ...data.rule } : this.createEmptyRule();
   }
@@ -98,6 +119,39 @@ export class RuleDialogComponent implements OnInit {
     this.userService.getUsers().subscribe({
       next: (users) => (this.users = users || []),
       error: () => (this.users = [])
+    });
+
+    // Load suppliers for conditions
+    this.supplierService.getSuppliers().subscribe({
+      next: (suppliers) => {
+        this.suppliers = suppliers || [];
+        this.clearDropdownCache();
+      },
+      error: (err) => {
+        this.suppliers = [];
+      }
+    });
+
+    // Load cost centers for conditions
+    this.costCenterService.getCostCenters().subscribe({
+      next: (costCenters) => {
+        this.costCenters = costCenters || [];
+        this.clearDropdownCache();
+      },
+      error: (err) => {
+        this.costCenters = [];
+      }
+    });
+
+    // Load projects for conditions
+    this.projectService.getProjects().subscribe({
+      next: (projects) => {
+        this.projects = projects || [];
+        this.clearDropdownCache();
+      },
+      error: (err) => {
+        this.projects = [];
+      }
     });
   }
 
@@ -225,6 +279,72 @@ export class RuleDialogComponent implements OnInit {
 
   private createDefaultStage(): StageDefinition {
     return { stepNumber: 1, approvalLevel: 1, role: 'cost_center_manager' };
+  }
+
+  // Cache für Dropdown-Optionen
+  private dropdownOptionsCache: Map<string, { value: any; label: string }[]> = new Map();
+  private operatorsCache: Map<string, { value: string; label: string }[]> = new Map();
+
+  isDropdownField(field: string): boolean {
+    return ['supplier', 'costCenter', 'project'].includes(field);
+  }
+
+  isDateField(field: string): boolean {
+    return ['invoiceDate', 'dueDate'].includes(field);
+  }
+
+  getAvailableOperators(field: string): { value: string; label: string }[] {
+    // Cache prüfen
+    if (this.operatorsCache.has(field)) {
+      return this.operatorsCache.get(field)!;
+    }
+
+    // Für Dropdown-Felder (Lieferant, Kostenstelle, Projekt) nur = und !=
+    // Für Datumsfelder spezielle Bezeichnungen (vor, nach, am, ...)
+    let operators: { value: string; label: string }[];
+    if (this.isDropdownField(field)) {
+      operators = this.availableOperators.filter(op => ['=', '!='].includes(op.value));
+    } else if (this.isDateField(field)) {
+      operators = this.dateOperators;
+    } else {
+      operators = this.availableOperators;
+    }
+
+    // Im Cache speichern
+    this.operatorsCache.set(field, operators);
+    return operators;
+  }
+
+  getDropdownOptions(field: string): { value: any; label: string }[] {
+    // Cache prüfen
+    if (this.dropdownOptionsCache.has(field)) {
+      return this.dropdownOptionsCache.get(field)!;
+    }
+
+    let options: { value: any; label: string }[] = [];
+
+    switch (field) {
+      case 'supplier':
+        options = this.suppliers.map(s => ({ value: s.id.toString(), label: s.name }));
+        break;
+      case 'costCenter':
+        options = this.costCenters.map(cc => ({ value: cc.id, label: cc.name }));
+        break;
+      case 'project':
+        options = this.projects.map(p => ({ value: p.id, label: p.name }));
+        break;
+      default:
+        options = [];
+    }
+
+    // Im Cache speichern
+    this.dropdownOptionsCache.set(field, options);
+    return options;
+  }
+
+  // Cache leeren wenn sich Daten ändern
+  private clearDropdownCache(): void {
+    this.dropdownOptionsCache.clear();
   }
 
   onCancel() {

@@ -45,6 +45,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IPdfUploadService, PdfUploadService>();
 builder.Services.AddScoped<backend.Services.IProjectService, backend.Services.ProjectService>();
+builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

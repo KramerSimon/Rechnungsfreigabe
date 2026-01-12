@@ -6,5 +6,6 @@ export * from './history.models';
 export * from './service.models';
 export * from './admin-rules.models';
 export * from './escalation-rule.model';
+export * from './system-config.model';
 // Only specific exports from auth.models to avoid conflicts
 export type { LoginRequest, LoginResponse } from './auth.models';

@@ -1,21 +1,28 @@
-import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatListModule } from '@angular/material/list';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatListModule } from '@angular/material/list';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DashboardService, SystemStatus } from '../../../../core/services/dashboard.service';
-// Zentrale Modelle
+import { SystemConfigService } from '../../../../core/services/system-config.service';
 import {
   AutoApprovalRule,
   AssignmentRule,
-  MasterDataSection
-} from '../../../../core/models/dashboard.models';
+  ConfigDataType,
+  MasterDataSection,
+  SystemConfig
+} from '../../../../core/models';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -23,6 +30,7 @@ import {
   styleUrls: ['./admin-dashboard.component.scss'],
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -30,12 +38,29 @@ import {
     MatSnackBarModule,
     MatListModule,
     MatDividerModule,
-    MatBadgeModule
+    MatBadgeModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatSlideToggleModule
   ]
 })
 export class AdminDashboardComponent implements OnInit {
   loading = false;
+  saving = false;
   systemStatus?: SystemStatus;
+  configs: SystemConfig[] = [];
+  selectedConfig?: SystemConfig;
+  configForm: FormGroup;
+  dataTypes: ConfigDataType[] = ['String', 'Number', 'Boolean', 'Json'];
+
+  readonly defaultSystemStatus: SystemStatus = {
+    servicesActive: true,
+    autoApprovalRate: 0,
+    lastUpdate: new Date().toISOString(),
+    totalInvoicesThisMonth: 0,
+    averageProcessingTime: 0
+  };
 
   masterDataSections: MasterDataSection[] = [
     {
@@ -93,16 +118,28 @@ export class AdminDashboardComponent implements OnInit {
       description: 'Abläufe konfigurieren',
       icon: 'schedule',
       route: '/admin/workflows'
-    },
+    }
   ];
 
   constructor(
     private router: Router,
-    private dashboardService: DashboardService
-  ) {}
+    private dashboardService: DashboardService,
+    private systemConfigService: SystemConfigService,
+    private fb: FormBuilder,
+    private snackBar: MatSnackBar
+  ) {
+    this.configForm = this.fb.group({
+      configKey: [{ value: '', disabled: true }, Validators.required],
+      dataType: ['String', Validators.required],
+      configValue: [''],
+      description: [''],
+      isEditable: [true]
+    });
+  }
 
   ngOnInit(): void {
     this.loadSystemStatus();
+    this.loadConfigs();
   }
 
   private loadSystemStatus(): void {
@@ -115,15 +152,25 @@ export class AdminDashboardComponent implements OnInit {
       },
       error: (error) => {
         console.error('Fehler beim Laden des System-Status:', error);
-        // Fallback Daten
-        this.systemStatus = {
-          servicesActive: true,
-          autoApprovalRate: 0,
-          lastUpdate: new Date().toISOString(),
-          totalInvoicesThisMonth: 0,
-          averageProcessingTime: 0
-        };
+        this.systemStatus = this.defaultSystemStatus;
         this.loading = false;
+      }
+    });
+  }
+
+  loadConfigs(): void {
+    this.systemConfigService.getAll().subscribe({
+      next: (configs) => {
+        this.configs = configs;
+        if (configs.length && !this.selectedConfig) {
+          this.onSelectConfig(configs[0]);
+        }
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der Systemeinstellungen:', error);
+        this.snackBar.open('Systemeinstellungen konnten nicht geladen werden.', 'OK', {
+          duration: 4000
+        });
       }
     });
   }
@@ -140,15 +187,94 @@ export class AdminDashboardComponent implements OnInit {
     this.router.navigate([section.route]);
   }
 
+  onSelectConfig(config: SystemConfig): void {
+    this.selectedConfig = config;
+    const parsedValue = this.parseConfigValue(config.configValue, config.dataType);
+
+    this.configForm.reset({
+      configKey: config.configKey,
+      dataType: config.dataType,
+      configValue: parsedValue,
+      description: config.description ?? '',
+      isEditable: config.isEditable
+    });
+
+    const valueControl = this.configForm.get('configValue');
+    const typeControl = this.configForm.get('dataType');
+
+    if (!config.isEditable) {
+      valueControl?.disable({ emitEvent: false });
+      typeControl?.disable({ emitEvent: false });
+    } else {
+      valueControl?.enable({ emitEvent: false });
+      typeControl?.enable({ emitEvent: false });
+    }
+  }
+
+  onTypeChanged(type: ConfigDataType): void {
+    const current = this.configForm.getRawValue().configValue;
+
+    switch (type) {
+      case 'Number':
+        this.configForm.patchValue({ configValue: typeof current === 'number' ? current : Number(current) || 0 });
+        break;
+      case 'Boolean':
+        this.configForm.patchValue({ configValue: current === true || current === 'true' });
+        break;
+      case 'Json':
+        this.configForm.patchValue({ configValue: this.stringifyJson(current) });
+        break;
+      default:
+        this.configForm.patchValue({ configValue: current ?? '' });
+    }
+  }
+
+  onSave(): void {
+    if (!this.selectedConfig || !this.selectedConfig.isEditable) {
+      this.snackBar.open('Diese Einstellung ist schreibgeschützt.', 'OK', { duration: 3000 });
+      return;
+    }
+
+    if (this.configForm.invalid) {
+      this.configForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.configForm.getRawValue();
+    const preparedValue = this.formatValue(raw.configValue, raw.dataType);
+
+    this.saving = true;
+
+    this.systemConfigService
+      .upsert(raw.configKey, {
+        configKey: raw.configKey,
+        configValue: preparedValue,
+        dataType: raw.dataType,
+        description: raw.description ?? null,
+        isEditable: raw.isEditable
+      })
+      .subscribe({
+        next: (updated) => {
+          this.saving = false;
+          this.snackBar.open('Systemeinstellung gespeichert.', 'OK', { duration: 3000 });
+          this.replaceConfig(updated);
+          this.onSelectConfig(updated);
+        },
+        error: (error) => {
+          console.error('Fehler beim Speichern der Systemeinstellung:', error);
+          this.saving = false;
+          this.snackBar.open('Speichern fehlgeschlagen.', 'OK', { duration: 4000 });
+        }
+      });
+  }
+
   toggleAutoRule(rule: AutoApprovalRule): void {
     rule.isActive = !rule.isActive;
-    // Hier würde ein API-Call zum Speichern der Änderung gemacht
     console.log(`Auto-Regel ${rule.name} ${rule.isActive ? 'aktiviert' : 'deaktiviert'}`);
   }
 
   toggleAssignmentRule(rule: AssignmentRule): void {
     rule.isActive = !rule.isActive;
-    // Hier würde ein API-Call zum Speichern der Änderung gemacht
     console.log(`Zuweisungs-Regel für ${rule.costCenter} ${rule.isActive ? 'aktiviert' : 'deaktiviert'}`);
   }
 
@@ -179,5 +305,62 @@ export class AdminDashboardComponent implements OnInit {
       style: 'currency',
       currency: 'EUR'
     }).format(amount);
+  }
+
+  private replaceConfig(updated: SystemConfig): void {
+    const idx = this.configs.findIndex((c) => c.configKey === updated.configKey);
+    if (idx >= 0) {
+      this.configs[idx] = updated;
+      this.configs = [...this.configs];
+    } else {
+      this.configs = [...this.configs, updated];
+    }
+  }
+
+  private parseConfigValue(value: string | null, type: ConfigDataType): string | number | boolean | null {
+    if (value == null) return null;
+    switch (type) {
+      case 'Number':
+        return Number(value);
+      case 'Boolean':
+        return value === 'true' || value === '1';
+      case 'Json':
+        try {
+          return JSON.stringify(JSON.parse(value), null, 2);
+        } catch {
+          return value;
+        }
+      default:
+        return value;
+    }
+  }
+
+  private formatValue(value: any, type: ConfigDataType): string | null {
+    if (value === null || value === undefined || value === '') return null;
+    switch (type) {
+      case 'Number':
+        return String(value);
+      case 'Boolean':
+        return value === true || value === 'true' ? 'true' : 'false';
+      case 'Json':
+        return this.stringifyJson(value);
+      default:
+        return String(value);
+    }
+  }
+
+  private stringifyJson(value: any): string {
+    if (typeof value === 'string') {
+      try {
+        return JSON.stringify(JSON.parse(value), null, 2);
+      } catch {
+        return value;
+      }
+    }
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return String(value ?? '');
+    }
   }
 }

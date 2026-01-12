@@ -43,6 +43,12 @@ export class RoleService {
       component: 'PdfUploadDashboard',
       role: UserRole.PDF_UPLOADER,
       title: 'PDF Upload'
+    },
+    {
+      path: '/dashboard/rules',
+      component: 'RuleDashboard',
+      role: UserRole.ADMIN,
+      title: 'Regeln'
     }
   ];
 

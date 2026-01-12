@@ -23,6 +23,7 @@ export const routes: Routes = [
   { path: 'dashboard/accounting', component: AccountingDashboardComponent, canActivate: [authGuard] },
   { path: 'dashboard/admin', component: AdminDashboardComponent, canActivate: [authGuard] },
   { path: 'dashboard/pdf-upload', component: PdfUploadDashboardComponent, canActivate: [authGuard] },
+  { path: 'dashboard/rules', component: RuleDashboardComponent, canActivate: [authGuard] },
 
   { path: 'admin/users', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'users' } },
   { path: 'admin/cost-centers', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'costcenters' } },

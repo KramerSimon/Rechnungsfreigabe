@@ -7,6 +7,9 @@ export interface ApprovalRule {
   isActive: boolean;
   conditions?: string;
   actions?: string;
+  supplierId?: number | null;
+  costCenterId?: string | null;
+  projectId?: string | null;
   createdBy: number;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +37,9 @@ export interface CreateApprovalRuleDto {
   conditions?: string;
   actions?: string;
   isActive?: boolean;
+  supplierId?: number | null;
+  costCenterId?: string | null;
+  projectId?: string | null;
 }
 
 export interface CreateApprovalWorkflowDto {

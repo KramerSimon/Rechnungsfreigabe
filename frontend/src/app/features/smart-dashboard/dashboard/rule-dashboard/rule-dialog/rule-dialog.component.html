@@ -65,13 +65,30 @@
           <mat-form-field appearance="outline">
             <mat-label>Operator</mat-label>
             <mat-select [(ngModel)]="condition.operator" required>
-              <mat-option *ngFor="let op of availableOperators" [value]="op.value">
+              <mat-option *ngFor="let op of getAvailableOperators(condition.field)" [value]="op.value">
                 {{ op.label }}
               </mat-option>
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
+          <!-- Dropdown für Lieferant, Kostenstelle oder Projekt -->
+          <mat-form-field appearance="outline" *ngIf="isDropdownField(condition.field)">
+            <mat-label>Wert</mat-label>
+            <mat-select [(ngModel)]="condition.value" required>
+              <mat-option *ngFor="let option of getDropdownOptions(condition.field)" [value]="option.value">
+                {{ option.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Date-Picker für Datumsfelder -->
+          <mat-form-field appearance="outline" *ngIf="isDateField(condition.field)">
+            <mat-label>Datum</mat-label>
+            <input matInput type="date" [(ngModel)]="condition.value" required>
+          </mat-form-field>
+
+          <!-- Textfeld für andere Felder -->
+          <mat-form-field appearance="outline" *ngIf="!isDropdownField(condition.field) && !isDateField(condition.field)">
             <mat-label>Wert</mat-label>
             <input matInput [(ngModel)]="condition.value" required>
           </mat-form-field>

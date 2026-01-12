@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,6 +8,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ApprovalRule } from '../../../core/models/approval.model';
+import { SupplierService } from '../../../core/services/supplier.service';
+import { CostCenterService } from '../../../core/services/cost-center.service';
+import { ProjectService } from '../../../core/services/project.service';
+import { Supplier } from '../../../core/models/supplier.model';
+import { CostCenter } from '../../../core/models/cost-center.model';
+import { Project } from '../../../core/models/project.model';
 
 @Component({
   selector: 'app-edit-approval-rule-dialog',
@@ -64,6 +70,40 @@ import { ApprovalRule } from '../../../core/models/approval.model';
         </div>
 
         <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Lieferant</mat-label>
+            <mat-select formControlName="supplierId">
+              <mat-option [value]="null">-- Keiner --</mat-option>
+              <mat-option *ngFor="let supplier of suppliers" [value]="supplier.id">
+                {{ supplier.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Kostenstelle</mat-label>
+            <mat-select formControlName="costCenterId">
+              <mat-option [value]="null">-- Keine --</mat-option>
+              <mat-option *ngFor="let costCenter of costCenters" [value]="costCenter.id">
+                {{ costCenter.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Projekt</mat-label>
+            <mat-select formControlName="projectId">
+              <mat-option [value]="null">-- Keines --</mat-option>
+              <mat-option *ngFor="let project of projects" [value]="project.id">
+                {{ project.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
           <mat-checkbox formControlName="isActive">
             Aktiv
           </mat-checkbox>
@@ -106,13 +146,19 @@ import { ApprovalRule } from '../../../core/models/approval.model';
     }
   `]
 })
-export class EditApprovalRuleDialogComponent {
+export class EditApprovalRuleDialogComponent implements OnInit {
   ruleForm: FormGroup;
+  suppliers: Supplier[] = [];
+  costCenters: CostCenter[] = [];
+  projects: Project[] = [];
 
   constructor(
     private fb: FormBuilder,
     public dialogRef: MatDialogRef<EditApprovalRuleDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: ApprovalRule
+    @Inject(MAT_DIALOG_DATA) public data: ApprovalRule,
+    private supplierService: SupplierService,
+    private costCenterService: CostCenterService,
+    private projectService: ProjectService
   ) {
     this.ruleForm = this.fb.group({
       name: [data.name, Validators.required],
@@ -120,6 +166,48 @@ export class EditApprovalRuleDialogComponent {
       ruleType: [data.ruleType, Validators.required],
       priority: [data.priority],
       isActive: [data.isActive],
+      supplierId: [data.supplierId || null],
+      costCenterId: [data.costCenterId || null],
+      projectId: [data.projectId || null],
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadSuppliers();
+    this.loadCostCenters();
+    this.loadProjects();
+  }
+
+  loadSuppliers(): void {
+    this.supplierService.getSuppliers().subscribe({
+      next: (suppliers) => {
+        this.suppliers = suppliers;
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der Lieferanten:', error);
+      }
+    });
+  }
+
+  loadCostCenters(): void {
+    this.costCenterService.getCostCenters().subscribe({
+      next: (costCenters) => {
+        this.costCenters = costCenters;
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der Kostenstellen:', error);
+      }
+    });
+  }
+
+  loadProjects(): void {
+    this.projectService.getProjects().subscribe({
+      next: (projects) => {
+        this.projects = projects;
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der Projekte:', error);
+      }
     });
   }
 

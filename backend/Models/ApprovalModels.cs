@@ -33,6 +33,15 @@ public class ApprovalRule
     [Column("actions", TypeName = "json")]
     public string Actions { get; set; } = "[]";
 
+    [Column("supplier_id")]
+    public int? SupplierId { get; set; }
+
+    [Column("cost_center_id")]
+    public string? CostCenterId { get; set; }
+
+    [Column("project_id")]
+    public string? ProjectId { get; set; }
+
     [Column("created_by")]
     public int CreatedBy { get; set; }
     

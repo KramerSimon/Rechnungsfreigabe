@@ -13,14 +13,6 @@
       </button>
     </div>
 
-    <!-- Legacy Admin Link (falls vorhanden) -->
-    <button mat-button
-            *ngIf="(currentRole$ | async) === 'admin'"
-            routerLink="/admin/rules"
-            class="nav-link">
-      Regeln
-    </button>
-
     <!-- Notifications button (left of account) -->
     <button mat-icon-button
             routerLink="/notifications"

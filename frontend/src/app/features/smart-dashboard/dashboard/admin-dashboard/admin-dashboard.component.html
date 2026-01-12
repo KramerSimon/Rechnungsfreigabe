@@ -1,4 +1,4 @@
-<!-- Admin Dashboard: "Konfiguration" - Systemorientiert -->
+<!-- Admin Dashboard: Konfiguration & Status -->
 <div class="admin-dashboard">
   <!-- System Status -->
   <div class="status-section">
@@ -42,6 +42,103 @@
       </mat-card>
     </div>
   </div>
+
+  <!-- Systemeinstellungen -->
+  <!-- <div class="config-section">
+    <div class="section-header">
+      <div>
+        <h2>SYSTEMEINSTELLUNGEN</h2>
+        <p>Globale Schalter, Limits und Integrationen.</p>
+      </div>
+      <button mat-stroked-button color="primary" (click)="loadConfigs()" [disabled]="saving || loading">
+        Aktualisieren
+      </button>
+    </div>
+
+    <div class="config-layout" *ngIf="configs.length; else noConfigs">
+      <div class="config-list">
+        <mat-card *ngFor="let config of configs"
+                  class="config-card"
+                  [class.active]="config.configKey === selectedConfig?.configKey"
+                  (click)="onSelectConfig(config)">
+          <div class="config-card__header">
+            <div class="config-key">{{ config.configKey }}</div>
+            <div class="chip" [class.warn]="!config.isEditable">{{ config.dataType }}</div>
+          </div>
+          <div class="config-desc">{{ config.description || 'Keine Beschreibung hinterlegt' }}</div>
+          <div class="config-meta">
+            <span class="chip muted" *ngIf="config.updatedAt">Aktualisiert {{ config.updatedAt | date: 'short' }}</span>
+            <span class="chip warn" *ngIf="!config.isEditable">Read-only</span>
+          </div>
+        </mat-card>
+      </div>
+
+      <div class="config-editor" *ngIf="selectedConfig">
+        <form [formGroup]="configForm" (ngSubmit)="onSave()" class="config-form">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Key</mat-label>
+              <input matInput formControlName="configKey" disabled />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Datentyp</mat-label>
+              <mat-select formControlName="dataType" (selectionChange)="onTypeChanged($event.value)">
+                <mat-option *ngFor="let type of dataTypes" [value]="type">{{ type }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div [ngSwitch]="configForm.get('dataType')?.value" class="value-row">
+            <mat-slide-toggle *ngSwitchCase="'Boolean'" formControlName="configValue" color="primary" [disabled]="!selectedConfig?.isEditable">
+              Wert
+            </mat-slide-toggle>
+
+            <mat-form-field *ngSwitchCase="'Number'" appearance="outline" class="full-width">
+              <mat-label>Wert</mat-label>
+              <input matInput type="number" formControlName="configValue" [disabled]="!selectedConfig?.isEditable" />
+            </mat-form-field>
+
+            <mat-form-field *ngSwitchCase="'Json'" appearance="outline" class="full-width">
+              <mat-label>Wert</mat-label>
+              <textarea matInput rows="6" formControlName="configValue" placeholder="JSON" [disabled]="!selectedConfig?.isEditable"></textarea>
+            </mat-form-field>
+
+            <mat-form-field *ngSwitchDefault appearance="outline" class="full-width">
+              <mat-label>Wert</mat-label>
+              <textarea matInput rows="3" formControlName="configValue" placeholder="Wert" [disabled]="!selectedConfig?.isEditable"></textarea>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Beschreibung</mat-label>
+            <textarea matInput rows="2" formControlName="description" placeholder="Hinweis für Admins"></textarea>
+          </mat-form-field>
+
+          <mat-slide-toggle formControlName="isEditable" color="primary" [disabled]="!selectedConfig?.isEditable">
+            Bearbeitung erlauben
+          </mat-slide-toggle>
+
+          <div class="actions">
+            <button mat-stroked-button type="button" (click)="onSelectConfig(selectedConfig)">
+              Zurücksetzen
+            </button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving || !selectedConfig?.isEditable">
+              <mat-icon *ngIf="saving" class="spinner">autorenew</mat-icon>
+              Speichern
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <ng-template #noConfigs>
+      <div class="empty-state">
+        <mat-icon>tune</mat-icon>
+        <p>Keine Systemeinstellungen gefunden.</p>
+      </div>
+    </ng-template>
+  </div> -->
 
   <!-- Loading State -->
   <div class="loading-overlay" *ngIf="loading">
