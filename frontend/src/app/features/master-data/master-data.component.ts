@@ -560,36 +560,6 @@ export class MasterDataComponent implements OnInit {
     });
   }
 
-
-  createPurchaseOrder(): void {
-    const dialogRef = this.dialog.open(CreatePurchaseOrderDialogComponent, {
-      width: '650px',
-      data: {
-        costCenters: this.costCenters,
-        projects: this.projects,
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((payload: CreatePurchaseOrderRequest | undefined) => {
-      if (payload) {
-        this.purchaseOrderService.createPurchaseOrder(payload).subscribe({
-          next: () => {
-            this.snackBar.open('Bestellung erfolgreich erstellt', 'Schließen', {
-              duration: 3000,
-            });
-            this.loadPurchaseOrders();
-          },
-          error: (error) => {
-            console.error('Error creating purchase order:', error);
-            this.snackBar.open('Fehler beim Erstellen der Bestellung', 'Schließen', {
-              duration: 3000,
-            });
-          },
-        });
-      }
-    });
-  }
-
   editPurchaseOrder(order: PurchaseOrder): void {
     const dialogRef = this.dialog.open(CreatePurchaseOrderDialogComponent, {
       width: '650px',

@@ -15,7 +15,8 @@ namespace RechnungsfreigabeAPI.Services;
 
 public interface IPdfUploadService
 {
-    Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int? supplierId, string? purchaseOrderId, string? costCenterId, int userId);
+    Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int? supplierId, string? purchaseOrderId, string? costCenterId, string? projectId, int userId);
+    Task<PurchaseOrderDto> UploadPurchaseOrderPdfAsync(IFormFile file, int? supplierId, string? costCenterId, string? projectId, int userId);
     Task<byte[]> GetInvoicePdfAsync(int invoiceId);
     Task<bool> DeleteInvoicePdfAsync(int invoiceId);
     Task<PdfUploadStatusDto> GetUploadStatusAsync();
@@ -56,7 +57,7 @@ public class PdfUploadService : IPdfUploadService
         }
     }
 
-    public async Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int? supplierId, string? purchaseOrderId, string? costCenterId, int userId)
+    public async Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int? supplierId, string? purchaseOrderId, string? costCenterId, string? projectId, int userId)
     {
         try
         {
@@ -73,6 +74,9 @@ public class PdfUploadService : IPdfUploadService
                 throw new InvalidOperationException($"User with ID {userId} not found");
             }
             Console.WriteLine($"[PDF Upload] User {userId} validated");
+
+            // Validiere dass Cost Center, Project und Purchase Order zusammenpassen
+            await ValidateProjectPurchaseOrderRelationship(costCenterId, projectId, purchaseOrderId);
 
             // Lies die PDF-Datei in den Speicher
             byte[] pdfContent;
@@ -164,6 +168,7 @@ public class PdfUploadService : IPdfUploadService
                 SupplierId = finalSupplierId,
                 PurchaseOrderId = validatedPurchaseOrderId,
                 CostCenterId = validatedCostCenterId,
+                ProjectId = projectId,
                 NetAmount = pdfData.NetAmount ?? 0,
                 TaxAmount = pdfData.TaxAmount ?? 0,
                 TotalAmount = pdfData.TotalAmount ?? 0,
@@ -237,6 +242,197 @@ public class PdfUploadService : IPdfUploadService
         {
             Console.WriteLine($"[PDF Upload] FATAL ERROR: {ex.Message}");
             Console.WriteLine($"[PDF Upload] Stack trace: {ex.StackTrace}");
+            throw;
+        }
+    }
+
+    public async Task<PurchaseOrderDto> UploadPurchaseOrderPdfAsync(IFormFile file, int? supplierId, string? costCenterId, string? projectId, int userId)
+    {
+        try
+        {
+            Console.WriteLine($"[PO PDF Upload] Starting upload for file: {file.FileName}, Size: {file.Length} bytes");
+
+            // Validiere die Datei
+            ValidateFile(file);
+            Console.WriteLine($"[PO PDF Upload] File validation passed");
+
+            // Validiere dass der User existiert
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+            {
+                throw new InvalidOperationException($"User with ID {userId} not found");
+            }
+            Console.WriteLine($"[PO PDF Upload] User {userId} validated");
+
+            // Lies die PDF-Datei in den Speicher
+            byte[] pdfContent;
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.CopyToAsync(memoryStream);
+                pdfContent = memoryStream.ToArray();
+            }
+            Console.WriteLine($"[PO PDF Upload] PDF content loaded into memory: {pdfContent.Length} bytes");
+
+            // Generiere eindeutigen Dateinamen
+            var fileName = GenerateUniqueFileName(file.FileName);
+            Console.WriteLine($"[PO PDF Upload] Generated unique filename: {fileName}");
+
+            // Extrahiere Daten aus dem PDF
+            var tempPath = Path.Combine(_uploadDirectory, fileName);
+            await using (var stream = new FileStream(tempPath, FileMode.Create))
+            {
+                await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
+            }
+            Console.WriteLine($"[PO PDF Upload] Temporary file created at: {tempPath}");
+
+            var pdfData = ExtractInvoiceDataFromPdf(tempPath);
+            Console.WriteLine($"[PO PDF Upload] Data extracted - Total: {pdfData.TotalAmount}, Supplier: {pdfData.SupplierInfo?.Name}");
+
+            // Generiere Purchase Order ID im Format PO-{Nummer}-{Jahr}
+            var poId = await GeneratePurchaseOrderIdAsync();
+            Console.WriteLine($"[PO PDF Upload] Generated PO ID: {poId}");
+
+            // Finde oder erstelle Lieferant
+            int? finalSupplierId = null;
+            if (supplierId.HasValue && supplierId.Value > 0)
+            {
+                // Verwende die übergebene SupplierId
+                var supplier = await _context.Suppliers.FindAsync(supplierId.Value);
+                if (supplier == null)
+                {
+                    Console.WriteLine($"[PO PDF Upload] ERROR: Supplier with ID {supplierId} not found");
+                    throw new InvalidOperationException($"Supplier with ID {supplierId} not found");
+                }
+                finalSupplierId = supplierId.Value;
+                Console.WriteLine($"[PO PDF Upload] Using provided supplier ID: {finalSupplierId}");
+            }
+            else if (pdfData.SupplierInfo != null)
+            {
+                // Extrahiere und erstelle/finde Lieferant aus PDF
+                finalSupplierId = await FindOrCreateSupplierAsync(pdfData.SupplierInfo, tempPath);
+                Console.WriteLine($"[PO PDF Upload] Found/created supplier ID: {finalSupplierId}");
+            }
+
+            // Validiere Cost Center ID - REQUIRED
+            if (string.IsNullOrWhiteSpace(costCenterId))
+            {
+                Console.WriteLine($"[PO PDF Upload] ERROR: Cost Center is required");
+                throw new InvalidOperationException("Cost Center is required for purchase order uploads");
+            }
+
+            var costCenterExists = await _context.CostCenters.AnyAsync(cc => cc.Id == costCenterId);
+            if (!costCenterExists)
+            {
+                Console.WriteLine($"[PO PDF Upload] ERROR: Cost Center '{costCenterId}' not found");
+                throw new InvalidOperationException($"Cost Center '{costCenterId}' not found");
+            }
+            Console.WriteLine($"[PO PDF Upload] Validated Cost Center: {costCenterId}");
+
+            // Validiere Project ID - REQUIRED
+            if (string.IsNullOrWhiteSpace(projectId))
+            {
+                Console.WriteLine($"[PO PDF Upload] ERROR: Project is required");
+                throw new InvalidOperationException("Project is required for purchase order uploads");
+            }
+
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+            if (project == null)
+            {
+                Console.WriteLine($"[PO PDF Upload] ERROR: Project '{projectId}' not found");
+                throw new InvalidOperationException($"Project '{projectId}' not found");
+            }
+
+            // Validate that project belongs to the selected cost center
+            if (project.CostCenterId != costCenterId)
+            {
+                Console.WriteLine($"[PO PDF Upload] ERROR: Project '{projectId}' does not belong to Cost Center '{costCenterId}'. Project belongs to '{project.CostCenterId}'");
+                throw new InvalidOperationException($"Project '{projectId}' does not belong to the selected Cost Center. The project belongs to Cost Center '{project.CostCenterId}'");
+            }
+            Console.WriteLine($"[PO PDF Upload] Validated Project: {projectId}, belongs to Cost Center: {costCenterId}");
+
+            // Erstelle Purchase Order mit extrahierten Daten
+            var purchaseOrder = new PurchaseOrder
+            {
+                Id = poId,
+                Title = poId,  // Use order number as title
+                Description = pdfData.Description,
+                SupplierId = finalSupplierId,
+                CostCenterId = costCenterId,  // Required
+                ProjectId = projectId,  // Required
+                TotalAmount = pdfData.TotalAmount ?? 0,
+                Currency = pdfData.Currency ?? "EUR",
+                Status = PurchaseOrderStatus.Offen,
+                CreatedBy = userId,
+                CreatedAt = DateTime.UtcNow,
+                PdfContent = pdfContent,
+                PdfFileSize = file.Length,
+                OriginalFilename = file.FileName
+            };
+
+            Console.WriteLine($"[PO PDF Upload] Creating purchase order - ID: {purchaseOrder.Id}, Total: {purchaseOrder.TotalAmount}");
+
+            _context.PurchaseOrders.Add(purchaseOrder);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"[PO PDF Upload] Purchase Order created successfully with ID: {purchaseOrder.Id}");
+
+            // Lösche die temporäre Datei
+            try
+            {
+                System.IO.File.Delete(tempPath);
+                Console.WriteLine($"[PO PDF Upload] Temporary file deleted: {tempPath}");
+            }
+            catch (Exception)
+            {
+                // Best-effort cleanup; ignore delete failures
+            }
+
+            // Lade vollständige PO mit Navigations-Properties
+            var poDto = await _context.PurchaseOrders
+                .Where(po => po.Id == poId)
+                .Select(po => new PurchaseOrderDto
+                {
+                    Id = po.Id,
+                    Title = po.Title,
+                    Description = po.Description,
+                    CostCenterId = po.CostCenterId,
+                    CostCenterName = po.CostCenter != null ? po.CostCenter.Name : null,
+                    ProjectId = po.ProjectId,
+                    ProjectName = po.Project != null ? po.Project.Name : null,
+                    TotalAmount = po.TotalAmount,
+                    Currency = po.Currency,
+                    Status = po.Status.ToString(),
+                    Creator = po.Creator != null ? new UserDto
+                    {
+                        Id = po.Creator.Id,
+                        FirstName = po.Creator.FirstName,
+                        LastName = po.Creator.LastName,
+                        Email = po.Creator.Email
+                    } : null,
+                    Approver = po.Approver != null ? new UserDto
+                    {
+                        Id = po.Approver.Id,
+                        FirstName = po.Approver.FirstName,
+                        LastName = po.Approver.LastName,
+                        Email = po.Approver.Email
+                    } : null,
+                    CreatedAt = po.CreatedAt,
+                    ApprovedAt = po.ApprovedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (poDto == null)
+            {
+                throw new InvalidOperationException("Failed to retrieve created purchase order");
+            }
+
+            Console.WriteLine($"[PO PDF Upload] Upload completed successfully for PO {poDto.Id}");
+            return poDto;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PO PDF Upload] FATAL ERROR: {ex.Message}");
+            Console.WriteLine($"[PO PDF Upload] Stack trace: {ex.StackTrace}");
             throw;
         }
     }
@@ -905,6 +1101,53 @@ public class PdfUploadService : IPdfUploadService
         return "EUR"; // Default
     }
 
+    private async Task ValidateProjectPurchaseOrderRelationship(string? costCenterId, string? projectId, string? purchaseOrderId)
+    {
+        // Wenn projectId vorhanden ist, validiere dass es zur Kostenstelle passt
+        if (!string.IsNullOrEmpty(projectId))
+        {
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+            if (project == null)
+            {
+                throw new ArgumentException($"Project with ID '{projectId}' not found");
+            }
+
+            // Validiere dass das Projekt zur Kostenstelle gehört
+            if (!string.IsNullOrEmpty(costCenterId) && project.CostCenterId != costCenterId)
+            {
+                throw new ArgumentException($"Project '{projectId}' does not belong to Cost Center '{costCenterId}'");
+            }
+
+            // Aktualisiere costCenterId basierend auf Project, wenn nicht vorhanden
+            if (string.IsNullOrEmpty(costCenterId))
+            {
+                costCenterId = project.CostCenterId;
+            }
+        }
+
+        // Wenn purchaseOrderId vorhanden ist, validiere dass es zur Kostenstelle und Projekt passt
+        if (!string.IsNullOrEmpty(purchaseOrderId))
+        {
+            var purchaseOrder = await _context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+            if (purchaseOrder == null)
+            {
+                throw new ArgumentException($"Purchase Order with ID '{purchaseOrderId}' not found");
+            }
+
+            // Validiere dass die Bestellung zur Kostenstelle gehört
+            if (!string.IsNullOrEmpty(costCenterId) && purchaseOrder.CostCenterId != costCenterId)
+            {
+                throw new ArgumentException($"Purchase Order '{purchaseOrderId}' does not belong to Cost Center '{costCenterId}'");
+            }
+
+            // Validiere dass die Bestellung zum Projekt gehört (wenn Projekt angegeben ist)
+            if (!string.IsNullOrEmpty(projectId) && purchaseOrder.ProjectId != projectId)
+            {
+                throw new ArgumentException($"Purchase Order '{purchaseOrderId}' does not belong to Project '{projectId}'");
+            }
+        }
+    }
+
     private void ValidateFile(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -994,6 +1237,44 @@ public class PdfUploadService : IPdfUploadService
 
         // Generiere Rechnungsnummer im Format FAT-{Nummer mit führenden Nullen}-{Jahr}
         return $"FAT-{nextNumber:D3}-{currentYear}";
+    }
+
+    private async Task<string> GeneratePurchaseOrderIdAsync()
+    {
+        var currentYear = DateTime.UtcNow.Year;
+        
+        // Finde die höchste Nummer des aktuellen Jahres
+        var posThisYear = await _context.PurchaseOrders
+            .Where(po => po.Id.EndsWith(currentYear.ToString()))
+            .Select(po => po.Id)
+            .ToListAsync();
+
+        int nextNumber = 1;
+        
+        if (posThisYear.Any())
+        {
+            // Extrahiere die Nummer aus bestehenden PO IDs (Format: PO-023-2025)
+            var numbers = posThisYear
+                .Select(poId => 
+                {
+                    var parts = poId.Split('-');
+                    if (parts.Length >= 2 && int.TryParse(parts[1], out int num))
+                    {
+                        return num;
+                    }
+                    return 0;
+                })
+                .Where(n => n > 0)
+                .ToList();
+
+            if (numbers.Any())
+            {
+                nextNumber = numbers.Max() + 1;
+            }
+        }
+
+        // Generiere PO ID im Format PO-{Nummer mit führenden Nullen}-{Jahr}
+        return $"PO-{nextNumber:D3}-{currentYear}";
     }
 
     private async Task<int> FindOrCreateSupplierAsync(SupplierInfo? supplierInfo, string tempPdfPath)

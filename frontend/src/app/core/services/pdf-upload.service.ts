@@ -18,6 +18,12 @@ export interface UploadedFile {
   size: number;
 }
 
+export interface UploadedPurchaseOrder {
+  fileName: string;
+  purchaseOrderId: string;
+  size: number;
+}
+
 export interface FailedFile {
   fileName: string;
   errorMessage: string;
@@ -48,7 +54,8 @@ export class PdfUploadService {
     file: File,
     supplierId?: number,
     purchaseOrderId?: string,
-    costCenterId?: string
+    costCenterId?: string,
+    projectId?: string
   ): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
@@ -60,6 +67,9 @@ export class PdfUploadService {
     }
     if (costCenterId) {
       formData.append('costCenterId', costCenterId);
+    }
+    if (projectId) {
+      formData.append('projectId', projectId);
     }
 
     return this.http.post(`${this.apiUrl}/upload`, formData);
@@ -73,7 +83,8 @@ export class PdfUploadService {
     files: File[],
     supplierId?: number,
     purchaseOrderId?: string,
-    costCenterId?: string
+    costCenterId?: string,
+    projectId?: string
   ): Observable<BulkUploadResult> {
     const formData = new FormData();
 
@@ -89,6 +100,9 @@ export class PdfUploadService {
     }
     if (costCenterId) {
       formData.append('costCenterId', costCenterId);
+    }
+    if (projectId) {
+      formData.append('projectId', projectId);
     }
 
     return this.http.post<BulkUploadResult>(`${this.apiUrl}/bulk-upload`, formData);
@@ -115,5 +129,30 @@ export class PdfUploadService {
    */
   getUploadStatus(): Observable<PdfUploadStatus> {
     return this.http.get<PdfUploadStatus>(`${this.apiUrl}/status`);
+  }
+
+  /**
+   * Upload a purchase order PDF file
+   * If supplierId is not provided, it will be extracted from the PDF or a new supplier will be created
+   */
+  uploadPurchaseOrderPdf(
+    file: File,
+    supplierId?: number,
+    costCenterId?: string,
+    projectId?: string
+  ): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (supplierId) {
+      formData.append('supplierId', supplierId.toString());
+    }
+    if (costCenterId) {
+      formData.append('costCenterId', costCenterId);
+    }
+    if (projectId) {
+      formData.append('projectId', projectId);
+    }
+
+    return this.http.post(`${this.apiUrl}/upload-purchase-order`, formData);
   }
 }

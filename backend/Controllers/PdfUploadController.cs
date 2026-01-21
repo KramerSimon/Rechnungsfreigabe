@@ -30,6 +30,7 @@ public class PdfUploadController : ControllerBase
     /// <param name="supplierId">Optional: The supplier ID associated with this invoice (will be extracted from PDF if not provided)</param>
     /// <param name="purchaseOrderId">Optional: Purchase order ID</param>
     /// <param name="costCenterId">Optional: Cost center ID</param>
+    /// <param name="projectId">Optional: Project ID</param>
     /// <returns>The created invoice DTO</returns>
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
@@ -37,7 +38,8 @@ public class PdfUploadController : ControllerBase
         [FromForm] IFormFile file,
         [FromForm] int? supplierId = null,
         [FromForm] string? purchaseOrderId = null,
-        [FromForm] string? costCenterId = null)
+        [FromForm] string? costCenterId = null,
+        [FromForm] string? projectId = null)
     {
         try
         {
@@ -52,6 +54,7 @@ public class PdfUploadController : ControllerBase
                 supplierId,
                 purchaseOrderId,
                 costCenterId,
+                projectId,
                 userId);
 
             // Check if data was extracted
@@ -68,6 +71,66 @@ public class PdfUploadController : ControllerBase
             }
 
             return CreatedAtAction("GetInvoice", "Invoices", new { id = result.Id }, result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { message = "An error occurred while uploading the file" });
+        }
+    }
+
+    /// <summary>
+    /// Upload a purchase order PDF file
+    /// </summary>
+    /// <param name="file">The PDF file to upload</param>
+    /// <param name="supplierId">Optional: The supplier ID associated with this PO (will be extracted from PDF if not provided)</param>
+    /// <param name="costCenterId">Optional: Cost center ID</param>
+    /// <param name="projectId">Optional: Project ID</param>
+    /// <returns>The created purchase order DTO</returns>
+    [HttpPost("upload-purchase-order")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<PurchaseOrderDto>> UploadPurchaseOrderPdf(
+        [FromForm] IFormFile file,
+        [FromForm] int? supplierId = null,
+        [FromForm] string? costCenterId = null,
+        [FromForm] string? projectId = null)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { message = "No file provided" });
+            }
+
+            var userId = GetCurrentUserId();
+            var result = await _pdfUploadService.UploadPurchaseOrderPdfAsync(
+                file,
+                supplierId,
+                costCenterId,
+                projectId,
+                userId);
+
+            // Check if data was extracted
+            var hasExtractedData = result.TotalAmount > 0;
+            
+            if (!hasExtractedData)
+            {
+                return Ok(new
+                {
+                    purchaseOrder = result,
+                    warning = "PDF hochgeladen, aber keine Daten extrahiert. Das PDF enthält möglicherweise nur Bilder (gescanntes Dokument). Bitte Daten manuell vervollständigen.",
+                    requiresManualEntry = true
+                });
+            }
+
+            return CreatedAtAction("GetPurchaseOrder", "PurchaseOrders", new { id = result.Id }, result);
         }
         catch (ArgumentException ex)
         {
@@ -193,7 +256,8 @@ public class PdfUploadController : ControllerBase
         [FromForm] List<IFormFile> files,
         [FromForm] int supplierId,
         [FromForm] string? purchaseOrderId = null,
-        [FromForm] string? costCenterId = null)
+        [FromForm] string? costCenterId = null,
+        [FromForm] string? projectId = null)
     {
         try
         {
@@ -214,6 +278,7 @@ public class PdfUploadController : ControllerBase
                         supplierId,
                         purchaseOrderId,
                         costCenterId,
+                        projectId,
                         userId);
 
                     // Check if data was extracted

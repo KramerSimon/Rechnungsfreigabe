@@ -39,7 +39,7 @@ CREATE TABLE `approval_rules` (
   PRIMARY KEY (`id`),
   KEY `created_by` (`created_by`),
   CONSTRAINT `approval_rules_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -48,7 +48,7 @@ CREATE TABLE `approval_rules` (
 
 LOCK TABLES `approval_rules` WRITE;
 /*!40000 ALTER TABLE `approval_rules` DISABLE KEYS */;
-INSERT INTO `approval_rules` VALUES (6,'Auto-Freigabe','','automatic',10,1,'[{\"field\": \"amount\", \"value\": \"500\", \"operator\": \"<=\"}]','[{\"type\": \"auto_approve\", \"value\": \"approved\", \"description\": \"Automatisch freigeben\"}]',1,'2025-12-18 14:27:26','2025-12-18 14:27:26'),(7,'Standard-Freigabe','','manual',999,1,'[{\"field\": \"amount\", \"value\": \"500\", \"operator\": \">\"}]','[{\"type\": \"assign_to\", \"value\": \"1\", \"description\": \"Zuweisen an Systemadministrator\"}]',1,'2025-12-20 11:48:34','2025-12-20 11:48:34'),(8,'Mehrstufige Freigabe','','manual',10,1,'[{\"field\": \"amount\", \"value\": \"1000\", \"operator\": \">\"}]','[{\"type\": \"require_approval\", \"value\": \"\", \"stages\": [{\"userId\": 5, \"stepNumber\": 1, \"approvalLevel\": 1}, {\"userId\": 1, \"stepNumber\": 2, \"approvalLevel\": 2}], \"description\": \"Mehrstufige Freigabe\"}]',1,'2025-12-21 12:45:11','2025-12-21 12:45:11');
+INSERT INTO `approval_rules` VALUES (6,'Auto-Freigabe','','automatic',10,1,'[{\"field\": \"amount\", \"value\": \"500\", \"operator\": \"<=\"}]','[{\"type\": \"auto_approve\", \"value\": \"approved\", \"description\": \"Automatisch freigeben\"}]',1,'2025-12-18 14:27:26','2025-12-18 14:27:26'),(7,'Standard-Freigabe','','manual',999,1,'[{\"field\": \"amount\", \"value\": \"500\", \"operator\": \">\"}]','[{\"type\": \"assign_to\", \"value\": \"1\", \"description\": \"Zuweisen an Systemadministrator\"}]',1,'2025-12-20 11:48:34','2025-12-20 11:48:34'),(8,'Mehrstufige Freigabe','','manual',10,1,'[{\"field\": \"amount\", \"value\": \"1000\", \"operator\": \">\"}]','[{\"type\": \"require_approval\", \"value\": \"\", \"stages\": [{\"userId\": 5, \"stepNumber\": 1, \"approvalLevel\": 1}, {\"userId\": 1, \"stepNumber\": 2, \"approvalLevel\": 2}], \"description\": \"Mehrstufige Freigabe\"}]',1,'2025-12-21 12:45:11','2025-12-21 12:45:11'),(9,'Test','','automatic',10,1,'[{\"field\": \"costCenter\", \"value\": \"OFFICE\", \"operator\": \"=\"}]','[{\"type\": \"auto_approve\", \"value\": \"\", \"description\": \"Automatisch freigeben\"}]',1,'2026-01-07 09:48:50','2026-01-07 09:48:50');
 /*!40000 ALTER TABLE `approval_rules` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -87,7 +87,6 @@ CREATE TABLE `approval_workflows` (
 
 LOCK TABLES `approval_workflows` WRITE;
 /*!40000 ALTER TABLE `approval_workflows` DISABLE KEYS */;
-INSERT INTO `approval_workflows` VALUES (57,109,8,1,5,1,'Approved','Freigabe erteilt','2025-12-21 15:25:20','2025-12-21 15:10:58'),(58,109,8,2,1,2,'Waiting',NULL,NULL,'2025-12-21 15:10:58');
 /*!40000 ALTER TABLE `approval_workflows` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -189,7 +188,7 @@ CREATE TABLE `invoice_history` (
   KEY `idx_action_source` (`action_source`),
   CONSTRAINT `invoice_history_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `invoice_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=132 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=134 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -198,7 +197,6 @@ CREATE TABLE `invoice_history` (
 
 LOCK TABLES `invoice_history` WRITE;
 /*!40000 ALTER TABLE `invoice_history` DISABLE KEYS */;
-INSERT INTO `invoice_history` VALUES (128,109,'Rechnung importiert','Created','Import',NULL,'Freigabe_Erforderlic',NULL,NULL,NULL,NULL,'E-Mail',1,'2025-12-21 15:10:58'),(129,109,'Daten vervollständigt','DataCompleted','User',NULL,NULL,'{\"ProjectId\": {\"NewValue\": \"OFF004\", \"OldValue\": \"\", \"DisplayName\": \"Projekt\"}, \"CostCenterId\": {\"NewValue\": \"OFFICE\", \"OldValue\": \"\", \"DisplayName\": \"Kostenstelle\"}}',NULL,NULL,NULL,NULL,5,'2025-12-21 15:25:14'),(130,109,'Freigabe erteilt','Approved','User',NULL,'FREIGEGEBEN',NULL,'Freigabe erteilt (Teilfreigabe - Schritt 1 von 2)',NULL,NULL,NULL,5,'2025-12-21 15:25:20'),(131,109,'Freigabe erteilt','Approved','User',NULL,'FREIGEGEBEN',NULL,'Freigabe erteilt',NULL,NULL,NULL,1,'2025-12-21 15:36:38');
 /*!40000 ALTER TABLE `invoice_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -257,7 +255,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `invoices_ibfk_5` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `invoices_ibfk_6` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=110 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=111 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -266,7 +264,6 @@ CREATE TABLE `invoices` (
 
 LOCK TABLES `invoices` WRITE;
 /*!40000 ALTER TABLE `invoices` DISABLE KEYS */;
-INSERT INTO `invoices` VALUES (109,'FAT-001-2025',55,NULL,'OFFICE','OFF004',1024.59,225.41,1250.00,'EUR','2025-12-15','2026-01-20','2025-12-21 15:10:58','Freigegeben',1,1,0,'20251221_161057_32a66a47.pdf',_binary '%PDF-1.4\r\n%���� ReportLab Generated PDF document http://www.reportlab.com\r\n1 0 obj\r\n<<\r\n/F1 2 0 R /F2 3 0 R\r\n>>\r\nendobj\r\n2 0 obj\r\n<<\r\n/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font\r\n>>\r\nendobj\r\n3 0 obj\r\n<<\r\n/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font\r\n>>\r\nendobj\r\n4 0 obj\r\n<<\r\n/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<\r\n/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]\r\n>> /Rotate 0 /Trans <<\r\n\r\n>> \r\n  /Type /Page\r\n>>\r\nendobj\r\n5 0 obj\r\n<<\r\n/PageMode /UseNone /Pages 7 0 R /Type /Catalog\r\n>>\r\nendobj\r\n6 0 obj\r\n<<\r\n/Author (\\(anonymous\\)) /CreationDate (D:20251217135140+00\'00\') /Creator (\\(unspecified\\)) /Keywords () /ModDate (D:20251217135140+00\'00\') /Producer (ReportLab PDF Library - www.reportlab.com) \r\n  /Subject (\\(unspecified\\)) /Title (\\(anonymous\\)) /Trapped /False\r\n>>\r\nendobj\r\n7 0 obj\r\n<<\r\n/Count 1 /Kids [ 4 0 R ] /Type /Pages\r\n>>\r\nendobj\r\n8 0 obj\r\n<<\r\n/Filter [ /ASCII85Decode /FlateDecode ] /Length 699\r\n>>\r\nstream\r\nGat=)9on!^&A@Zck#.%AWF>-QM:ihP]%\'j9C&rNS>V%RG<[:O0BI/+U-VaqB+A5p-jC@$c^NlE5@=WGSHXA\'!pBjA#$lB5W!@Bo0l3TYS_9W._R?<.n0MfirU^R=O!r;Qkjg&JY8k`nI%SW0]EF(99U<$h29#B*sL(=ro^<J#aTO\'q?_YZ5bW\\_6?b1sb3bU[6[J_#KS*e)om-I6(pMdi=E4$_jON]]:Y?W:OeI9osDl@Lip0Ok\'ZdXf9N/YJpZ?n#@&fkn1g`u8Z1ZTO5*/2pW+<+&kJE,pb/]%/Pm8Ht+KPN>p--.Xcr&e41A6Y)!QF?,k@=l,[AB+H%j-?nsXOE\"V1@3ingQ<Dg:(ZJ;a=XMu`qdE-HMMkO(A\"BcO`/VsS\\f>]+$6h.q#nP$n-ToKq&MWE4BfK!_o0X\'%Bq?X3\"u`rmdHSp`<TA<5Jbu:qiRI3pH$kFSe2VS49TBR+[b#4*(JA+C%p([EkM.$e))ZHV&aNJhnbj,.AVK!0/,Tq[94\"\"`=\'7>\\@p!=,DSJ\'n62/kC8l(7(OnI5_;cf!;1EN3E4V#Hcbd*q7l1\\Aj@fD3JINP&EfQPZc()Af_FU21`LJi\\9H.;=57P@c#2U)lXB1(a&2KuM+3p<2fZh$2\"kHG=_j1daZGl+kJHeb-NAZOd;\'@2RCU]3Ful-Q*<KQe!*X6kA64!HBR\")RII#l~>endstream\r\nendobj\r\nxref\r\n0 9\r\n0000000000 65535 f \r\n0000000073 00000 n \r\n0000000114 00000 n \r\n0000000221 00000 n \r\n0000000333 00000 n \r\n0000000536 00000 n \r\n0000000604 00000 n \r\n0000000887 00000 n \r\n0000000946 00000 n \r\ntrailer\r\n<<\r\n/ID \r\n[<8b49bf133db554c872f8842fff1159ff><8b49bf133db554c872f8842fff1159ff>]\r\n% ReportLab generated PDF document -- digest (http://www.reportlab.com)\r\n\r\n/Info 6 0 R\r\n/Root 5 0 R\r\n/Size 9\r\n>>\r\nstartxref\r\n1735\r\n%%EOF\r\n',2214,'fattura_002.pdf','FATTURA | Numero fattura: 002/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,1,'2025-12-21 15:10:58','2025-12-21 15:36:38');
 /*!40000 ALTER TABLE `invoices` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -295,7 +292,7 @@ CREATE TABLE `notifications` (
   KEY `idx_is_read` (`is_read`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=192 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=194 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -304,7 +301,6 @@ CREATE TABLE `notifications` (
 
 LOCK TABLES `notifications` WRITE;
 /*!40000 ALTER TABLE `notifications` DISABLE KEYS */;
-INSERT INTO `notifications` VALUES (185,5,109,'invoice_approval_required','Neue Rechnung zur Freigabe','Rechnung FAT-001-2025 von Azienda Demo SRL über 1.250,00 € EUR wartet auf Ihre Freigabe.',0,'normal','/invoices/109','2025-12-21 15:10:58',NULL),(186,3,109,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2025 von Azienda Demo SRL über 1.250,00 € EUR ist eingegangen.',0,'low','/invoices/109','2025-12-21 15:10:58',NULL),(187,1,109,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2025 von Azienda Demo SRL über 1.250,00 € EUR ist eingegangen.',0,'normal','/invoices/109','2025-12-21 15:10:58',NULL),(188,1,109,'invoice_approved','Rechnung freigegeben','Rechnung FAT-001-2025 von Azienda Demo SRL über 1.250,00 € EUR wurde freigegeben.',0,'normal','/invoices/109','2025-12-21 15:25:20',NULL),(189,3,109,'invoice_approved','Rechnung freigegeben','Rechnung FAT-001-2025 von Azienda Demo SRL über 1.250,00 € EUR wurde freigegeben.',0,'normal','/invoices/109','2025-12-21 15:25:20',NULL),(190,1,109,'invoice_approved','Rechnung freigegeben','Rechnung FAT-001-2025 von Azienda Demo SRL über 1.250,00 € EUR wurde freigegeben.',0,'normal','/invoices/109','2025-12-21 15:36:38',NULL),(191,3,109,'invoice_approved','Rechnung freigegeben','Rechnung FAT-001-2025 von Azienda Demo SRL über 1.250,00 € EUR wurde freigegeben.',0,'normal','/invoices/109','2025-12-21 15:36:38',NULL);
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -356,6 +352,7 @@ CREATE TABLE `purchase_orders` (
   `id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `title` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
+  `supplier_id` int DEFAULT NULL,
   `cost_center_id` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `project_id` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `total_amount` decimal(12,2) NOT NULL,
@@ -365,15 +362,21 @@ CREATE TABLE `purchase_orders` (
   `approved_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `approved_at` timestamp NULL DEFAULT NULL,
+  `pdf_content` longblob COMMENT 'PDF file content as BLOB',
+  `pdf_file_size` bigint DEFAULT NULL,
+  `original_filename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `cost_center_id` (`cost_center_id`),
   KEY `project_id` (`project_id`),
   KEY `created_by` (`created_by`),
   KEY `approved_by` (`approved_by`),
+  KEY `idx_supplier_id` (`supplier_id`),
+  KEY `idx_pdf_file_size` (`pdf_file_size`),
   CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`),
   CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `purchase_orders_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
-  CONSTRAINT `purchase_orders_ibfk_4` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`)
+  CONSTRAINT `purchase_orders_ibfk_4` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `purchase_orders_ibfk_5` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -383,6 +386,7 @@ CREATE TABLE `purchase_orders` (
 
 LOCK TABLES `purchase_orders` WRITE;
 /*!40000 ALTER TABLE `purchase_orders` DISABLE KEYS */;
+INSERT INTO `purchase_orders` VALUES ('PO-2026-01-01','Büromaterial','',NULL,'OFFICE','OFF004',1000.00,'EUR','Offen',1,NULL,'2026-01-21 11:17:29',NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `purchase_orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -451,7 +455,6 @@ CREATE TABLE `suppliers` (
 
 LOCK TABLES `suppliers` WRITE;
 /*!40000 ALTER TABLE `suppliers` DISABLE KEYS */;
-INSERT INTO `suppliers` VALUES (55,'Azienda Demo SRL','Azienda Demo SRL','IT01234567890','IT01234567890','Via Roma 1 00100',NULL,'00100','Roma','Italien',NULL,NULL,NULL,NULL,NULL,30,1,'2025-12-21 14:55:35','2025-12-21 14:55:35'),(56,'KAROSSERIE MARTIN Lanciastrasse 10','KAROSSERIE MARTIN Lanciastrasse 10','02900920212','02900920212',NULL,NULL,'39100','BOZEN','Italien',NULL,NULL,NULL,NULL,NULL,30,1,'2025-12-21 14:58:23','2025-12-21 14:58:23');
 /*!40000 ALTER TABLE `suppliers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -550,7 +553,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','admin@firma.de','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-21 15:36:03'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','Müller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-21 15:19:51');
+INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','admin@firma.de','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-21 11:41:35'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','Müller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48'),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-21 15:19:51');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -645,4 +648,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-21 17:47:58
+-- Dump completed on 2026-01-21 13:45:53

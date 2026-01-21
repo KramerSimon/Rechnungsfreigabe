@@ -14,6 +14,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PdfUploadService } from '../../../../core/services/pdf-upload.service';
 import { SupplierService } from '../../../../core/services/supplier.service';
 import { CostCenterService } from '../../../../core/services/cost-center.service';
+import { ProjectService } from '../../../../core/services/project.service';
+import { PurchaseOrderService } from '../../../../core/services/purchase-order.service';
 
 interface UploadedFile {
   fileName: string;
@@ -51,22 +53,36 @@ interface FailedFile {
 })
 export class PdfUploadDashboardComponent implements OnInit {
   @ViewChild('fileInput') fileInput: any;
+  @ViewChild('poFileInput') poFileInput: any;
 
   uploadForm!: FormGroup;
+  poUploadForm!: FormGroup;
   selectedFiles: File[] = [];
+  selectedPoFile: File | null = null;
   isDragOver = false;
+  isPoDropZoneActive = false;
   isUploading = false;
+  isPoUploading = false;
   suppliers: any[] = [];
   costCenters: any[] = [];
+  projects: any[] = [];
+  purchaseOrders: any[] = [];
+  filteredProjects: any[] = [];  // Projects filtered by selected cost center
+  filteredProjectsForInvoice: any[] = [];  // Projects filtered for invoice upload
+  filteredPurchaseOrders: any[] = [];  // Purchase orders filtered by cost center and project
   uploadResults: any = null;
   uploadStatus: any = null;
 
-  // Progress tracking
+  // Progress tracking for invoices
   uploadProgress = 0;
   currentFileProgress = 0;
   currentFileName = '';
   uploadPhase = ''; // 'uploading', 'processing', 'complete'
   fileProgressDetails: any[] = []; // Array to track progress of each file
+
+  // Progress tracking for purchase orders
+  poUploadProgress = 0;
+  poUploadPhase = '';
 
   displayedSuccessColumns = ['fileName', 'invoiceNumber', 'invoiceId', 'size'];
   displayedErrorColumns = ['fileName', 'errorMessage'];
@@ -76,18 +92,43 @@ export class PdfUploadDashboardComponent implements OnInit {
     private pdfUploadService: PdfUploadService,
     private supplierService: SupplierService,
     private costCenterService: CostCenterService,
+    private projectService: ProjectService,
+    private purchaseOrderService: PurchaseOrderService,
     private snackBar: MatSnackBar
   ) {
     this.uploadForm = this.fb.group({
       supplierId: [''],  // Optional - wird aus PDF extrahiert wenn nicht angegeben
       costCenterId: [''],
+      projectId: [''],  // Optional - zum Zuordnen des Projekts
       purchaseOrderId: ['']
+    });
+    this.poUploadForm = this.fb.group({
+      supplierId: [''],  // Optional - wird aus PDF extrahiert oder neu erstellt
+      costCenterId: ['', Validators.required],  // REQUIRED
+      projectId: ['', Validators.required]  // REQUIRED
+    });
+
+    // Listen for cost center changes to filter projects in invoice upload
+    this.uploadForm.get('costCenterId')?.valueChanges.subscribe((costCenterId) => {
+      this.onInvoiceCostCenterChanged(costCenterId);
+    });
+
+    // Listen for project changes to filter purchase orders in invoice upload
+    this.uploadForm.get('projectId')?.valueChanges.subscribe((projectId) => {
+      this.onInvoiceProjectChanged(projectId);
+    });
+
+    // Listen for cost center changes to filter projects in PO upload
+    this.poUploadForm.get('costCenterId')?.valueChanges.subscribe((costCenterId) => {
+      this.onCostCenterChanged(costCenterId);
     });
   }
 
   ngOnInit() {
     this.loadSuppliers();
     this.loadCostCenters();
+    this.loadProjects();
+      this.loadPurchaseOrders();
     this.loadUploadStatus();
   }
 
@@ -113,6 +154,77 @@ export class PdfUploadDashboardComponent implements OnInit {
     );
   }
 
+  loadProjects() {
+    this.projectService.getProjects().subscribe(
+      (projects) => {
+        this.projects = projects;
+        // Initialize filtered projects
+        this.filteredProjects = this.projects;
+      },
+      (error) => {
+        this.snackBar.open('Fehler beim Laden der Projekte', 'Schließen', { duration: 3000 });
+      }
+    );
+  }
+
+  loadPurchaseOrders() {
+    this.purchaseOrderService.getPurchaseOrders().subscribe(
+      (purchaseOrders) => {
+        this.purchaseOrders = purchaseOrders;
+        this.filteredPurchaseOrders = this.purchaseOrders;
+      },
+      (error) => {
+        this.snackBar.open('Fehler beim Laden der Bestellungen', 'Schließen', { duration: 3000 });
+      }
+    );
+  }
+
+  onInvoiceCostCenterChanged(costCenterId: string) {
+    // Reset project selection when cost center changes
+    this.uploadForm.get('projectId')?.reset('', { emitEvent: false });
+    // Reset purchase order selection when cost center changes
+    this.uploadForm.get('purchaseOrderId')?.reset('', { emitEvent: false });
+
+    if (!costCenterId) {
+      this.filteredProjectsForInvoice = [];
+      this.filteredPurchaseOrders = [];
+    } else {
+      // Filter projects by selected cost center
+      this.filteredProjectsForInvoice = this.projects.filter(p => p.costCenterId === costCenterId);
+      // Filter purchase orders by selected cost center
+      this.filteredPurchaseOrders = this.purchaseOrders.filter(po => po.costCenterId === costCenterId);
+    }
+  }
+
+  onInvoiceProjectChanged(projectId: string) {
+    // Reset purchase order selection when project changes
+    this.uploadForm.get('purchaseOrderId')?.reset('', { emitEvent: false });
+
+    const costCenterId = this.uploadForm.get('costCenterId')?.value;
+
+    if (!projectId || !costCenterId) {
+      // Only show purchase orders for the cost center
+      this.filteredPurchaseOrders = this.purchaseOrders.filter(po => po.costCenterId === costCenterId);
+    } else {
+      // Filter purchase orders by both cost center and project
+      this.filteredPurchaseOrders = this.purchaseOrders.filter(po =>
+        po.costCenterId === costCenterId && po.projectId === projectId
+      );
+    }
+  }
+
+  onCostCenterChanged(costCenterId: string) {
+    // Reset project selection when cost center changes
+    this.poUploadForm.get('projectId')?.reset('', { emitEvent: false });
+
+    if (!costCenterId) {
+      this.filteredProjects = [];
+    } else {
+      // Filter projects by selected cost center
+      this.filteredProjects = this.projects.filter(p => p.costCenterId === costCenterId);
+    }
+  }
+
   loadUploadStatus() {
     this.pdfUploadService.getUploadStatus().subscribe(
       (status) => {
@@ -120,6 +232,7 @@ export class PdfUploadDashboardComponent implements OnInit {
       },
       (error) => {
         console.error('Error loading upload status:', error);
+        this.snackBar.open('Fehler beim Laden des Upload-Status', 'Schließen', { duration: 3000 });
       }
     );
   }
@@ -193,6 +306,8 @@ export class PdfUploadDashboardComponent implements OnInit {
     const supplierId = supplierIdValue && supplierIdValue !== '' ? Number(supplierIdValue) : undefined;
     const costCenterIdValue = this.uploadForm.get('costCenterId')?.value;
     const costCenterId = costCenterIdValue && costCenterIdValue !== '' ? costCenterIdValue : undefined;
+    const projectIdValue = this.uploadForm.get('projectId')?.value;
+    const projectId = projectIdValue && projectIdValue !== '' ? projectIdValue : undefined;
     const purchaseOrderIdValue = this.uploadForm.get('purchaseOrderId')?.value;
     const purchaseOrderId = purchaseOrderIdValue && purchaseOrderIdValue !== '' ? purchaseOrderIdValue : undefined;
 
@@ -259,7 +374,8 @@ export class PdfUploadDashboardComponent implements OnInit {
       this.selectedFiles,
       supplierId,
       purchaseOrderId,
-      costCenterId
+      costCenterId,
+      projectId
     ).subscribe(
       (results) => {
         clearInterval(progressInterval);
@@ -337,5 +453,129 @@ export class PdfUploadDashboardComponent implements OnInit {
 
   getPercentage(value: number, total: number): number {
     return total === 0 ? 0 : Math.round((value / total) * 100);
+  }
+
+  // Purchase Order Upload Methods
+  onPoDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isPoDropZoneActive = true;
+  }
+
+  onPoDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isPoDropZoneActive = false;
+  }
+
+  onPoFileDropped(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isPoDropZoneActive = false;
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        this.selectedPoFile = file;
+      } else {
+        this.snackBar.open(`${file.name} ist keine PDF-Datei`, 'Schließen', { duration: 3000 });
+      }
+    }
+  }
+
+  onPoFileSelected(event: any) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        this.selectedPoFile = file;
+      } else {
+        this.snackBar.open(`${file.name} ist keine PDF-Datei`, 'Schließen', { duration: 3000 });
+      }
+    }
+  }
+
+  removePoFile() {
+    this.selectedPoFile = null;
+  }
+
+  clearPoSelection() {
+    this.selectedPoFile = null;
+    this.poUploadForm.reset();
+  }
+
+  uploadPurchaseOrder() {
+    if (!this.selectedPoFile || !this.poUploadForm.valid) {
+      if (!this.poUploadForm.get('costCenterId')?.value) {
+        this.snackBar.open('Kostenstelle ist erforderlich', 'Schließen', { duration: 3000 });
+      } else if (!this.poUploadForm.get('projectId')?.value) {
+        this.snackBar.open('Projekt ist erforderlich', 'Schließen', { duration: 3000 });
+      }
+      return;
+    }
+
+    this.isPoUploading = true;
+    this.poUploadProgress = 0;
+    this.poUploadPhase = 'uploading';
+
+    const supplierIdValue = this.poUploadForm.get('supplierId')?.value;
+    const supplierId = supplierIdValue && supplierIdValue !== '' ? Number(supplierIdValue) : undefined;
+    const costCenterIdValue = this.poUploadForm.get('costCenterId')?.value;
+    const costCenterId = costCenterIdValue && costCenterIdValue !== '' ? costCenterIdValue : undefined;
+    const projectIdValue = this.poUploadForm.get('projectId')?.value;
+    const projectId = projectIdValue && projectIdValue !== '' ? projectIdValue : undefined;
+
+    // Progress simulation
+    const progressInterval = setInterval(() => {
+      if (this.poUploadPhase === 'uploading' && this.poUploadProgress < 20) {
+        this.poUploadProgress += Math.random() * 3;
+      } else if (this.poUploadProgress >= 20 && this.poUploadProgress < 80) {
+        this.poUploadPhase = 'processing';
+        this.poUploadProgress += Math.random() * 2;
+      } else if (this.poUploadProgress >= 80 && this.poUploadProgress < 95) {
+        this.poUploadPhase = 'saving';
+        this.poUploadProgress += Math.random() * 4;
+      }
+      this.poUploadProgress = Math.min(this.poUploadProgress, 95);
+    }, 150);
+
+    this.pdfUploadService.uploadPurchaseOrderPdf(
+      this.selectedPoFile,
+      supplierId,
+      costCenterId,
+      projectId
+    ).subscribe(
+      (result) => {
+        clearInterval(progressInterval);
+        this.poUploadProgress = 100;
+        this.poUploadPhase = 'complete';
+        this.isPoUploading = false;
+
+        const hasWarning = result.warning || result.requiresManualEntry;
+        let message = 'Bestellung erfolgreich hochgeladen';
+        if (hasWarning) {
+          message += ' ⚠️ Keine extrahierbaren Daten gefunden. Bitte manuell vervollständigen.';
+        }
+
+        this.snackBar.open(message, 'Schließen', { duration: hasWarning ? 10000 : 5000 });
+
+        // Reset form after success
+        setTimeout(() => {
+          this.selectedPoFile = null;
+          this.poUploadForm.reset();
+          this.poUploadProgress = 0;
+          this.poUploadPhase = '';
+        }, 2000);
+
+        this.loadUploadStatus();
+      },
+      (error) => {
+        clearInterval(progressInterval);
+        this.isPoUploading = false;
+        this.poUploadPhase = '';
+        this.snackBar.open('Fehler beim Upload: ' + (error.message || 'Unbekannter Fehler'), 'Schließen', { duration: 5000 });
+      }
+    );
   }
 }

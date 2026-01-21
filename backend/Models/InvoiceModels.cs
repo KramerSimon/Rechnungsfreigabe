@@ -96,6 +96,9 @@ public class PurchaseOrder
     [Column("description")]
     public string? Description { get; set; }
 
+    [Column("supplier_id")]
+    public int? SupplierId { get; set; }
+
     [Column("cost_center_id")]
     [StringLength(20)]
     public string? CostCenterId { get; set; }
@@ -126,7 +129,18 @@ public class PurchaseOrder
     [Column("approved_at")]
     public DateTime? ApprovedAt { get; set; }
 
+    [Column("pdf_content")]
+    public byte[]? PdfContent { get; set; }
+
+    [Column("pdf_file_size")]
+    public long? PdfFileSize { get; set; }
+
+    [StringLength(255)]
+    [Column("original_filename")]
+    public string? OriginalFilename { get; set; }
+
     // Navigation properties
+    public virtual Supplier? Supplier { get; set; }
     public virtual CostCenter? CostCenter { get; set; }
     public virtual Project? Project { get; set; }
     public virtual User Creator { get; set; } = null!;
