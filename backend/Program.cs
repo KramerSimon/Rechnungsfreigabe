@@ -77,6 +77,8 @@ builder.Services.AddControllers()
     {
         // Accept both numeric and string values for enums like RuleType
         options.JsonSerializerOptions.Converters.Add(new FlexibleEnumConverter<RechnungsfreigabeAPI.Models.RuleType>());
+        // Handle circular references
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
 // Configure CORS

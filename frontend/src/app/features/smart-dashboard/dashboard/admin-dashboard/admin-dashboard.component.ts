@@ -65,7 +65,7 @@ export class AdminDashboardComponent implements OnInit {
   masterDataSections: MasterDataSection[] = [
     {
       id: 'suppliers',
-      title: 'Lieferanten-Verwaltung',
+      title: 'Lieferanten',
       description: 'Stammdaten und Kategorien',
       icon: 'business',
       route: '/admin/suppliers'

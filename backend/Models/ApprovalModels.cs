@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace RechnungsfreigabeAPI.Models;
 
@@ -33,15 +34,6 @@ public class ApprovalRule
     [Column("actions", TypeName = "json")]
     public string Actions { get; set; } = "[]";
 
-    [Column("supplier_id")]
-    public int? SupplierId { get; set; }
-
-    [Column("cost_center_id")]
-    public string? CostCenterId { get; set; }
-
-    [Column("project_id")]
-    public string? ProjectId { get; set; }
-
     [Column("created_by")]
     public int CreatedBy { get; set; }
     
@@ -52,7 +44,9 @@ public class ApprovalRule
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
+    [JsonIgnore]
     public virtual User Creator { get; set; } = null!;
+    [JsonIgnore]
     public virtual ICollection<ApprovalWorkflow> ApprovalWorkflows { get; set; } = new List<ApprovalWorkflow>();
 }
 

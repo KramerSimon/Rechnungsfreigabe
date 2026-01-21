@@ -125,10 +125,11 @@ public class ApprovalController : ControllerBase
             var rules = await _approvalService.GetActiveRulesAsync();
             return Ok(rules);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            
-            return StatusCode(500, new { message = "An error occurred while retrieving approval rules" });
+            Console.WriteLine($"Error in GetApprovalRules: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            return StatusCode(500, new { message = "An error occurred while retrieving approval rules", error = ex.Message });
         }
     }
 
@@ -387,9 +388,6 @@ public class ApprovalController : ControllerBase
                 Priority = dto.Priority ?? 10,
                 Conditions = conditionsJson,
                 Actions = actionsJson,
-                SupplierId = dto.SupplierId,
-                CostCenterId = dto.CostCenterId,
-                ProjectId = dto.ProjectId,
                 CreatedBy = userId
             };
 
@@ -432,12 +430,6 @@ public class ApprovalController : ControllerBase
                 rule.Actions = dto.Actions;
             if (dto.IsActive.HasValue)
                 rule.IsActive = dto.IsActive.Value;
-            if (dto.SupplierId.HasValue)
-                rule.SupplierId = dto.SupplierId;
-            if (dto.CostCenterId != null)
-                rule.CostCenterId = dto.CostCenterId;
-            if (dto.ProjectId != null)
-                rule.ProjectId = dto.ProjectId;
             
             rule.UpdatedAt = DateTime.UtcNow;
 

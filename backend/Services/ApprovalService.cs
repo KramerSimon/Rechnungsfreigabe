@@ -112,6 +112,8 @@ public class ApprovalService : IApprovalService
     public async Task<IEnumerable<ApprovalRule>> GetActiveRulesAsync()
     {
         return await _context.ApprovalRules
+            .AsNoTracking()
+            .IgnoreAutoIncludes()
             .Where(r => r.IsActive)
             .OrderBy(r => r.Priority)
             .ToListAsync();
