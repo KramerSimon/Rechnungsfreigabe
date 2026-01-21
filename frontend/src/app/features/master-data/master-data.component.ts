@@ -18,6 +18,7 @@ import { TabConfig } from '../../core/interfaces/common.interfaces';
 import { CreateSupplierDialogComponent } from './dialogs/create-supplier-dialog.component';
 import { CreateCostCenterDialogComponent } from './dialogs/create-cost-center-dialog.component';
 import { CreateProjectDialogComponent } from './dialogs/create-project-dialog.component';
+import { CreatePurchaseOrderDialogComponent } from './dialogs/create-purchase-order-dialog.component';
 import { CreateUserDialogComponent } from './dialogs/create-user-dialog.component';
 import { EditSupplierDialogComponent } from './dialogs/edit-supplier-dialog.component';
 import { EditCostCenterDialogComponent } from './dialogs/edit-cost-center-dialog.component';
@@ -34,7 +35,7 @@ import { UserService } from '../../core/services/user.service';
 import { Supplier } from '../../core/models/supplier.model';
 import { CostCenter } from '../../core/models/cost-center.model';
 import { Project } from '../../core/models/project.model';
-import { PurchaseOrder } from '../../core/models/purchaseOrder.model';
+import { CreatePurchaseOrderRequest, PurchaseOrder } from '../../core/models/purchaseOrder.model';
 import { PurchaseOrderService } from '../../core/services/purchase-order.service';
 import { Invoice } from '../../core/models/invoice.models';
 import { InvoiceService } from '../../core/services/invoice.service';
@@ -98,11 +99,12 @@ export class MasterDataComponent implements OnInit {
     { id: 'suppliers', label: 'Lieferanten', index: 0 },
     { id: 'costcenters', label: 'Kostenstellen', index: 1 },
     { id: 'projects', label: 'Projekte', index: 2 },
-    { id: 'invoices', label: 'Rechnungen', index: 3 },
-    { id: 'users', label: 'Benutzer & Rollen', index: 4 },
-    { id: 'escalation', label: 'Eskalations-Einstellungen', index: 5 },
-    { id: 'rules', label: 'Genehmigungsregeln', index: 6 },
-    { id: 'workflows', label: 'Genehmigungsworkflows', index: 7 },
+    { id: 'purchaseorders', label: 'Bestellungen', index: 3 },
+    { id: 'invoices', label: 'Rechnungen', index: 4 },
+    { id: 'users', label: 'Benutzer & Rollen', index: 5 },
+    { id: 'escalation', label: 'Eskalations-Einstellungen', index: 6 },
+    { id: 'rules', label: 'Genehmigungsregeln', index: 7 },
+    { id: 'workflows', label: 'Genehmigungsworkflows', index: 8 },
   ];
 
   invoiceStatuses = [
@@ -130,6 +132,8 @@ export class MasterDataComponent implements OnInit {
   purchaseOrderColumns = [
     'id',
     'title',
+    'costCenter',
+    'project',
     'totalAmount',
     'status',
     'createdAt',
@@ -556,6 +560,78 @@ export class MasterDataComponent implements OnInit {
     });
   }
 
+
+  createPurchaseOrder(): void {
+    const dialogRef = this.dialog.open(CreatePurchaseOrderDialogComponent, {
+      width: '650px',
+      data: {
+        costCenters: this.costCenters,
+        projects: this.projects,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((payload: CreatePurchaseOrderRequest | undefined) => {
+      if (payload) {
+        this.purchaseOrderService.createPurchaseOrder(payload).subscribe({
+          next: () => {
+            this.snackBar.open('Bestellung erfolgreich erstellt', 'Schließen', {
+              duration: 3000,
+            });
+            this.loadPurchaseOrders();
+          },
+          error: (error) => {
+            console.error('Error creating purchase order:', error);
+            this.snackBar.open('Fehler beim Erstellen der Bestellung', 'Schließen', {
+              duration: 3000,
+            });
+          },
+        });
+      }
+    });
+  }
+
+  editPurchaseOrder(order: PurchaseOrder): void {
+    const dialogRef = this.dialog.open(CreatePurchaseOrderDialogComponent, {
+      width: '650px',
+      data: {
+        costCenters: this.costCenters,
+        projects: this.projects,
+      },
+    });
+
+    // Seed the form by setting initial value after component init
+    dialogRef.afterOpened().subscribe(() => {
+      const instance = dialogRef.componentInstance;
+      if (instance) {
+        instance.form.patchValue({
+          id: order.id,
+          title: order.title,
+          description: order.description || '',
+          costCenterId: order.costCenterId || '',
+          projectId: order.projectId || '',
+          totalAmount: order.totalAmount,
+          currency: order.currency || 'EUR',
+        });
+      }
+    });
+
+    dialogRef.afterClosed().subscribe((payload: CreatePurchaseOrderRequest | undefined) => {
+      if (payload) {
+        this.purchaseOrderService.updatePurchaseOrder(order.id, payload).subscribe({
+          next: () => {
+            this.snackBar.open('Bestellung aktualisiert', 'Schließen', { duration: 3000 });
+            this.loadPurchaseOrders();
+          },
+          error: (error) => {
+            console.error('Error updating purchase order:', error);
+            this.snackBar.open('Fehler beim Aktualisieren der Bestellung', 'Schließen', {
+              duration: 3000,
+            });
+          },
+        });
+      }
+    });
+  }
   createUser(): void {
     const dialogData: User = {
       id: '',
@@ -812,10 +888,10 @@ export class MasterDataComponent implements OnInit {
   }
 
   // Format currency
-  formatCurrency(amount: number): string {
+  formatCurrency(amount: number, currency = 'EUR'): string {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
-      currency: 'EUR',
+      currency: currency || 'EUR',
     }).format(amount);
   }
 

@@ -28,6 +28,7 @@ export const routes: Routes = [
   { path: 'admin/users', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'users' } },
   { path: 'admin/cost-centers', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'costcenters' } },
   { path: 'admin/suppliers', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'suppliers' } },
+  { path: 'admin/purchase-orders', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'purchaseorders' } },
   { path: 'admin/invoices', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'invoices' } },
   { path: 'admin/escalation', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'escalation' } },
   { path: 'admin/projects', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'projects' } },

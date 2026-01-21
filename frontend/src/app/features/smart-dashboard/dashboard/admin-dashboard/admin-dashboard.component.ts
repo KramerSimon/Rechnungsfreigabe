@@ -85,6 +85,13 @@ export class AdminDashboardComponent implements OnInit {
       route: '/admin/projects'
     },
     {
+      id: 'purchaseorders',
+      title: 'Bestellungen',
+      description: 'Bestellungen verwalten',
+      icon: 'shopping_cart',
+      route: '/admin/purchase-orders'
+    },
+    {
       id: 'invoices',
       title: 'Rechnungen',
       description: 'Alle Rechnungen verwalten',
