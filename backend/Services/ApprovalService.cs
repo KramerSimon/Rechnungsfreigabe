@@ -292,9 +292,11 @@ public class ApprovalService : IApprovalService
                 await CreateApprovalWorkflowStepsAsync(invoice, rule, action);
                 break;
             case "set_status":
-                if (Enum.TryParse<InvoiceStatus>(action.Value, out var status))
+                var newStatus = await _context.Statuses
+                    .FirstOrDefaultAsync(s => s.Code == action.Value && s.EntityType == EntityTypes.Invoice);
+                if (newStatus != null)
                 {
-                    invoice.Status = status;
+                    invoice.StatusId = newStatus.Id;
                     await _context.SaveChangesAsync();
                 }
                 break;
@@ -313,7 +315,13 @@ public class ApprovalService : IApprovalService
 
     private async Task AutoApproveInvoiceAsync(Invoice invoice)
     {
-        invoice.Status = InvoiceStatus.Freigegeben;
+        var freigegeben = await _context.Statuses
+            .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben && 
+                                        s.EntityType == EntityTypes.Invoice);
+        if (freigegeben != null)
+        {
+            invoice.StatusId = freigegeben.Id;
+        }
         invoice.AutoApproved = true;
         invoice.UpdatedAt = DateTime.UtcNow;
         
@@ -359,7 +367,17 @@ public class ApprovalService : IApprovalService
                     StepNumber = stepNumber,
                     ApproverId = approverId.Value,
                     ApprovalLevel = stage.ApprovalLevel ?? stepNumber,
-                    Status = (stepNumber == 1) ? ApprovalStatus.Pending : ApprovalStatus.Waiting,
+                    StatusId = (stepNumber == 1) ? 
+                        (await _context.Statuses
+                            .Where(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                        s.EntityType == EntityTypes.ApprovalWorkflow)
+                            .Select(s => (int?)s.Id)
+                            .FirstOrDefaultAsync()) :
+                        (await _context.Statuses
+                            .Where(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Waiting && 
+                                        s.EntityType == EntityTypes.ApprovalWorkflow)
+                            .Select(s => (int?)s.Id)
+                            .FirstOrDefaultAsync()),
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -376,7 +394,13 @@ public class ApprovalService : IApprovalService
             {
                 // Keine Approver gefunden - Auto-Approve
                 Console.WriteLine($"[WARNING] No approvers found for invoice {invoice.Id}, auto-approving");
-                invoice.Status = InvoiceStatus.Freigegeben;
+                var freigegeben = await _context.Statuses
+                    .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben && 
+                                                s.EntityType == EntityTypes.Invoice);
+                if (freigegeben != null)
+                {
+                    invoice.StatusId = freigegeben.Id;
+                }
                 invoice.AutoApproved = true;
                 await _context.SaveChangesAsync();
                 await _historyService.CreateSystemActionAsync(
@@ -399,6 +423,10 @@ public class ApprovalService : IApprovalService
                     continue;
                 }
 
+                var workflowStatus = await _context.Statuses
+                    .FirstOrDefaultAsync(s => s.Code == (stepNumber == 1 ? RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending : RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Waiting) && 
+                                                s.EntityType == EntityTypes.ApprovalWorkflow);
+                
                 var workflow = new ApprovalWorkflow
                 {
                     InvoiceId = invoice.Id,
@@ -406,7 +434,7 @@ public class ApprovalService : IApprovalService
                     StepNumber = stepNumber,
                     ApproverId = approverId,
                     ApprovalLevel = GetApprovalLevelForAction(action),
-                    Status = (stepNumber == 1) ? ApprovalStatus.Pending : ApprovalStatus.Waiting,
+                    StatusId = workflowStatus?.Id,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -415,7 +443,13 @@ public class ApprovalService : IApprovalService
             }
         }
 
-        invoice.Status = InvoiceStatus.Freigabe_Erforderlich;
+        var freigabeErforderlich = await _context.Statuses
+            .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && 
+                                        s.EntityType == EntityTypes.Invoice);
+        if (freigabeErforderlich != null)
+        {
+            invoice.StatusId = freigabeErforderlich.Id;
+        }
         await _context.SaveChangesAsync();
     }
 
@@ -428,6 +462,10 @@ public class ApprovalService : IApprovalService
             return;
         }
 
+        var pendingStatus = await _context.Statuses
+            .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                        s.EntityType == EntityTypes.ApprovalWorkflow);
+        
         var workflow = new ApprovalWorkflow
         {
             InvoiceId = invoice.Id,
@@ -435,13 +473,19 @@ public class ApprovalService : IApprovalService
             StepNumber = 1,
             ApproverId = userId,
             ApprovalLevel = 1,
-            Status = ApprovalStatus.Pending,
+            StatusId = pendingStatus?.Id,
             CreatedAt = DateTime.UtcNow
         };
 
         _context.ApprovalWorkflows.Add(workflow);
 
-        invoice.Status = InvoiceStatus.Freigabe_Erforderlich;
+        var freigabeErforderlich = await _context.Statuses
+            .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && 
+                                        s.EntityType == EntityTypes.Invoice);
+        if (freigabeErforderlich != null)
+        {
+            invoice.StatusId = freigabeErforderlich.Id;
+        }
         await _context.SaveChangesAsync();
     }
 
@@ -488,13 +532,17 @@ public class ApprovalService : IApprovalService
         int stepNumber = 1;
         foreach (var approverId in approvers)
         {
+            var workflowStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == (stepNumber == 1 ? RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending : RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Waiting) && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            
             var workflow = new ApprovalWorkflow
             {
                 InvoiceId = invoice.Id,
                 StepNumber = stepNumber++,
                 ApproverId = approverId,
                 ApprovalLevel = 1,
-                Status = (stepNumber == 2) ? ApprovalStatus.Pending : ApprovalStatus.Waiting,
+                StatusId = workflowStatus?.Id,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -503,13 +551,25 @@ public class ApprovalService : IApprovalService
 
         if (approvers.Any())
         {
-            invoice.Status = InvoiceStatus.Freigabe_Erforderlich;
+            var freigabeErforderlich = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && 
+                                            s.EntityType == EntityTypes.Invoice);
+            if (freigabeErforderlich != null)
+            {
+                invoice.StatusId = freigabeErforderlich.Id;
+            }
         }
         else
         {
             // No approvers found, auto-approve
             Console.WriteLine($"[WARNING] No approvers found for invoice {invoice.Id}, auto-approving");
-            invoice.Status = InvoiceStatus.Freigegeben;
+            var freigegeben2 = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben && 
+                                            s.EntityType == EntityTypes.Invoice);
+            if (freigegeben2 != null)
+            {
+                invoice.StatusId = freigegeben2.Id;
+            }
             invoice.AutoApproved = true;
             await _historyService.CreateSystemActionAsync(
                 invoice.Id,
@@ -618,11 +678,16 @@ public class ApprovalService : IApprovalService
     {
         try
         {
+            var pendingStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+
             var workflows = await _context.ApprovalWorkflows
                 .Include(w => w.Invoice)
                 .Include(w => w.Approver)
                 .Include(w => w.Rule)
-                .Where(w => w.ApproverId == userId && w.Status == ApprovalStatus.Pending)
+                .Include(w => w.Status)
+                .Where(w => w.ApproverId == userId && w.StatusId == pendingStatus!.Id)
                 .OrderBy(w => w.CreatedAt)
                 .Select(w => new ApprovalWorkflowDto
                 {
@@ -641,7 +706,7 @@ public class ApprovalService : IApprovalService
                         LastName = w.Approver.LastName
                     },
                     ApprovalLevel = w.ApprovalLevel,
-                    Status = w.Status.ToString(),
+                    Status = w.Status != null ? w.Status.Code : "Unknown",
                     Comments = w.Comments,
                     ApprovedAt = w.ApprovedAt,
                     CreatedAt = w.CreatedAt
@@ -665,7 +730,11 @@ public class ApprovalService : IApprovalService
                 .Include(w => w.Invoice)
                 .FirstOrDefaultAsync(w => w.Id == approvalId);
 
-            if (approval == null || approval.Status != ApprovalStatus.Pending)
+            var pendingStatus3 = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            
+            if (approval == null || approval.StatusId != pendingStatus3?.Id)
                 return false;
 
             if (approval.ApproverId != userId)
@@ -680,20 +749,29 @@ public class ApprovalService : IApprovalService
                 return false;
             }
 
-            approval.Status = ApprovalStatus.Approved;
+            var approvedStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Approved && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            approval.StatusId = approvedStatus?.Id;
             approval.ApprovedAt = DateTime.UtcNow;
             approval.Comments = comments;
             var invoice = approval.Invoice;
 
             // Activate the next waiting step (sequential progression)
+            var waitingStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Waiting && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
             var nextStep = await _context.ApprovalWorkflows
-                .Where(w => w.InvoiceId == invoice.Id && w.Status == ApprovalStatus.Waiting && w.StepNumber > approval.StepNumber)
+                .Where(w => w.InvoiceId == invoice.Id && w.StatusId == waitingStatus!.Id && w.StepNumber > approval.StepNumber)
                 .OrderBy(w => w.StepNumber)
                 .FirstOrDefaultAsync();
 
             if (nextStep != null)
             {
-                nextStep.Status = ApprovalStatus.Pending;
+                var pendingStatus2 = await _context.Statuses
+                    .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                                s.EntityType == EntityTypes.ApprovalWorkflow);
+                nextStep.StatusId = pendingStatus2?.Id;
                 // Notify next approver if notification service is available
                 if (_notificationService != null)
                 {
@@ -702,13 +780,25 @@ public class ApprovalService : IApprovalService
             }
 
             // If no pending or waiting approvals remain, finalize invoice approval
+            var pendingStatusId = await _context.Statuses
+                .Where(s => s.Code == "Pending" && s.EntityType == "ApprovalWorkflow")
+                .Select(s => s.Id)
+                .FirstOrDefaultAsync();
+            var waitingStatusId = await _context.Statuses
+                .Where(s => s.Code == "Waiting" && s.EntityType == "ApprovalWorkflow")
+                .Select(s => s.Id)
+                .FirstOrDefaultAsync();
+            
             var remainingOpen = await _context.ApprovalWorkflows
-                .Where(w => w.InvoiceId == invoice.Id && (w.Status == ApprovalStatus.Pending || w.Status == ApprovalStatus.Waiting))
+                .Where(w => w.InvoiceId == invoice.Id && (w.StatusId == pendingStatusId || w.StatusId == waitingStatusId))
                 .CountAsync();
 
             if (remainingOpen == 0)
             {
-                invoice.Status = InvoiceStatus.Freigegeben;
+                var freigegeben = await _context.Statuses
+                    .Where(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben && s.EntityType == "Invoice")
+                    .FirstOrDefaultAsync();
+                invoice.StatusId = freigegeben?.Id;
             }
 
             await _context.SaveChangesAsync();
@@ -726,11 +816,15 @@ public class ApprovalService : IApprovalService
     {
         try
         {
+            var pendingStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+
             var approval = await _context.ApprovalWorkflows
                 .Include(w => w.Invoice)
                 .FirstOrDefaultAsync(w => w.Id == approvalId);
 
-            if (approval == null || approval.Status != ApprovalStatus.Pending)
+            if (approval == null || approval.StatusId != pendingStatus?.Id)
                 return false;
 
             if (approval.ApproverId != userId)
@@ -739,22 +833,42 @@ public class ApprovalService : IApprovalService
                 return false;
             }
 
-            approval.Status = ApprovalStatus.Rejected;
+            var rejectedStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Rejected && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            approval.StatusId = rejectedStatus?.Id;
             approval.ApprovedAt = DateTime.UtcNow;
             approval.Comments = comments;
 
             // Mark invoice as rejected
             var invoice = approval.Invoice;
-            invoice.Status = InvoiceStatus.Abgelehnt;
+            var abgelehnt = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Abgelehnt && 
+                                            s.EntityType == EntityTypes.Invoice);
+            if (abgelehnt != null)
+            {
+                invoice.StatusId = abgelehnt.Id;
+            }
 
             // Reject all open approvals (pending or waiting) for this invoice
-            var openApprovals = await _context.ApprovalWorkflows
-                .Where(w => w.InvoiceId == invoice.Id && (w.Status == ApprovalStatus.Pending || w.Status == ApprovalStatus.Waiting))
+            var pendingStatus3 = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            var waitingStatus3 = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Waiting && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            
+            var allApprovals = await _context.ApprovalWorkflows
+                .Where(w => w.InvoiceId == invoice.Id && (w.StatusId == pendingStatus3!.Id || w.StatusId == waitingStatus3!.Id))
                 .ToListAsync();
 
-            foreach (var open in openApprovals)
+            var rejectedStatus2 = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Rejected && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            
+            foreach (var open in allApprovals)
             {
-                open.Status = ApprovalStatus.Rejected;
+                open.StatusId = rejectedStatus2?.Id;
             }
 
             await _context.SaveChangesAsync();
@@ -790,6 +904,7 @@ public class ApprovalService : IApprovalService
         {
             var workflows = await _context.ApprovalWorkflows
                 .Include(w => w.Approver)
+                .Include(w => w.Status)
                 .OrderByDescending(w => w.CreatedAt)
                 .Select(w => new ApprovalWorkflowDto
                 {
@@ -797,7 +912,7 @@ public class ApprovalService : IApprovalService
                     InvoiceId = w.InvoiceId,
                     StepNumber = w.StepNumber,
                     ApproverName = $"{w.Approver.FirstName} {w.Approver.LastName}",
-                    Status = w.Status.ToString(),
+                    Status = w.Status != null ? w.Status.Code : "Pending",
                     Comments = w.Comments,
                     ApprovedAt = w.ApprovedAt,
                     CreatedAt = w.CreatedAt,

@@ -168,6 +168,11 @@ public class CostCenterService : ICostCenterService
     {
         try
         {
+            var projectStatusId = await _context.Statuses
+                .Where(s => s.Code == createProjectDto.Status && s.EntityType == EntityTypes.Project)
+                .Select(s => (int?)s.Id)
+                .FirstOrDefaultAsync();
+            
             var project = new Project
             {
                 Id = createProjectDto.Id,
@@ -175,7 +180,7 @@ public class CostCenterService : ICostCenterService
                 Description = createProjectDto.Description,
                 CostCenterId = createProjectDto.CostCenterId,
                 Budget = createProjectDto.Budget,
-                Status = Enum.Parse<ProjectStatus>(createProjectDto.Status),
+                StatusId = projectStatusId,
                 StartDate = createProjectDto.StartDate,
                 EndDate = createProjectDto.EndDate,
                 ProjectManagerId = createProjectDto.ProjectManagerId,
@@ -230,10 +235,10 @@ public class CostCenterService : ICostCenterService
             Name = project.Name,
             Description = project.Description,
             CostCenterId = project.CostCenterId,
-            CostCenterName = project.CostCenter.Name,
+            CostCenterName = project.CostCenter?.Name ?? string.Empty,
             Budget = project.Budget,
             SpentAmount = project.SpentAmount,
-            Status = project.Status.ToString(),
+            Status = project.Status?.ToString() ?? string.Empty,
             StartDate = project.StartDate,
             EndDate = project.EndDate,
             ProjectManager = project.ProjectManager != null ? new UserDto

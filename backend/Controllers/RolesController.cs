@@ -5,7 +5,7 @@ using RechnungsfreigabeAPI.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/roles")]
 public class RolesController : ControllerBase
 {
     private readonly IRoleService _roleService;

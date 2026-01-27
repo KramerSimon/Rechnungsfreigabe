@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using backend.DTOs;
+using RechnungsfreigabeAPI.DTOs;
 using backend.Services;
 
 namespace backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/projects")]
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService _projectService;

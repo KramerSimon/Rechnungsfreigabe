@@ -26,6 +26,7 @@ public class EscalationRuleService : IEscalationRuleService
     {
         var rules = await _context.EscalationRules
             .Include(r => r.NotifyUser)
+            .Include(r => r.NotifyRoleRef)
             .OrderBy(r => r.TriggerAfterHours)
             .ThenBy(r => r.Name)
             .ToListAsync();
@@ -37,6 +38,7 @@ public class EscalationRuleService : IEscalationRuleService
     {
         var rule = await _context.EscalationRules
             .Include(r => r.NotifyUser)
+            .Include(r => r.NotifyRoleRef)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         return rule == null ? null : MapToDto(rule);
@@ -53,6 +55,7 @@ public class EscalationRuleService : IEscalationRuleService
             RepeatIntervalHours = dto.RepeatIntervalHours,
             MaxEscalations = dto.MaxEscalations,
             NotifyRole = dto.NotifyRole,
+            NotifyRoleId = dto.NotifyRoleId,
             NotifyUserId = dto.NotifyUserId,
             MessageTemplate = dto.MessageTemplate,
             IsActive = dto.IsActive,
@@ -60,12 +63,25 @@ public class EscalationRuleService : IEscalationRuleService
             UpdatedAt = DateTime.UtcNow
         };
 
+        if (dto.NotifyRoleId.HasValue)
+        {
+            var roleName = await _context.Roles
+                .Where(r => r.Id == dto.NotifyRoleId.Value)
+                .Select(r => r.Name)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrWhiteSpace(roleName))
+            {
+                rule.NotifyRole = roleName;
+            }
+        }
+
         _context.EscalationRules.Add(rule);
         await _context.SaveChangesAsync();
 
         // reload with navigation property
         var created = await _context.EscalationRules
             .Include(r => r.NotifyUser)
+            .Include(r => r.NotifyRoleRef)
             .FirstAsync(r => r.Id == rule.Id);
 
         return MapToDto(created);
@@ -83,6 +99,18 @@ public class EscalationRuleService : IEscalationRuleService
         if (dto.RepeatIntervalHours.HasValue) rule.RepeatIntervalHours = dto.RepeatIntervalHours.Value;
         if (dto.MaxEscalations.HasValue) rule.MaxEscalations = dto.MaxEscalations.Value;
         if (dto.NotifyRole != null) rule.NotifyRole = dto.NotifyRole;
+        if (dto.NotifyRoleId.HasValue)
+        {
+            rule.NotifyRoleId = dto.NotifyRoleId.Value;
+            var roleNameUpdated = await _context.Roles
+                .Where(r => r.Id == dto.NotifyRoleId.Value)
+                .Select(r => r.Name)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrWhiteSpace(roleNameUpdated))
+            {
+                rule.NotifyRole = roleNameUpdated;
+            }
+        }
         if (dto.NotifyUserId.HasValue) rule.NotifyUserId = dto.NotifyUserId.Value;
         if (dto.MessageTemplate != null) rule.MessageTemplate = dto.MessageTemplate;
         if (dto.IsActive.HasValue) rule.IsActive = dto.IsActive.Value;
@@ -92,6 +120,7 @@ public class EscalationRuleService : IEscalationRuleService
 
         var updated = await _context.EscalationRules
             .Include(r => r.NotifyUser)
+            .Include(r => r.NotifyRoleRef)
             .FirstAsync(r => r.Id == id);
 
         return MapToDto(updated);
@@ -102,9 +131,7 @@ public class EscalationRuleService : IEscalationRuleService
         var rule = await _context.EscalationRules.FindAsync(id);
         if (rule == null) return false;
 
-        // Soft delete to keep history
-        rule.IsActive = false;
-        rule.UpdatedAt = DateTime.UtcNow;
+        _context.EscalationRules.Remove(rule);
         await _context.SaveChangesAsync();
 
         return true;
@@ -122,6 +149,8 @@ public class EscalationRuleService : IEscalationRuleService
             RepeatIntervalHours = rule.RepeatIntervalHours,
             MaxEscalations = rule.MaxEscalations,
             NotifyRole = rule.NotifyRole,
+            NotifyRoleId = rule.NotifyRoleId,
+            NotifyRoleName = rule.NotifyRoleRef?.Name ?? rule.NotifyRole,
             NotifyUserId = rule.NotifyUserId,
             NotifyUserName = rule.NotifyUser != null ? $"{rule.NotifyUser.FirstName} {rule.NotifyUser.LastName}" : null,
             MessageTemplate = rule.MessageTemplate,

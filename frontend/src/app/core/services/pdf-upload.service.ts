@@ -42,7 +42,7 @@ export interface PdfUploadStatus {
   providedIn: 'root'
 })
 export class PdfUploadService {
-  private apiUrl = `${environment.apiUrl}/pdfupload`;
+  private apiUrl = `${environment.apiUrl}/v1/pdf-upload`;
 
   constructor(private http: HttpClient) { }
 

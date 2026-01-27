@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/notifications")]
 [Authorize]
 public class NotificationsController : ControllerBase
 {

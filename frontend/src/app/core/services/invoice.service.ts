@@ -12,7 +12,7 @@ export type { PagedResult, PageRequest };
   providedIn: 'root'
 })
 export class InvoiceService {
-  private readonly apiUrl = `${environment.apiUrl}/invoices`;
+  private readonly apiUrl = `${environment.apiUrl}/v1/invoices`;
 
   constructor(private http: HttpClient) {}
 
@@ -40,6 +40,25 @@ export class InvoiceService {
     }
 
     return this.http.get<PagedResult<Invoice>>(this.apiUrl, { params }).pipe(
+      map((result: any) => ({
+        ...result,
+        items: result.items?.map((invoice: any) => this.mapInvoice(invoice)) || []
+      }))
+    );
+  }
+
+  getAllInvoices(pageRequest?: PageRequest): Observable<PagedResult<Invoice>> {
+    let params = new HttpParams();
+
+    if (pageRequest) {
+      if (pageRequest.pageNumber) params = params.set('pageNumber', pageRequest.pageNumber.toString());
+      if (pageRequest.pageSize) params = params.set('pageSize', pageRequest.pageSize.toString());
+      if (pageRequest.sortBy) params = params.set('sortBy', pageRequest.sortBy);
+      if (pageRequest.sortOrder) params = params.set('sortOrder', pageRequest.sortOrder);
+      if (pageRequest.searchTerm) params = params.set('searchTerm', pageRequest.searchTerm);
+    }
+
+    return this.http.get<PagedResult<Invoice>>(`${this.apiUrl}/all`, { params }).pipe(
       map((result: any) => ({
         ...result,
         items: result.items?.map((invoice: any) => this.mapInvoice(invoice)) || []
@@ -85,7 +104,8 @@ export class InvoiceService {
   }
 
   downloadInvoicePdf(invoiceId: number): Observable<Blob> {
-    return this.http.get(`${environment.apiUrl}/pdfupload/download/${invoiceId}`, {
+    // Backend route is api/v1/pdf-upload/download/{invoiceId}
+    return this.http.get(`${environment.apiUrl}/v1/pdf-upload/download/${invoiceId}`, {
       responseType: 'blob'
     });
   }

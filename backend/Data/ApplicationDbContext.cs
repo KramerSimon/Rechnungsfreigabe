@@ -10,6 +10,7 @@ public class ApplicationDbContext : DbContext
     }
 
     // DbSets
+    public DbSet<Status> Statuses { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
@@ -26,12 +27,14 @@ public class ApplicationDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<SystemConfig> SystemConfigs { get; set; }
     public DbSet<EscalationRule> EscalationRules { get; set; }
+    public DbSet<EscalationLog> EscalationLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         // Configure table names to match MySQL database
+        modelBuilder.Entity<Status>().ToTable("statuses");
         modelBuilder.Entity<User>().ToTable("users");
         modelBuilder.Entity<Role>().ToTable("roles");
         modelBuilder.Entity<UserRole>().ToTable("user_roles");
@@ -48,6 +51,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Notification>().ToTable("notifications");
         modelBuilder.Entity<SystemConfig>().ToTable("system_config");
         modelBuilder.Entity<EscalationRule>().ToTable("escalation_rules");
+        modelBuilder.Entity<EscalationLog>().ToTable("escalation_logs");
+
+        // Configure primary keys
 
         // Configure primary keys
         modelBuilder.Entity<UserRole>()
@@ -108,6 +114,12 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(p => p.ProjectManagerId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<Project>()
+            .HasOne(p => p.Status)
+            .WithMany(s => s.Projects)
+            .HasForeignKey(p => p.StatusId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<PurchaseOrder>()
             .HasOne(po => po.CostCenter)
             .WithMany(cc => cc.PurchaseOrders)
@@ -131,6 +143,12 @@ public class ApplicationDbContext : DbContext
             .WithMany()
             .HasForeignKey(po => po.ApprovedBy)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PurchaseOrder>()
+            .HasOne(po => po.Status)
+            .WithMany(s => s.PurchaseOrders)
+            .HasForeignKey(po => po.StatusId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Invoice>()
             .HasOne(i => i.Supplier)
@@ -168,14 +186,11 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(i => i.ProcessedBy)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Configure Invoice Status enum to string conversion with max length
         modelBuilder.Entity<Invoice>()
-            .Property(i => i.Status)
-            .HasConversion(
-                v => v.ToString(),
-                v => (InvoiceStatus)Enum.Parse(typeof(InvoiceStatus), v))
-            .HasMaxLength(30)
-            .HasColumnType("varchar(30)");
+            .HasOne(i => i.Status)
+            .WithMany(s => s.Invoices)
+            .HasForeignKey(i => i.StatusId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<ApprovalRule>()
             .HasOne(ar => ar.Creator)
@@ -199,6 +214,12 @@ public class ApplicationDbContext : DbContext
             .HasOne(aw => aw.Approver)
             .WithMany(u => u.ApprovalWorkflows)
             .HasForeignKey(aw => aw.ApproverId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ApprovalWorkflow>()
+            .HasOne(aw => aw.Status)
+            .WithMany(s => s.ApprovalWorkflows)
+            .HasForeignKey(aw => aw.StatusId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<InvoiceHistory>()
@@ -251,6 +272,30 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(er => er.NotifyUserId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<EscalationRule>()
+            .HasOne(er => er.NotifyRoleRef)
+            .WithMany()
+            .HasForeignKey(er => er.NotifyRoleId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<EscalationLog>()
+            .HasOne(el => el.Invoice)
+            .WithMany()
+            .HasForeignKey(el => el.InvoiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EscalationLog>()
+            .HasOne(el => el.EscalationRule)
+            .WithMany()
+            .HasForeignKey(el => el.EscalationRuleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EscalationLog>()
+            .HasOne(el => el.RecipientUser)
+            .WithMany()
+            .HasForeignKey(el => el.RecipientUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<SystemConfig>()
             .HasOne(sc => sc.UpdatedByUser)
             .WithMany()
@@ -280,23 +325,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<EscalationRule>()
             .HasIndex(er => er.IsActive);
 
-        // Configure enum conversions to strings
-        modelBuilder.Entity<Project>()
-            .Property(p => p.Status)
-            .HasConversion<string>();
-
-        modelBuilder.Entity<PurchaseOrder>()
-            .Property(po => po.Status)
-            .HasConversion<string>();
-
-        // Invoice Status already configured above with HasMaxLength(30)
-
+        // Configure enum conversions to strings (for non-Status enums)
         modelBuilder.Entity<ApprovalRule>()
             .Property(ar => ar.RuleType)
-            .HasConversion<string>();
-
-        modelBuilder.Entity<ApprovalWorkflow>()
-            .Property(aw => aw.Status)
             .HasConversion<string>();
 
         modelBuilder.Entity<Notification>()

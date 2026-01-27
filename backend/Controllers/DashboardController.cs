@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/dashboards")]
 // [Authorize] // Temporarily disabled for testing
 public class DashboardController : ControllerBase
 {

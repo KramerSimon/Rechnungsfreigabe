@@ -22,12 +22,16 @@ public class PurchaseOrderService : IPurchaseOrderService
 
     public async Task<IEnumerable<PurchaseOrderDto>> GetAllPurchaseOrdersAsync()
     {
+        var storniertStatus = await _context.Statuses
+            .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Storniert && 
+                                        s.EntityType == EntityTypes.PurchaseOrder);
+        
         var purchaseOrders = await _context.PurchaseOrders
             .Include(po => po.CostCenter)
             .Include(po => po.Project)
             .Include(po => po.Creator)
             .Include(po => po.Approver)
-            .Where(po => po.Status != PurchaseOrderStatus.Storniert)
+            .Where(po => po.StatusId != storniertStatus!.Id)
             .OrderByDescending(po => po.CreatedAt)
             .ToListAsync();
 
@@ -48,6 +52,10 @@ public class PurchaseOrderService : IPurchaseOrderService
 
     public async Task<PurchaseOrderDto> CreatePurchaseOrderAsync(CreatePurchaseOrderDto createDto, int createdBy)
     {
+        var offenStatus = await _context.Statuses
+            .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Offen && 
+                                        s.EntityType == EntityTypes.PurchaseOrder);
+        
         var purchaseOrder = new PurchaseOrder
         {
             Id = createDto.Id,
@@ -57,7 +65,7 @@ public class PurchaseOrderService : IPurchaseOrderService
             ProjectId = createDto.ProjectId,
             TotalAmount = createDto.TotalAmount,
             Currency = createDto.Currency,
-            Status = PurchaseOrderStatus.Offen,
+            StatusId = offenStatus?.Id,
             CreatedBy = createdBy,
             CreatedAt = DateTime.UtcNow
         };
@@ -82,7 +90,7 @@ public class PurchaseOrderService : IPurchaseOrderService
             ProjectName = po.Project?.Name,
             TotalAmount = po.TotalAmount,
             Currency = po.Currency,
-            Status = po.Status.ToString(),
+            Status = po.Status?.ToString() ?? string.Empty,
             Creator = po.Creator != null ? new UserDto
             {
                 Id = po.Creator.Id,

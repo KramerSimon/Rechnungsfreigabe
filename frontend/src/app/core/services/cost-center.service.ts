@@ -9,7 +9,7 @@ import { Project } from '../models/project.model';
   providedIn: 'root'
 })
 export class CostCenterService {
-  private readonly apiUrl = `${environment.apiUrl}/costcenters`;
+  private readonly apiUrl = `${environment.apiUrl}/v1/cost-centers`;
 
   constructor(private http: HttpClient) {}
 

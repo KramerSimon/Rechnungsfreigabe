@@ -8,7 +8,7 @@ import { CreatePurchaseOrderRequest, PurchaseOrder } from '../models/purchaseOrd
   providedIn: 'root'
 })
 export class PurchaseOrderService {
-  private readonly apiUrl = `${environment.apiUrl}/purchaseorders`;
+  private readonly apiUrl = `${environment.apiUrl}/v1/purchase-orders`;
 
   constructor(private http: HttpClient) {}
 

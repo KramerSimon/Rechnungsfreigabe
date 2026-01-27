@@ -19,6 +19,7 @@ export interface Invoice {
   dueDate: string;
   receivedDate: string;
   status: string;
+  statusColor?: string;
   requiresApproval: boolean;
   approvalLevel: number;
   autoApproved: boolean;

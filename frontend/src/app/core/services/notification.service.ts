@@ -7,7 +7,7 @@ import { NotificationDto, UnreadCountResponse } from '../models/notification.mod
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService implements OnDestroy {
-  private readonly baseUrl = `${environment.apiUrl}/notifications`;
+  private readonly baseUrl = `${environment.apiUrl}/v1/notifications`;
   private readonly destroy$ = new Subject<void>();
 
   // Real-time unread count observable that polls every 30 seconds

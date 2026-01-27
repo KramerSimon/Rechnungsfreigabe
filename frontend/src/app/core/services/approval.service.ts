@@ -8,7 +8,7 @@ import { ApprovalRule, ApprovalWorkflow, CreateApprovalRuleDto, CreateApprovalWo
   providedIn: 'root'
 })
 export class ApprovalService {
-  private apiUrl = `${environment.apiUrl}/approval`;
+  private apiUrl = `${environment.apiUrl}/v1/approvals`;
 
   constructor(private http: HttpClient) {}
 

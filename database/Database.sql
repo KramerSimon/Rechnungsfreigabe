@@ -66,7 +66,8 @@ CREATE TABLE `approval_workflows` (
   `step_number` int NOT NULL,
   `approver_id` int NOT NULL,
   `approval_level` int NOT NULL,
-  `status` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'Pending',
+  `status_backup` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status_id` int DEFAULT NULL,
   `comments` text COLLATE utf8mb4_unicode_ci,
   `approved_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -74,10 +75,11 @@ CREATE TABLE `approval_workflows` (
   KEY `rule_id` (`rule_id`),
   KEY `idx_invoice_id` (`invoice_id`),
   KEY `idx_approver_id` (`approver_id`),
-  KEY `idx_status` (`status`),
+  KEY `idx_approval_workflows_status_id` (`status_id`),
   CONSTRAINT `approval_workflows_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `approval_workflows_ibfk_2` FOREIGN KEY (`rule_id`) REFERENCES `approval_rules` (`id`),
-  CONSTRAINT `approval_workflows_ibfk_3` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`)
+  CONSTRAINT `approval_workflows_ibfk_3` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `FK_approval_workflows_status` FOREIGN KEY (`status_id`) REFERENCES `statuses` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -87,7 +89,7 @@ CREATE TABLE `approval_workflows` (
 
 LOCK TABLES `approval_workflows` WRITE;
 /*!40000 ALTER TABLE `approval_workflows` DISABLE KEYS */;
-INSERT INTO `approval_workflows` VALUES (63,116,NULL,1,2,1,'Pending',NULL,NULL,'2026-01-22 13:33:29'),(64,117,8,1,5,1,'Pending',NULL,NULL,'2026-01-22 13:33:54'),(65,117,8,2,1,2,'Waiting',NULL,NULL,'2026-01-22 13:33:54');
+INSERT INTO `approval_workflows` VALUES (63,116,NULL,1,2,1,'Pending',18,NULL,NULL,'2026-01-22 13:33:29'),(64,117,8,1,5,1,'Pending',18,NULL,NULL,'2026-01-22 13:33:54'),(65,117,8,2,1,2,'Waiting',22,NULL,NULL,'2026-01-22 13:33:54');
 /*!40000 ALTER TABLE `approval_workflows` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -123,6 +125,41 @@ INSERT INTO `cost_centers` VALUES ('FACILITY','Facility Management','Geb√§ude, R
 UNLOCK TABLES;
 
 --
+-- Table structure for table `escalation_logs`
+--
+
+DROP TABLE IF EXISTS `escalation_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `escalation_logs` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `invoice_id` int NOT NULL,
+  `escalation_rule_id` int NOT NULL,
+  `recipient_user_id` int DEFAULT NULL,
+  `sent_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `status` varchar(50) NOT NULL DEFAULT 'Sent',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_escalation_logs_user` (`recipient_user_id`),
+  KEY `ix_escalation_logs_invoice` (`invoice_id`),
+  KEY `ix_escalation_logs_rule` (`escalation_rule_id`),
+  KEY `ix_escalation_logs_sent_at` (`sent_at`),
+  CONSTRAINT `fk_escalation_logs_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_escalation_logs_rule` FOREIGN KEY (`escalation_rule_id`) REFERENCES `escalation_rules` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_escalation_logs_user` FOREIGN KEY (`recipient_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `escalation_logs`
+--
+
+LOCK TABLES `escalation_logs` WRITE;
+/*!40000 ALTER TABLE `escalation_logs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `escalation_logs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `escalation_rules`
 --
 
@@ -143,9 +180,12 @@ CREATE TABLE `escalation_rules` (
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `notify_role_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `notify_user_id` (`notify_user_id`),
-  CONSTRAINT `escalation_rules_ibfk_1` FOREIGN KEY (`notify_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+  KEY `ix_escalation_rules_role` (`notify_role_id`),
+  CONSTRAINT `escalation_rules_ibfk_1` FOREIGN KEY (`notify_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_escalation_rules_roles` FOREIGN KEY (`notify_role_id`) REFERENCES `roles` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -155,7 +195,6 @@ CREATE TABLE `escalation_rules` (
 
 LOCK TABLES `escalation_rules` WRITE;
 /*!40000 ALTER TABLE `escalation_rules` DISABLE KEYS */;
-INSERT INTO `escalation_rules` VALUES (1,'Eskalation nach 48h','','Eingegangen',48,NULL,3,'',NULL,'',1,'2025-12-18 06:38:23','2025-12-18 06:38:23');
 /*!40000 ALTER TABLE `escalation_rules` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -223,7 +262,8 @@ CREATE TABLE `invoices` (
   `invoice_date` date NOT NULL,
   `due_date` date NOT NULL,
   `received_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `status` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'Eingegangen',
+  `status_backup` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status_id` int DEFAULT NULL,
   `requires_approval` tinyint(1) DEFAULT '1',
   `approval_level` int DEFAULT '1',
   `auto_approved` tinyint(1) DEFAULT '0',
@@ -242,7 +282,6 @@ CREATE TABLE `invoices` (
   KEY `created_by` (`created_by`),
   KEY `processed_by` (`processed_by`),
   KEY `idx_invoice_number` (`invoice_number`),
-  KEY `idx_status` (`status`),
   KEY `idx_supplier_id` (`supplier_id`),
   KEY `idx_cost_center_id` (`cost_center_id`),
   KEY `idx_project_id` (`project_id`),
@@ -250,7 +289,9 @@ CREATE TABLE `invoices` (
   KEY `idx_due_date` (`due_date`),
   KEY `idx_received_date` (`received_date`),
   KEY `idx_pdf_content` (`pdf_file_size`),
+  KEY `idx_invoices_status_id` (`status_id`),
   FULLTEXT KEY `description` (`description`,`internal_notes`),
+  CONSTRAINT `FK_invoices_status` FOREIGN KEY (`status_id`) REFERENCES `statuses` (`id`),
   CONSTRAINT `invoices_ibfk_1` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`),
   CONSTRAINT `invoices_ibfk_2` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`id`),
   CONSTRAINT `invoices_ibfk_3` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`),
@@ -266,7 +307,7 @@ CREATE TABLE `invoices` (
 
 LOCK TABLES `invoices` WRITE;
 /*!40000 ALTER TABLE `invoices` DISABLE KEYS */;
-INSERT INTO `invoices` VALUES (116,'FAT-001-2026',61,NULL,NULL,NULL,245.90,54.10,300.00,'EUR','2025-12-15','2026-02-21','2026-01-22 13:33:29','Freigabe_Erforderlich',1,1,0,NULL,_binary '%PDF-1.4\r\n%ìåãû ReportLab Generated PDF document http://www.reportlab.com\r\n1 0 obj\r\n<<\r\n/F1 2 0 R /F2 3 0 R\r\n>>\r\nendobj\r\n2 0 obj\r\n<<\r\n/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font\r\n>>\r\nendobj\r\n3 0 obj\r\n<<\r\n/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font\r\n>>\r\nendobj\r\n4 0 obj\r\n<<\r\n/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<\r\n/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]\r\n>> /Rotate 0 /Trans <<\r\n\r\n>> \r\n  /Type /Page\r\n>>\r\nendobj\r\n5 0 obj\r\n<<\r\n/PageMode /UseNone /Pages 7 0 R /Type /Catalog\r\n>>\r\nendobj\r\n6 0 obj\r\n<<\r\n/Author (\\(anonymous\\)) /CreationDate (D:20251217135140+00\'00\') /Creator (\\(unspecified\\)) /Keywords () /ModDate (D:20251217135140+00\'00\') /Producer (ReportLab PDF Library - www.reportlab.com) \r\n  /Subject (\\(unspecified\\)) /Title (\\(anonymous\\)) /Trapped /False\r\n>>\r\nendobj\r\n7 0 obj\r\n<<\r\n/Count 1 /Kids [ 4 0 R ] /Type /Pages\r\n>>\r\nendobj\r\n8 0 obj\r\n<<\r\n/Filter [ /ASCII85Decode /FlateDecode ] /Length 699\r\n>>\r\nstream\r\nGat=)gMY_1&:N^lk+r]I<&8m+^#Y0=VFm+C!F24@Z!`DH_R=4G<oWF,?5m\"9>?b8*1?ZlQ3BO!i!ResRI@1(_MI>qpJ8pCr^n`>$HA4(Mmq7\\=bYUSRRA\\P2;$I&7Jc)W?\\a6O?,pou5#H\"Mt33O*,@H]GF\']IFHqN%C\"qCs#H61bZ74a_(`UcP3MXj\"aYAR6mN$+)%\\ErVt0FIp<0/rDEF*ro.H3-\'L%ITDHap3Bt]*#GEequPjXUsaeqh^tLtlXM5GbLpa@o(s>>DmMP`7@%^>I4VV&U-I?LSZZE=lQh,9o\\\"791,gp]ZQo`uN$0sp3kFNN^G##8d&RCIo?dY&7EE!#ILrM&?8Ln.l9[VGA<t@\'Aj:4T:N=tNF(sJ>b]UWT=6jnF?-!Pi5S3>oh+i3PLXKh^IF<)1PU6Hn$>H(Hj;QVDXjQCY$<?,2%=jAZCO`FpbM;GXQ>3=8LWT)%SWn+tQsq3a?JqgcpGLR7>t0fYE5\\W=-[]pp7p-FBoF66L^*V*Iri<%:<X+jm\\h,j%h8L1F$BuoLPK5B++b_:h_\\%\\G?8*e2\'!$2)UYgFIM!8\";pq:TG@[fe>)jo:q2Bcm**(g[3jAEPT(qnERg+l=&Sd-HXZFQGVR\\2VE-`9o.:14qGLOXYOnb-,9FSKf1/o7rO4Zohm#ljL8U_AC[%mGM8Q^`\"7G=8+u#;;onWW~>endstream\r\nendobj\r\nxref\r\n0 9\r\n0000000000 65535 f \r\n0000000073 00000 n \r\n0000000114 00000 n \r\n0000000221 00000 n \r\n0000000333 00000 n \r\n0000000536 00000 n \r\n0000000604 00000 n \r\n0000000887 00000 n \r\n0000000946 00000 n \r\ntrailer\r\n<<\r\n/ID \r\n[<82de21b91b86403725a14956d4a41851><82de21b91b86403725a14956d4a41851>]\r\n% ReportLab generated PDF document -- digest (http://www.reportlab.com)\r\n\r\n/Info 6 0 R\r\n/Root 5 0 R\r\n/Size 9\r\n>>\r\nstartxref\r\n1735\r\n%%EOF\r\n',2214,'fattura_003.pdf','FATTURA | Numero fattura: 003/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2026-01-22 13:33:29','2026-01-22 14:33:28'),(117,'FAT-002-2026',61,NULL,NULL,NULL,1024.59,225.41,1250.00,'EUR','2025-12-15','2026-02-21','2026-01-22 13:33:54','Freigabe_Erforderlich',1,1,0,NULL,_binary '%PDF-1.6\r%\‚\„\œ\”\r\n7 0 obj\r<</Linearized 1/L 6183/O 9/E 1707/N 1/T 5894/H [ 447 132]>>\rendobj\r                       \r\n12 0 obj\r<</DecodeParms<</Columns 4/Predictor 12>>/Filter/FlateDecode/ID[<8B49BF133DB554C872F8842FFF1159FF><C30457C9E1DCAA4483AE873FF001ED09>]/Index[7 10]/Info 6 0 R/Length 48/Prev 5895/Root 8 0 R/Size 17/Type/XRef/W[1 2 1]>>stream\r\nh\ﬁbbd``b`2æ@ÇÒ<à∏	$˛\ÿ0012LI00Bàˇå[ˇ\0võ\÷\r\nendstream\rendobj\rstartxref\r\n0\r\n%%EOF\r\n        \r\n16 0 obj\r<</Filter/FlateDecode/I 67/Length 53/S 38>>stream\r\nh\ﬁb```f``\‚a\0iT¿d\‡h@cÜbÜÛúL[\Z†Ç¢\Ô!\Z%\0\0\\\⁄Û\r\nendstream\rendobj\r8 0 obj\r<</Metadata 1 0 R/PageMode/UseNone/Pages 5 0 R/Type/Catalog>>\rendobj\r9 0 obj\r<</Contents 11 0 R/CropBox[0 0 595.2756 841.8898]/MediaBox[0 0 595.2756 841.8898]/Parent 5 0 R/Resources<</Font 13 0 R/ProcSet[/PDF/Text/ImageB/ImageC/ImageI]>>/Rotate 0/Trans<<>>/Type/Page>>\rendobj\r10 0 obj\r<</Filter/FlateDecode/First 18/Length 122/N 3/Type/ObjStm>>stream\r\nh\ﬁ24V0P04Q02Q04U040Q∞±\—w3	(\ÈªÅÑÅ,;;†∏Sbq™[~^âæGjNYjIfr¢æk^r~Jf^∫~xfûc^q&úÔóòõ\n4H?∏4©§≤ U?HÇI}ê8\Ã\”u\ \œI!d®nC\0Ω\·Bj\r\nendstream\rendobj\r11 0 obj\r<</Filter/FlateDecode/Length 557>>stream\r\nxúùUMè\⁄0ΩÛ+\ÊRâ]©a\Ï8â\Ÿ[∫\’V\€jwO\\,0mV$QCh%~}\'NN K[E\‰c\ﬁøyûëaÄt1{_%\0˜\nFµ&<\Í	>™¡\œ´ôëÑH0O ±§\–˘˜\Â≤f9JLh)LñKq^.ƒ¢\»cBJ\¬\’\ZÜ•æ\Õ\'7†^A\›\¬˚6L™3∫\⁄\ ‹ø™\Ã+e2Å÷ÑU~\›\'&\œ`£ãbü\Î;@\‰#é<8ä_Tc\◊}^Võ\ÍÇ4X0bˇ¶“Å\¬¿-†•`)\\\…\Ÿm∂Ú\«\Zio≥<çã,7V˙T`Y\≈pràM∫\÷05Iã˘ì\ÂX\‰%\÷0\œ\r\ÏCdàUt9úYﬁú†g_&w®êq_a$\«¯ñY\◊Q\‚QüY&\ﬁ6˚aK~äãV\ÔcùÆ~ƒçÀæ∫q\n\"/Ù	\∆n\'<\…#0\Ë>i8RJÛCiû%\‰6∑≠\—\È\Œ\nU\„x\rÅ˚•\◊\·\‘\ÏVy|à≥\‘8u;Lé\rw∂\◊iK_`W6\‹\Á\‹5r\…\ÎVûÒ˝_eÖﬁö+¸K^ò¸WY3¨cXe\Ènø5\ÈA˜\‘JOà:ëı\‘\·SWéã3†á=\≈\€Ã≤°ü\È˜Z∑b˛â>~õï\ÿv\—\À6Üu[áRÅgy\‘*F/Uå6\Õ\ÀgC\‰u6w≥˝:ËüÇ≥Û9u\Á∞E\„ø=≠x˚¥™{‹úçe´\·|œã	£ˇ<\È–†øÑwß´\Ì~ß;\"0¯lr	\r\nendstream\rendobj\r1 0 obj\r<</Length 3691/Subtype/XML/Type/Metadata>>stream\r\n<?xpacket begin=\"Ôªø\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"Adobe XMP Core 5.4-c006 80.159825, 2016/09/16-03:31:08        \">\n   <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n      <rdf:Description rdf:about=\"\"\n            xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n            xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n            xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n            xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\">\n         <dc:format>application/pdf</dc:format>\n         <dc:creator>\n            <rdf:Seq>\n               <rdf:li>(anonymous)</rdf:li>\n            </rdf:Seq>\n         </dc:creator>\n         <dc:description>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">(unspecified)</rdf:li>\n            </rdf:Alt>\n         </dc:description>\n         <dc:title>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">(anonymous)</rdf:li>\n            </rdf:Alt>\n         </dc:title>\n         <xmp:CreateDate>2025-12-17T13:51:40Z</xmp:CreateDate>\n         <xmp:CreatorTool>(unspecified)</xmp:CreatorTool>\n         <xmp:ModifyDate>2026-01-21T15:31:23+01:00</xmp:ModifyDate>\n         <xmp:MetadataDate>2026-01-21T15:31:23+01:00</xmp:MetadataDate>\n         <pdf:Keywords/>\n         <pdf:Producer>ReportLab PDF Library - www.reportlab.com</pdf:Producer>\n         <pdf:Trapped>False</pdf:Trapped>\n         <xmpMM:DocumentID>uuid:51159c19-db28-4aba-b679-aeb9d688ab17</xmpMM:DocumentID>\n         <xmpMM:InstanceID>uuid:102b4301-c501-4e5e-81da-abbb2108831e</xmpMM:InstanceID>\n      </rdf:Description>\n   </rdf:RDF>\n</x:xmpmeta>\n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                           \n<?xpacket end=\"w\"?>\r\nendstream\rendobj\r2 0 obj\r<</Filter/FlateDecode/First 4/Length 48/N 1/Type/ObjStm>>stream\r\nh\ﬁ2U0P∞±\—w\Œ/\Õ+Q0\‘˜\ŒL)é∂ä\≈\ÍáT§\Í$¶ß\€\Ÿ\0\÷wÄ\r\nendstream\rendobj\r3 0 obj\r<</Filter/FlateDecode/First 4/Length 187/N 1/Type/ObjStm>>stream\r\nh\ﬁd\œ\À\n\¬0Ö\·W\…\Œ\—$≠U\ƒ“ç\n¢Æ\ƒM⁄åi;eöP˙ˆ^]ˇ|Œî)∂X\»U7$~\·¶∆∫Ø0¥!\‰ö¿xáuj<t©(—ëû\È8\—u˛Ù7u\€@\·Æ\Ïn†\ÔêlÀÖ‹°˝Ú©zzù\ƒ:äáJî\Zπ\'¥°\0\‚hê¸\÷\‰lüfl\Îr2‘≥\Î∫nL\ÔVö|\\`%\‰1\‰w(¸ˇ\…˘~oú\»4\rXôô≤Ö\ÂÚ!¿\0ENã\r\nendstream\rendobj\r4 0 obj\r<</DecodeParms<</Columns 3/Predictor 12>>/Filter/FlateDecode/ID[<8B49BF133DB554C872F8842FFF1159FF><C30457C9E1DCAA4483AE873FF001ED09>]/Info 6 0 R/Length 37/Root 8 0 R/Size 7/Type/XRef/W[1 2 0]>>stream\r\nh\ﬁbb```bd[\Õ\ƒ¿øÉâÅ°áâÅIÇâÒ\Âo õ ¿\0/Q\r\nendstream\rendobj\rstartxref\r\n116\r\n%%EOF\r\n',6183,'fattura_002.pdf','FATTURA | Numero fattura: 002/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2026-01-22 13:33:54','2026-01-22 14:33:54');
+INSERT INTO `invoices` VALUES (116,'FAT-001-2026',61,NULL,NULL,NULL,245.90,54.10,300.00,'EUR','2025-12-15','2026-02-21','2026-01-22 13:33:29','Freigabe_Erforderlich',3,1,1,0,NULL,_binary '%PDF-1.4\r\n%ìåãû ReportLab Generated PDF document http://www.reportlab.com\r\n1 0 obj\r\n<<\r\n/F1 2 0 R /F2 3 0 R\r\n>>\r\nendobj\r\n2 0 obj\r\n<<\r\n/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font\r\n>>\r\nendobj\r\n3 0 obj\r\n<<\r\n/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font\r\n>>\r\nendobj\r\n4 0 obj\r\n<<\r\n/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<\r\n/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]\r\n>> /Rotate 0 /Trans <<\r\n\r\n>> \r\n  /Type /Page\r\n>>\r\nendobj\r\n5 0 obj\r\n<<\r\n/PageMode /UseNone /Pages 7 0 R /Type /Catalog\r\n>>\r\nendobj\r\n6 0 obj\r\n<<\r\n/Author (\\(anonymous\\)) /CreationDate (D:20251217135140+00\'00\') /Creator (\\(unspecified\\)) /Keywords () /ModDate (D:20251217135140+00\'00\') /Producer (ReportLab PDF Library - www.reportlab.com) \r\n  /Subject (\\(unspecified\\)) /Title (\\(anonymous\\)) /Trapped /False\r\n>>\r\nendobj\r\n7 0 obj\r\n<<\r\n/Count 1 /Kids [ 4 0 R ] /Type /Pages\r\n>>\r\nendobj\r\n8 0 obj\r\n<<\r\n/Filter [ /ASCII85Decode /FlateDecode ] /Length 699\r\n>>\r\nstream\r\nGat=)gMY_1&:N^lk+r]I<&8m+^#Y0=VFm+C!F24@Z!`DH_R=4G<oWF,?5m\"9>?b8*1?ZlQ3BO!i!ResRI@1(_MI>qpJ8pCr^n`>$HA4(Mmq7\\=bYUSRRA\\P2;$I&7Jc)W?\\a6O?,pou5#H\"Mt33O*,@H]GF\']IFHqN%C\"qCs#H61bZ74a_(`UcP3MXj\"aYAR6mN$+)%\\ErVt0FIp<0/rDEF*ro.H3-\'L%ITDHap3Bt]*#GEequPjXUsaeqh^tLtlXM5GbLpa@o(s>>DmMP`7@%^>I4VV&U-I?LSZZE=lQh,9o\\\"791,gp]ZQo`uN$0sp3kFNN^G##8d&RCIo?dY&7EE!#ILrM&?8Ln.l9[VGA<t@\'Aj:4T:N=tNF(sJ>b]UWT=6jnF?-!Pi5S3>oh+i3PLXKh^IF<)1PU6Hn$>H(Hj;QVDXjQCY$<?,2%=jAZCO`FpbM;GXQ>3=8LWT)%SWn+tQsq3a?JqgcpGLR7>t0fYE5\\W=-[]pp7p-FBoF66L^*V*Iri<%:<X+jm\\h,j%h8L1F$BuoLPK5B++b_:h_\\%\\G?8*e2\'!$2)UYgFIM!8\";pq:TG@[fe>)jo:q2Bcm**(g[3jAEPT(qnERg+l=&Sd-HXZFQGVR\\2VE-`9o.:14qGLOXYOnb-,9FSKf1/o7rO4Zohm#ljL8U_AC[%mGM8Q^`\"7G=8+u#;;onWW~>endstream\r\nendobj\r\nxref\r\n0 9\r\n0000000000 65535 f \r\n0000000073 00000 n \r\n0000000114 00000 n \r\n0000000221 00000 n \r\n0000000333 00000 n \r\n0000000536 00000 n \r\n0000000604 00000 n \r\n0000000887 00000 n \r\n0000000946 00000 n \r\ntrailer\r\n<<\r\n/ID \r\n[<82de21b91b86403725a14956d4a41851><82de21b91b86403725a14956d4a41851>]\r\n% ReportLab generated PDF document -- digest (http://www.reportlab.com)\r\n\r\n/Info 6 0 R\r\n/Root 5 0 R\r\n/Size 9\r\n>>\r\nstartxref\r\n1735\r\n%%EOF\r\n',2214,'fattura_003.pdf','FATTURA | Numero fattura: 003/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2026-01-22 13:33:29','2026-01-27 10:00:03'),(117,'FAT-002-2026',61,NULL,NULL,NULL,1024.59,225.41,1250.00,'EUR','2025-12-15','2026-02-21','2026-01-22 13:33:54','Freigabe_Erforderlich',3,1,1,0,NULL,_binary '%PDF-1.6\r%\‚\„\œ\”\r\n7 0 obj\r<</Linearized 1/L 6183/O 9/E 1707/N 1/T 5894/H [ 447 132]>>\rendobj\r                       \r\n12 0 obj\r<</DecodeParms<</Columns 4/Predictor 12>>/Filter/FlateDecode/ID[<8B49BF133DB554C872F8842FFF1159FF><C30457C9E1DCAA4483AE873FF001ED09>]/Index[7 10]/Info 6 0 R/Length 48/Prev 5895/Root 8 0 R/Size 17/Type/XRef/W[1 2 1]>>stream\r\nh\ﬁbbd``b`2æ@ÇÒ<à∏	$˛\ÿ0012LI00Bàˇå[ˇ\0võ\÷\r\nendstream\rendobj\rstartxref\r\n0\r\n%%EOF\r\n        \r\n16 0 obj\r<</Filter/FlateDecode/I 67/Length 53/S 38>>stream\r\nh\ﬁb```f``\‚a\0iT¿d\‡h@cÜbÜÛúL[\Z†Ç¢\Ô!\Z%\0\0\\\⁄Û\r\nendstream\rendobj\r8 0 obj\r<</Metadata 1 0 R/PageMode/UseNone/Pages 5 0 R/Type/Catalog>>\rendobj\r9 0 obj\r<</Contents 11 0 R/CropBox[0 0 595.2756 841.8898]/MediaBox[0 0 595.2756 841.8898]/Parent 5 0 R/Resources<</Font 13 0 R/ProcSet[/PDF/Text/ImageB/ImageC/ImageI]>>/Rotate 0/Trans<<>>/Type/Page>>\rendobj\r10 0 obj\r<</Filter/FlateDecode/First 18/Length 122/N 3/Type/ObjStm>>stream\r\nh\ﬁ24V0P04Q02Q04U040Q∞±\—w3	(\ÈªÅÑÅ,;;†∏Sbq™[~^âæGjNYjIfr¢æk^r~Jf^∫~xfûc^q&úÔóòõ\n4H?∏4©§≤ U?HÇI}ê8\Ã\”u\ \œI!d®nC\0Ω\·Bj\r\nendstream\rendobj\r11 0 obj\r<</Filter/FlateDecode/Length 557>>stream\r\nxúùUMè\⁄0ΩÛ+\ÊRâ]©a\Ï8â\Ÿ[∫\’V\€jwO\\,0mV$QCh%~}\'NN K[E\‰c\ﬁøyûëaÄt1{_%\0˜\nFµ&<\Í	>™¡\œ´ôëÑH0O ±§\–˘˜\Â≤f9JLh)LñKq^.ƒ¢\»cBJ\¬\’\ZÜ•æ\Õ\'7†^A\›\¬˚6L™3∫\⁄\ ‹ø™\Ã+e2Å÷ÑU~\›\'&\œ`£ãbü\Î;@\‰#é<8ä_Tc\◊}^Võ\ÍÇ4X0bˇ¶“Å\¬¿-†•`)\\\…\Ÿm∂Ú\«\Zio≥<çã,7V˙T`Y\≈pràM∫\÷05Iã˘ì\ÂX\‰%\÷0\œ\r\ÏCdàUt9úYﬁú†g_&w®êq_a$\«¯ñY\◊Q\‚QüY&\ﬁ6˚aK~äãV\ÔcùÆ~ƒçÀæ∫q\n\"/Ù	\∆n\'<\…#0\Ë>i8RJÛCiû%\‰6∑≠\—\È\Œ\nU\„x\rÅ˚•\◊\·\‘\ÏVy|à≥\‘8u;Lé\rw∂\◊iK_`W6\‹\Á\‹5r\…\ÎVûÒ˝_eÖﬁö+¸K^ò¸WY3¨cXe\Ènø5\ÈA˜\‘JOà:ëı\‘\·SWéã3†á=\≈\€Ã≤°ü\È˜Z∑b˛â>~õï\ÿv\—\À6Üu[áRÅgy\‘*F/Uå6\Õ\ÀgC\‰u6w≥˝:ËüÇ≥Û9u\Á∞E\„ø=≠x˚¥™{‹úçe´\·|œã	£ˇ<\È–†øÑwß´\Ì~ß;\"0¯lr	\r\nendstream\rendobj\r1 0 obj\r<</Length 3691/Subtype/XML/Type/Metadata>>stream\r\n<?xpacket begin=\"Ôªø\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"Adobe XMP Core 5.4-c006 80.159825, 2016/09/16-03:31:08        \">\n   <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n      <rdf:Description rdf:about=\"\"\n            xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n            xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n            xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n            xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\">\n         <dc:format>application/pdf</dc:format>\n         <dc:creator>\n            <rdf:Seq>\n               <rdf:li>(anonymous)</rdf:li>\n            </rdf:Seq>\n         </dc:creator>\n         <dc:description>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">(unspecified)</rdf:li>\n            </rdf:Alt>\n         </dc:description>\n         <dc:title>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">(anonymous)</rdf:li>\n            </rdf:Alt>\n         </dc:title>\n         <xmp:CreateDate>2025-12-17T13:51:40Z</xmp:CreateDate>\n         <xmp:CreatorTool>(unspecified)</xmp:CreatorTool>\n         <xmp:ModifyDate>2026-01-21T15:31:23+01:00</xmp:ModifyDate>\n         <xmp:MetadataDate>2026-01-21T15:31:23+01:00</xmp:MetadataDate>\n         <pdf:Keywords/>\n         <pdf:Producer>ReportLab PDF Library - www.reportlab.com</pdf:Producer>\n         <pdf:Trapped>False</pdf:Trapped>\n         <xmpMM:DocumentID>uuid:51159c19-db28-4aba-b679-aeb9d688ab17</xmpMM:DocumentID>\n         <xmpMM:InstanceID>uuid:102b4301-c501-4e5e-81da-abbb2108831e</xmpMM:InstanceID>\n      </rdf:Description>\n   </rdf:RDF>\n</x:xmpmeta>\n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                           \n<?xpacket end=\"w\"?>\r\nendstream\rendobj\r2 0 obj\r<</Filter/FlateDecode/First 4/Length 48/N 1/Type/ObjStm>>stream\r\nh\ﬁ2U0P∞±\—w\Œ/\Õ+Q0\‘˜\ŒL)é∂ä\≈\ÍáT§\Í$¶ß\€\Ÿ\0\÷wÄ\r\nendstream\rendobj\r3 0 obj\r<</Filter/FlateDecode/First 4/Length 187/N 1/Type/ObjStm>>stream\r\nh\ﬁd\œ\À\n\¬0Ö\·W\…\Œ\—$≠U\ƒ“ç\n¢Æ\ƒM⁄åi;eöP˙ˆ^]ˇ|Œî)∂X\»U7$~\·¶∆∫Ø0¥!\‰ö¿xáuj<t©(—ëû\È8\—u˛Ù7u\€@\·Æ\Ïn†\ÔêlÀÖ‹°˝Ú©zzù\ƒ:äáJî\Zπ\'¥°\0\‚hê¸\÷\‰lüfl\Îr2‘≥\Î∫nL\ÔVö|\\`%\‰1\‰w(¸ˇ\…˘~oú\»4\rXôô≤Ö\ÂÚ!¿\0ENã\r\nendstream\rendobj\r4 0 obj\r<</DecodeParms<</Columns 3/Predictor 12>>/Filter/FlateDecode/ID[<8B49BF133DB554C872F8842FFF1159FF><C30457C9E1DCAA4483AE873FF001ED09>]/Info 6 0 R/Length 37/Root 8 0 R/Size 7/Type/XRef/W[1 2 0]>>stream\r\nh\ﬁbb```bd[\Õ\ƒ¿øÉâÅ°áâÅIÇâÒ\Âo õ ¿\0/Q\r\nendstream\rendobj\rstartxref\r\n116\r\n%%EOF\r\n',6183,'fattura_002.pdf','FATTURA | Numero fattura: 002/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2026-01-22 13:33:54','2026-01-27 10:00:03');
 /*!40000 ALTER TABLE `invoices` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -304,7 +345,7 @@ CREATE TABLE `notifications` (
 
 LOCK TABLES `notifications` WRITE;
 /*!40000 ALTER TABLE `notifications` DISABLE KEYS */;
-INSERT INTO `notifications` VALUES (214,2,116,'invoice_approval_required','Neue Rechnung zur Freigabe','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR wartet auf Ihre Freigabe.',0,'normal','/invoices/116','2026-01-22 13:33:29',NULL),(215,3,116,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR ist eingegangen.',0,'low','/invoices/116','2026-01-22 13:33:29',NULL),(216,1,116,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR ist eingegangen.',0,'normal','/invoices/116','2026-01-22 13:33:29',NULL),(217,5,117,'invoice_approval_required','Neue Rechnung zur Freigabe','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR wartet auf Ihre Freigabe.',0,'normal','/invoices/117','2026-01-22 13:33:55',NULL),(218,3,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',0,'low','/invoices/117','2026-01-22 13:33:55',NULL),(219,1,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',0,'normal','/invoices/117','2026-01-22 13:33:55',NULL),(220,2,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',0,'normal','/invoices/117','2026-01-22 13:33:55',NULL);
+INSERT INTO `notifications` VALUES (214,2,116,'invoice_approval_required','Neue Rechnung zur Freigabe','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR wartet auf Ihre Freigabe.',0,'normal','/invoices/116','2026-01-22 13:33:29',NULL),(215,3,116,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR ist eingegangen.',0,'low','/invoices/116','2026-01-22 13:33:29',NULL),(216,1,116,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR ist eingegangen.',1,'normal','/invoices/116','2026-01-22 13:33:29','2026-01-27 08:14:22'),(217,5,117,'invoice_approval_required','Neue Rechnung zur Freigabe','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR wartet auf Ihre Freigabe.',0,'normal','/invoices/117','2026-01-22 13:33:55',NULL),(218,3,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',0,'low','/invoices/117','2026-01-22 13:33:55',NULL),(219,1,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',1,'normal','/invoices/117','2026-01-22 13:33:55','2026-01-27 08:14:22'),(220,2,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',0,'normal','/invoices/117','2026-01-22 13:33:55',NULL);
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -352,7 +393,8 @@ CREATE TABLE `projects` (
   `cost_center_id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `budget` decimal(12,2) DEFAULT '0.00',
   `spent_amount` decimal(12,2) DEFAULT '0.00',
-  `status` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'Geplant',
+  `status_backup` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status_id` int DEFAULT NULL,
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
   `project_manager_id` int DEFAULT NULL,
@@ -360,6 +402,8 @@ CREATE TABLE `projects` (
   PRIMARY KEY (`id`),
   KEY `cost_center_id` (`cost_center_id`),
   KEY `project_manager_id` (`project_manager_id`),
+  KEY `idx_projects_status_id` (`status_id`),
+  CONSTRAINT `FK_projects_status` FOREIGN KEY (`status_id`) REFERENCES `statuses` (`id`),
   CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`),
   CONSTRAINT `projects_ibfk_2` FOREIGN KEY (`project_manager_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -371,7 +415,7 @@ CREATE TABLE `projects` (
 
 LOCK TABLES `projects` WRITE;
 /*!40000 ALTER TABLE `projects` DISABLE KEYS */;
-INSERT INTO `projects` VALUES ('10000','Fuhrpark-Reparaturen','','FLEET',0.00,0.00,'Aktiv',NULL,NULL,NULL,'2025-12-20 14:24:13'),('HR002','Mitarbeiter-Portal','Entwicklung eines Self-Service Portals f√ºr Mitarbeiter','HR',15000.00,0.00,'Geplant',NULL,NULL,3,'2025-12-12 09:31:17'),('OFF004','B√ºroausstattung 2024','Modernisierung der B√ºroausstattung','OFFICE',5000.00,0.00,'Aktiv',NULL,NULL,1,'2025-12-12 09:31:17'),('SALES003','CRM System','Einf√ºhrung eines neuen Customer Relationship Management Systems','SALES',40000.00,0.00,'Aktiv',NULL,NULL,2,'2025-12-12 09:31:17'),('WEB001','Website Relaunch','Neugestaltung der Unternehmenswebsite','IT',25000.00,0.00,'Aktiv',NULL,NULL,4,'2025-12-12 09:31:17');
+INSERT INTO `projects` VALUES ('10000','Fuhrpark-Reparaturen','','FLEET',0.00,0.00,'Aktiv',14,NULL,NULL,NULL,'2025-12-20 14:24:13'),('HR002','Mitarbeiter-Portal','Entwicklung eines Self-Service Portals f√ºr Mitarbeiter','HR',15000.00,0.00,'Geplant',13,NULL,NULL,3,'2025-12-12 09:31:17'),('OFF004','B√ºroausstattung 2024','Modernisierung der B√ºroausstattung','OFFICE',5000.00,0.00,'Aktiv',14,NULL,NULL,1,'2025-12-12 09:31:17'),('SALES003','CRM System','Einf√ºhrung eines neuen Customer Relationship Management Systems','SALES',40000.00,0.00,'Aktiv',14,NULL,NULL,2,'2025-12-12 09:31:17'),('WEB001','Website Relaunch','Neugestaltung der Unternehmenswebsite','IT',25000.00,0.00,'Aktiv',14,NULL,NULL,4,'2025-12-12 09:31:17');
 /*!40000 ALTER TABLE `projects` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -391,7 +435,8 @@ CREATE TABLE `purchase_orders` (
   `project_id` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `total_amount` decimal(12,2) NOT NULL,
   `currency` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT 'EUR',
-  `status` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'Offen',
+  `status_backup` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status_id` int DEFAULT NULL,
   `created_by` int NOT NULL,
   `approved_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -406,6 +451,8 @@ CREATE TABLE `purchase_orders` (
   KEY `approved_by` (`approved_by`),
   KEY `idx_supplier_id` (`supplier_id`),
   KEY `idx_pdf_file_size` (`pdf_file_size`),
+  KEY `idx_purchase_orders_status_id` (`status_id`),
+  CONSTRAINT `FK_purchase_orders_status` FOREIGN KEY (`status_id`) REFERENCES `statuses` (`id`),
   CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`),
   CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `purchase_orders_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
@@ -477,6 +524,40 @@ LOCK TABLES `roles` WRITE;
 /*!40000 ALTER TABLE `roles` DISABLE KEYS */;
 INSERT INTO `roles` VALUES (1,'Administrator','System Administrator mit allen Rechten','#F44336',1),(2,'Freigeber','Kann Rechnungen freigeben und ablehnen','#00bfff',0),(3,'Buchhaltung','Kann alle Rechnungen einsehen und bearbeiten','#4CAF50',1),(4,'Mitarbeiter','Kann eigene Rechnungen einsehen','#795548',0),(5,'Controller','Kann Reports erstellen und Budgets √ºberwachen','#fbff00',0),(6,'Manager','Kann Kostenstellen-bezogene Rechnungen freigeben','#FF9800',0);
 /*!40000 ALTER TABLE `roles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `statuses`
+--
+
+DROP TABLE IF EXISTS `statuses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `statuses` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `display_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `entity_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Invoice, PurchaseOrder, Project, ApprovalWorkflow',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '1',
+  `color` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '#808080' COMMENT 'Hex color code for UI display',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_status_code_entity` (`code`,`entity_type`),
+  KEY `idx_entity_type` (`entity_type`),
+  KEY `idx_is_active` (`is_active`)
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `statuses`
+--
+
+LOCK TABLES `statuses` WRITE;
+/*!40000 ALTER TABLE `statuses` DISABLE KEYS */;
+INSERT INTO `statuses` VALUES (1,'Received','Received','Invoice has been received and awaits review','Invoice',1,1,'#2196F3','2026-01-27 10:00:02'),(2,'Under_Review','Under Review','Invoice is currently being reviewed','Invoice',2,1,'#FF9800','2026-01-27 10:00:02'),(3,'Approval_Required','Approval Required','Invoice requires approval','Invoice',3,1,'#FFC107','2026-01-27 10:00:02'),(4,'Approved','Approved','Invoice has been approved','Invoice',4,1,'#4CAF50','2026-01-27 10:00:02'),(5,'Rejected','Rejected','Invoice has been rejected','Invoice',5,1,'#F44336','2026-01-27 10:00:02'),(6,'Paid','Paid','Invoice has been paid','Invoice',6,1,'#8BC34A','2026-01-27 10:00:02'),(7,'Overdue','Overdue','Payment is overdue','Invoice',7,1,'#E91E63','2026-01-27 10:00:02'),(8,'Cancelled','Cancelled','Invoice has been cancelled','Invoice',8,1,'#9E9E9E','2026-01-27 10:00:02'),(9,'Open','Open','Purchase order is open','PurchaseOrder',1,1,'#2196F3','2026-01-27 10:00:02'),(10,'Partially_Fulfilled','Partially Fulfilled','Purchase order has been partially fulfilled','PurchaseOrder',2,1,'#FF9800','2026-01-27 10:00:02'),(11,'Fulfilled','Fulfilled','Purchase order has been fully fulfilled','PurchaseOrder',3,1,'#4CAF50','2026-01-27 10:00:02'),(12,'Cancelled','Cancelled','Purchase order has been cancelled','PurchaseOrder',4,1,'#9E9E9E','2026-01-27 10:00:02'),(13,'Planned','Planned','Project is in planning','Project',1,1,'#2196F3','2026-01-27 10:00:02'),(14,'Active','Active','Project is active','Project',2,1,'#4CAF50','2026-01-27 10:00:02'),(15,'On_Hold','On Hold','Project is on hold','Project',3,1,'#FF9800','2026-01-27 10:00:02'),(16,'Completed','Completed','Project has been completed','Project',4,1,'#8BC34A','2026-01-27 10:00:02'),(17,'Cancelled','Cancelled','Project has been cancelled','Project',5,1,'#F44336','2026-01-27 10:00:02'),(18,'Pending','Pending','Approval is pending','ApprovalWorkflow',1,1,'#FFC107','2026-01-27 10:00:02'),(19,'Approved','Approved','Approval has been granted','ApprovalWorkflow',2,1,'#4CAF50','2026-01-27 10:00:02'),(20,'Rejected','Rejected','Approval has been rejected','ApprovalWorkflow',3,1,'#F44336','2026-01-27 10:00:02'),(21,'Skipped','Skipped','Approval step was skipped','ApprovalWorkflow',4,1,'#9E9E9E','2026-01-27 10:00:02'),(22,'Waiting','Waiting','Waiting for previous approval','ApprovalWorkflow',5,1,'#03A9F4','2026-01-27 10:00:02');
+/*!40000 ALTER TABLE `statuses` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -578,7 +659,7 @@ CREATE TABLE `user_roles` (
 
 LOCK TABLES `user_roles` WRITE;
 /*!40000 ALTER TABLE `user_roles` DISABLE KEYS */;
-INSERT INTO `user_roles` VALUES (1,1,'2025-12-12 09:31:16'),(2,1,'2026-01-22 13:29:29'),(2,2,'2026-01-22 13:29:29'),(3,3,'2025-12-12 09:31:16'),(4,6,'2025-12-12 09:31:16'),(5,2,'2025-12-21 15:18:51'),(5,4,'2025-12-21 15:18:51');
+INSERT INTO `user_roles` VALUES (1,1,'2026-01-27 08:16:20'),(2,2,'2026-01-27 07:57:16'),(3,3,'2025-12-12 09:31:16'),(4,6,'2025-12-12 09:31:16'),(5,2,'2025-12-21 15:18:51'),(5,4,'2025-12-21 15:18:51');
 /*!40000 ALTER TABLE `user_roles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -617,91 +698,9 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','admin@firma.de','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-27 07:53:49','2026-01-27 07:53:49'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-22 13:29:29',NULL),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','M√ºller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-21 13:36:17',NULL);
+INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','simon.kramer05@gmail.com','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-27 13:26:25','2026-01-27 13:26:25'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-27 07:57:16',NULL),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','M√ºller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-21 13:36:17',NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
-
---
--- Temporary view structure for view `v_dashboard_stats`
---
-
-DROP TABLE IF EXISTS `v_dashboard_stats`;
-/*!50001 DROP VIEW IF EXISTS `v_dashboard_stats`*/;
-SET @saved_cs_client     = @@character_set_client;
-/*!50503 SET character_set_client = utf8mb4 */;
-/*!50001 CREATE VIEW `v_dashboard_stats` AS SELECT 
- 1 AS `new_invoices`,
- 1 AS `pending_approval`,
- 1 AS `approved_invoices`,
- 1 AS `overdue_invoices`,
- 1 AS `monthly_approved_amount`,
- 1 AS `pending_approval_amount`*/;
-SET character_set_client = @saved_cs_client;
-
---
--- Temporary view structure for view `v_invoice_details`
---
-
-DROP TABLE IF EXISTS `v_invoice_details`;
-/*!50001 DROP VIEW IF EXISTS `v_invoice_details`*/;
-SET @saved_cs_client     = @@character_set_client;
-/*!50503 SET character_set_client = utf8mb4 */;
-/*!50001 CREATE VIEW `v_invoice_details` AS SELECT 
- 1 AS `id`,
- 1 AS `invoice_number`,
- 1 AS `total_amount`,
- 1 AS `currency`,
- 1 AS `status`,
- 1 AS `invoice_date`,
- 1 AS `due_date`,
- 1 AS `description`,
- 1 AS `supplier_name`,
- 1 AS `supplier_email`,
- 1 AS `cost_center_name`,
- 1 AS `cost_center_manager_id`,
- 1 AS `project_name`,
- 1 AS `purchase_order_title`,
- 1 AS `is_overdue`,
- 1 AS `days_overdue`,
- 1 AS `created_by_name`,
- 1 AS `processed_by_name`*/;
-SET character_set_client = @saved_cs_client;
-
---
--- Final view structure for view `v_dashboard_stats`
---
-
-/*!50001 DROP VIEW IF EXISTS `v_dashboard_stats`*/;
-/*!50001 SET @saved_cs_client          = @@character_set_client */;
-/*!50001 SET @saved_cs_results         = @@character_set_results */;
-/*!50001 SET @saved_col_connection     = @@collation_connection */;
-/*!50001 SET character_set_client      = utf8mb4 */;
-/*!50001 SET character_set_results     = utf8mb4 */;
-/*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
-/*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `v_dashboard_stats` AS select (select count(0) from `invoices` where (`invoices`.`status` = 'Eingegangen')) AS `new_invoices`,(select count(0) from `invoices` where (`invoices`.`status` = 'Freigabe_Erforderlich')) AS `pending_approval`,(select count(0) from `invoices` where (`invoices`.`status` = 'Freigegeben')) AS `approved_invoices`,(select count(0) from `invoices` where (`invoices`.`status` = 'Ueberfaellig')) AS `overdue_invoices`,(select coalesce(sum(`invoices`.`total_amount`),0) from `invoices` where ((`invoices`.`status` in ('Freigegeben','Bezahlt')) and (month(`invoices`.`invoice_date`) = month(curdate())) and (year(`invoices`.`invoice_date`) = year(curdate())))) AS `monthly_approved_amount`,(select coalesce(sum(`invoices`.`total_amount`),0) from `invoices` where (`invoices`.`status` = 'Freigabe_Erforderlich')) AS `pending_approval_amount` */;
-/*!50001 SET character_set_client      = @saved_cs_client */;
-/*!50001 SET character_set_results     = @saved_cs_results */;
-/*!50001 SET collation_connection      = @saved_col_connection */;
-
---
--- Final view structure for view `v_invoice_details`
---
-
-/*!50001 DROP VIEW IF EXISTS `v_invoice_details`*/;
-/*!50001 SET @saved_cs_client          = @@character_set_client */;
-/*!50001 SET @saved_cs_results         = @@character_set_results */;
-/*!50001 SET @saved_col_connection     = @@collation_connection */;
-/*!50001 SET character_set_client      = utf8mb4 */;
-/*!50001 SET character_set_results     = utf8mb4 */;
-/*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
-/*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `v_invoice_details` AS select `i`.`id` AS `id`,`i`.`invoice_number` AS `invoice_number`,`i`.`total_amount` AS `total_amount`,`i`.`currency` AS `currency`,`i`.`status` AS `status`,`i`.`invoice_date` AS `invoice_date`,`i`.`due_date` AS `due_date`,`i`.`description` AS `description`,`s`.`name` AS `supplier_name`,`s`.`email` AS `supplier_email`,`cc`.`name` AS `cost_center_name`,`cc`.`manager_id` AS `cost_center_manager_id`,`p`.`name` AS `project_name`,`po`.`title` AS `purchase_order_title`,(case when ((`i`.`due_date` < curdate()) and (`i`.`status` not in ('Bezahlt','Storniert'))) then true else false end) AS `is_overdue`,(to_days(curdate()) - to_days(`i`.`due_date`)) AS `days_overdue`,concat(`creator`.`first_name`,' ',`creator`.`last_name`) AS `created_by_name`,concat(`processor`.`first_name`,' ',`processor`.`last_name`) AS `processed_by_name` from ((((((`invoices` `i` left join `suppliers` `s` on((`i`.`supplier_id` = `s`.`id`))) left join `cost_centers` `cc` on((`i`.`cost_center_id` = `cc`.`id`))) left join `projects` `p` on((`i`.`project_id` = `p`.`id`))) left join `purchase_orders` `po` on((`i`.`purchase_order_id` = `po`.`id`))) left join `users` `creator` on((`i`.`created_by` = `creator`.`id`))) left join `users` `processor` on((`i`.`processed_by` = `processor`.`id`))) */;
-/*!50001 SET character_set_client      = @saved_cs_client */;
-/*!50001 SET character_set_results     = @saved_cs_results */;
-/*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -712,4 +711,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-27  9:56:24
+-- Dump completed on 2026-01-27 15:36:31

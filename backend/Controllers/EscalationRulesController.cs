@@ -6,7 +6,7 @@ using RechnungsfreigabeAPI.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/escalation-rules")]
+[Route("api/v1/escalation-rules")]
 [Authorize(Roles = "Administrator")]
 public class EscalationRulesController : ControllerBase
 {

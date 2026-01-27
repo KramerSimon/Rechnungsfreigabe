@@ -14,7 +14,7 @@ export interface PermissionDto {
 
 @Injectable({ providedIn: 'root' })
 export class PermissionsApiService {
-  private readonly baseUrl = `${environment.apiUrl}/permissions`;
+  private readonly baseUrl = `${environment.apiUrl}/v1/permissions`;
 
   constructor(private http: HttpClient) {}
 

@@ -8,10 +8,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CreateEscalationRuleDto, EscalationRule } from '../../../core/models/escalation-rule.model';
+import { RoleDto, User } from '../../../core/models/user.models';
 
 export interface EscalationRuleDialogData {
   mode: 'create' | 'edit';
   statuses: string[];
+  roles: RoleDto[];
+  users: User[];
   rule?: EscalationRule;
 }
 
@@ -69,12 +72,18 @@ export interface EscalationRuleDialogData {
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Benachrichtigte Rolle</mat-label>
-            <input matInput formControlName="notifyRole" placeholder="z.B. Manager">
+            <mat-select formControlName="notifyRoleId">
+              <mat-option [value]="null">- Keine Rolle -</mat-option>
+              <mat-option *ngFor="let role of data.roles" [value]="role.id">{{role.name}}</mat-option>
+            </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Benutzer-ID (optional)</mat-label>
-            <input matInput type="number" formControlName="notifyUserId" min="1">
+            <mat-label>Benutzer (optional)</mat-label>
+            <mat-select formControlName="notifyUserId">
+              <mat-option [value]="null">- Kein Benutzer -</mat-option>
+              <mat-option *ngFor="let user of data.users" [value]="user.id">{{user.firstName}} {{user.lastName}} ({{user.username}})</mat-option>
+            </mat-select>
           </mat-form-field>
         </div>
 
@@ -106,35 +115,118 @@ export interface EscalationRuleDialogData {
     </div>
   `,
   styles: [`
+    :host ::ng-deep .escalation-rule-dialog {
+      width: 80vw !important;
+      max-width: 900px !important;
+    }
+
     .dialog-container {
-      width: 720px;
-      max-width: 95vw;
+      width: 100%;
+      padding: 0 16px;
     }
 
     .form-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 16px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
       align-items: flex-start;
     }
 
     .form-row mat-form-field {
-      flex: 1;
+      width: 100%;
     }
 
     .full-width {
+      grid-column: 1 / -1;
       width: 100%;
+    }
+
+    mat-checkbox {
+      margin-bottom: 12px;
+      grid-column: 1 / -1;
     }
 
     .dialog-actions {
       display: flex;
       justify-content: flex-end;
       gap: 8px;
-      padding: 12px 0;
+      padding: 16px 0 0 0;
+      flex-wrap: wrap;
     }
 
     textarea {
       resize: vertical;
+    }
+
+    /* Large screens */
+    @media (min-width: 1200px) {
+      .form-row {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .form-row mat-form-field:nth-child(1) {
+        grid-column: span 2;
+      }
+
+      .form-row mat-form-field:nth-child(2) {
+        grid-column: span 2;
+      }
+    }
+
+    /* Tablet screens (768px - 1199px) */
+    @media (max-width: 1199px) and (min-width: 769px) {
+      .form-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Mobile screens (up to 768px) */
+    @media (max-width: 768px) {
+      .dialog-container {
+        padding: 0 12px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .dialog-actions {
+        gap: 6px;
+      }
+
+      .dialog-actions button {
+        flex: 1;
+      }
+    }
+
+    /* Small mobile screens (up to 480px) */
+    @media (max-width: 480px) {
+      .dialog-container {
+        padding: 0 8px;
+      }
+
+      .form-row {
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .dialog-actions {
+        flex-direction: column-reverse;
+        gap: 8px;
+        padding-top: 12px;
+      }
+
+      .dialog-actions button {
+        width: 100%;
+      }
+
+      h2 {
+        font-size: 18px;
+        margin-bottom: 12px;
+      }
     }
   `]
 })
@@ -154,8 +246,8 @@ export class EscalationRuleDialogComponent {
       triggerAfterHours: [rule?.triggerAfterHours ?? 48, [Validators.required, Validators.min(1)]],
       repeatIntervalHours: [rule?.repeatIntervalHours ?? null, [Validators.min(1)]],
       maxEscalations: [rule?.maxEscalations ?? 3, [Validators.min(0)]],
-      notifyRole: [rule?.notifyRole || ''],
-      notifyUserId: [rule?.notifyUserId ?? null, [Validators.min(1)]],
+      notifyRoleId: [rule?.notifyRoleId ?? null],
+      notifyUserId: [rule?.notifyUserId ?? null],
       messageTemplate: [rule?.messageTemplate || ''],
       isActive: [rule?.isActive ?? true],
     });
@@ -175,6 +267,9 @@ export class EscalationRuleDialogComponent {
       notifyUserId: this.form.value.notifyUserId === null || this.form.value.notifyUserId === ''
         ? null
         : Number(this.form.value.notifyUserId),
+      notifyRoleId: this.form.value.notifyRoleId === null || this.form.value.notifyRoleId === ''
+        ? null
+        : Number(this.form.value.notifyRoleId),
       repeatIntervalHours: this.form.value.repeatIntervalHours === null || this.form.value.repeatIntervalHours === ''
         ? null
         : Number(this.form.value.repeatIntervalHours),

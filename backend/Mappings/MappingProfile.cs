@@ -36,8 +36,8 @@ public class MappingProfile : Profile
         CreateMap<Invoice, InvoiceDto>()
             .ForMember(dest => dest.IsOverdue, opt => opt.MapFrom(src => 
                 src.DueDate < DateTime.UtcNow && 
-                src.Status != InvoiceStatus.Bezahlt && 
-                src.Status != InvoiceStatus.Storniert))
+                (src.Status == null || (src.Status.Code != RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Bezahlt && 
+                src.Status.Code != RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Storniert))))
             .ForMember(dest => dest.DaysOverdue, opt => opt.MapFrom(src => 
                 src.DueDate < DateTime.UtcNow ? (DateTime.UtcNow - src.DueDate).Days : 0));
         CreateMap<CreateInvoiceDto, Invoice>();

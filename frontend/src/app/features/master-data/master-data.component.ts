@@ -46,6 +46,9 @@ import { EscalationRule, CreateEscalationRuleDto } from '../../core/models/escal
 import { EscalationRuleService } from '../../core/services/escalation-rule.service';
 import { EscalationRuleDialogComponent, EscalationRuleDialogData } from './dialogs/escalation-rule-dialog.component';
 import { RolesApiService } from '../../core/services/roles-api.service';
+import { StatusService } from '../../core/services/status.service';
+import { Status } from '../../core/models/status.model';
+import { StatusDisplayPipe } from '../../core/pipes/status-display.pipe';
 
 @Component({
   selector: 'app-master-data',
@@ -65,6 +68,7 @@ import { RolesApiService } from '../../core/services/roles-api.service';
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
+    StatusDisplayPipe,
   ],
   templateUrl: './master-data.component.html',
   styleUrls: ['./master-data.component.scss'],
@@ -96,6 +100,8 @@ export class MasterDataComponent implements OnInit {
   approvalRules: ApprovalRule[] = [];
   approvalWorkflows: ApprovalWorkflow[] = [];
   escalationRules: EscalationRule[] = [];
+  invoiceStatuses: Status[] = [];
+  allStatuses: Status[] = [];
 
   // Loading states
   loadingSuppliers = false;
@@ -122,17 +128,6 @@ export class MasterDataComponent implements OnInit {
     { id: 'escalation', label: 'Eskalations-Einstellungen', index: 7 },
     { id: 'rules', label: 'Genehmigungsregeln', index: 8 },
     { id: 'workflows', label: 'Genehmigungsworkflows', index: 9 },
-  ];
-
-  invoiceStatuses = [
-    'Eingegangen',
-    'In_Pruefung',
-    'Freigabe_Erforderlich',
-    'Freigegeben',
-    'Abgelehnt',
-    'Bezahlt',
-    'Ueberfaellig',
-    'Storniert'
   ];
 
   // Table columns
@@ -217,7 +212,8 @@ export class MasterDataComponent implements OnInit {
     private userService: UserService,
     private approvalService: ApprovalService,
     private escalationRuleService: EscalationRuleService,
-    private rolesApi: RolesApiService
+    private rolesApi: RolesApiService,
+    private statusService: StatusService
   ) {}
 
   ngOnInit(): void {
@@ -236,6 +232,7 @@ export class MasterDataComponent implements OnInit {
   }
 
   loadAllData(): void {
+    this.loadInvoiceStatuses();
     this.loadSuppliers();
     this.loadCostCenters();
     this.loadProjects();
@@ -246,6 +243,22 @@ export class MasterDataComponent implements OnInit {
     this.loadApprovalRules();
     this.loadApprovalWorkflows();
     this.loadEscalationRules();
+  }
+
+  // Statuses
+  loadInvoiceStatuses(): void {
+    this.statusService.getAllStatuses().subscribe({
+      next: (statuses) => {
+        this.allStatuses = statuses;
+        this.invoiceStatuses = statuses.filter(s => s.entityType === 'Invoice');
+      },
+      error: (error) => {
+        console.error('Error loading invoice statuses:', error);
+        this.snackBar.open('Fehler beim Laden der Rechnungsstatus', 'Schließen', {
+          duration: 3000,
+        });
+      },
+    });
   }
 
   // Suppliers
@@ -399,7 +412,7 @@ export class MasterDataComponent implements OnInit {
   // Invoices
   loadInvoices(): void {
     this.loadingInvoices = true;
-    this.invoiceService.getInvoices().subscribe({
+    this.invoiceService.getAllInvoices().subscribe({
       next: (data) => {
         console.log('Loaded invoices:', data);
         this.invoices = data.items; // Use the array of invoices from the paged result
@@ -764,10 +777,14 @@ export class MasterDataComponent implements OnInit {
 
   createEscalationRule(): void {
     const dialogRef = this.dialog.open(EscalationRuleDialogComponent, {
-      width: '700px',
+      width: '80vw',
+      maxWidth: '900px',
+      panelClass: 'escalation-rule-dialog',
       data: {
         mode: 'create',
-        statuses: this.invoiceStatuses,
+        statuses: this.invoiceStatuses.map(s => s.code),
+        roles: this.roles,
+        users: this.users,
       } as EscalationRuleDialogData,
     });
 
@@ -781,6 +798,7 @@ export class MasterDataComponent implements OnInit {
             ? Number(result.maxEscalations)
             : null,
           notifyUserId: result.notifyUserId ? Number(result.notifyUserId) : null,
+          notifyRoleId: result.notifyRoleId ? Number(result.notifyRoleId) : null,
           isActive: result.isActive ?? true,
         };
 
@@ -800,10 +818,14 @@ export class MasterDataComponent implements OnInit {
 
   editEscalationRule(rule: EscalationRule): void {
     const dialogRef = this.dialog.open(EscalationRuleDialogComponent, {
-      width: '700px',
+      width: '80vw',
+      maxWidth: '900px',
+      panelClass: 'escalation-rule-dialog',
       data: {
         mode: 'edit',
-        statuses: this.invoiceStatuses,
+        statuses: this.invoiceStatuses.map(s => s.code),
+        roles: this.roles,
+        users: this.users,
         rule,
       } as EscalationRuleDialogData,
     });
@@ -818,6 +840,7 @@ export class MasterDataComponent implements OnInit {
             ? Number(result.maxEscalations)
             : null,
           notifyUserId: result.notifyUserId ? Number(result.notifyUserId) : null,
+          notifyRoleId: result.notifyRoleId ? Number(result.notifyRoleId) : null,
           isActive: result.isActive ?? rule.isActive,
         };
 
@@ -1216,5 +1239,11 @@ export class MasterDataComponent implements OnInit {
         });
       }
     });
+  }
+
+  getStatusColor(statusCode: string, entityType: string): string {
+    // Get all statuses and find the matching one
+    const status = this.allStatuses.find(s => s.code === statusCode);
+    return status?.color || '#9E9E9E';
   }
 }

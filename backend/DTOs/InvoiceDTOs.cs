@@ -94,6 +94,7 @@ public class InvoiceDto
     public DateTime DueDate { get; set; }
     public DateTime ReceivedDate { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string? StatusColor { get; set; }
     public bool RequiresApproval { get; set; }
     public int ApprovalLevel { get; set; }
     public bool AutoApproved { get; set; }

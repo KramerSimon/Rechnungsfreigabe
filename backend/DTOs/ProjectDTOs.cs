@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using RechnungsfreigabeAPI.Models;
 
-namespace backend.DTOs
-{
+namespace RechnungsfreigabeAPI.DTOs;
     public class ProjectDto
     {
         public string Id { get; set; } = string.Empty;
@@ -12,10 +11,12 @@ namespace backend.DTOs
         public string? CostCenterName { get; set; }
         public decimal Budget { get; set; }
         public decimal SpentAmount { get; set; }
-        public string Status { get; set; } = ProjectStatus.Geplant.ToString();
+        public string Status { get; set; } = RechnungsfreigabeAPI.Models.StatusCodes.Project.Geplant;
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public int? ProjectManagerId { get; set; }
+        public UserDto? ProjectManager { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class CreateProjectDto
@@ -42,7 +43,7 @@ namespace backend.DTOs
         public decimal SpentAmount { get; set; } = 0;
 
         [StringLength(50)]
-        public string Status { get; set; } = ProjectStatus.Geplant.ToString();
+        public string Status { get; set; } = RechnungsfreigabeAPI.Models.StatusCodes.Project.Geplant;
 
         public DateTime? StartDate { get; set; }
 
@@ -50,4 +51,3 @@ namespace backend.DTOs
 
         public int? ProjectManagerId { get; set; }
     }
-}

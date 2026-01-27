@@ -6,7 +6,7 @@ import { SystemConfig, UpsertSystemConfig } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class SystemConfigService {
-  private readonly apiUrl = `${environment.apiUrl}/system-config`;
+  private readonly apiUrl = `${environment.apiUrl}/v1/system-config`;
 
   constructor(private http: HttpClient) {}
 

@@ -20,7 +20,7 @@ export interface UpdateRoleRequest {
 
 @Injectable({ providedIn: 'root' })
 export class RolesApiService {
-  private readonly baseUrl = `${environment.apiUrl}/roles`;
+  private readonly baseUrl = `${environment.apiUrl}/v1/roles`;
 
   constructor(private http: HttpClient) {}
 

@@ -189,8 +189,12 @@ public class NotificationService : INotificationService
             var notifiedUserIds = new HashSet<int>();
 
             // Notify approvers
+            var pendingStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            
             var approvers = invoice.ApprovalWorkflows
-                .Where(aw => aw.Status == ApprovalStatus.Pending)
+                .Where(aw => aw.StatusId == pendingStatus?.Id)
                 .Select(aw => aw.Approver)
                 .Distinct()
                 .ToList();
@@ -314,18 +318,31 @@ public class NotificationService : INotificationService
     {
         try
         {
+            var bezahltStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Bezahlt && 
+                                            s.EntityType == EntityTypes.Invoice);
+            var storniert = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Storniert && 
+                                            s.EntityType == EntityTypes.Invoice);
+            var ueberfaellig = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Ueberfaellig && 
+                                            s.EntityType == EntityTypes.Invoice);
+            
             var overdueInvoices = await _context.Invoices
                 .Include(i => i.Supplier)
                 .Where(i => i.DueDate < DateTime.UtcNow && 
-                           i.Status != InvoiceStatus.Bezahlt && 
-                           i.Status != InvoiceStatus.Storniert &&
-                           i.Status != InvoiceStatus.Ueberfaellig)
+                           i.StatusId != bezahltStatus!.Id && 
+                           i.StatusId != storniert!.Id &&
+                           i.StatusId != ueberfaellig!.Id)
                 .ToListAsync();
 
             foreach (var invoice in overdueInvoices)
             {
                 // Update invoice status
-                invoice.Status = InvoiceStatus.Ueberfaellig;
+                if (ueberfaellig != null)
+                {
+                    invoice.StatusId = ueberfaellig.Id;
+                }
                 invoice.UpdatedAt = DateTime.UtcNow;
             }
 
@@ -380,12 +397,12 @@ public class NotificationService : INotificationService
                 InvoiceNumber = notification.Invoice.InvoiceNumber,
                 TotalAmount = notification.Invoice.TotalAmount,
                 Currency = notification.Invoice.Currency,
-                Status = notification.Invoice.Status.ToString(),
-                Supplier = new SupplierDto
+                Status = notification.Invoice.Status?.ToString() ?? string.Empty,
+                Supplier = notification.Invoice.Supplier != null ? new SupplierDto
                 {
                     Id = notification.Invoice.Supplier.Id,
                     Name = notification.Invoice.Supplier.Name
-                }
+                } : new SupplierDto { Id = 0, Name = string.Empty }
             } : null
         };
     }

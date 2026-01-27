@@ -135,16 +135,31 @@ export class InvoiceDetailComponent implements OnInit {
       error: (error) => {
         console.error('Error loading invoice:', error);
         this.loading = false;
+        this.pdfLoading = false;
+        const message = error?.status === 404
+          ? 'Rechnung wurde nicht gefunden. Bitte zurück zur Übersicht und erneut wählen.'
+          : 'Rechnung konnte nicht geladen werden.';
+        this.snackBar.open(message, 'OK', { duration: 4000 });
+        // Auf das Dashboard zurück, damit keine leere Seite bleibt
+        this.router.navigate(['/dashboard']);
       }
     });
   }
 
   private loadPdf(): void {
+    console.log('=== loadPdf called ===');
+    console.log('Invoice ID:', this.invoice.id);
+    console.log('Full invoice object:', this.invoice);
+
     this.pdfLoading = true;
 
     // Lade PDF als Blob und konvertiere zu Uint8Array für ngx-extended-pdf-viewer
     this.invoiceService.downloadInvoicePdf(this.invoice.id).subscribe({
       next: async (blob) => {
+        console.log('=== PDF download successful ===');
+        console.log('Blob received, size:', blob.size, 'bytes');
+        console.log('Blob type:', blob.type);
+
         // Konvertiere Blob zu ArrayBuffer und dann zu Uint8Array
         const arrayBuffer = await blob.arrayBuffer();
         this.pdfSrc = new Uint8Array(arrayBuffer);
@@ -153,15 +168,21 @@ export class InvoiceDetailComponent implements OnInit {
         this.pdfBlobUrl = URL.createObjectURL(blob);
 
         this.pdfLoading = false;
-        console.log('PDF successfully loaded, size:', this.pdfSrc.length, 'bytes');
+        console.log('PDF successfully loaded, pdfSrc length:', this.pdfSrc.length, 'bytes');
+        console.log('pdfBlobUrl:', this.pdfBlobUrl);
       },
       error: (error) => {
-        console.error('Error loading PDF:', error);
+        console.error('=== Error loading PDF ===');
+        console.error('Error object:', error);
+        console.error('Error status:', error.status);
+        console.error('Error message:', error.message);
+        console.error('Error statusText:', error.statusText);
+
         this.pdfSrc = null;
         this.pdfBlobUrl = null;
         this.pdfLoading = false;
-        this.snackBar.open('PDF konnte nicht geladen werden', 'Schließen', {
-          duration: 3000
+        this.snackBar.open('PDF konnte nicht geladen werden: ' + (error.status || 'Unbekannter Fehler'), 'Schließen', {
+          duration: 5000
         });
       }
     });

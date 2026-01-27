@@ -70,8 +70,8 @@ public class ApprovalWorkflow
     [Column("approval_level")]
     public int ApprovalLevel { get; set; }
 
-    [Column("status")]
-    public ApprovalStatus Status { get; set; } = ApprovalStatus.Pending;
+    [Column("status_id")]
+    public int? StatusId { get; set; }
 
     [Column("comments")]
     public string? Comments { get; set; }
@@ -86,6 +86,7 @@ public class ApprovalWorkflow
     public virtual Invoice Invoice { get; set; } = null!;
     public virtual ApprovalRule? Rule { get; set; }
     public virtual User Approver { get; set; } = null!;
+    public virtual Status? Status { get; set; }
 }
 
 public enum HistoryActionType
@@ -252,14 +253,8 @@ public enum RuleType
     Manual
 }
 
-public enum ApprovalStatus
-{
-    Pending,
-    Approved,
-    Rejected,
-    Skipped,
-    Waiting
-}
+// ApprovalStatus enum removed - statuses are now in the centralized statuses table
+// Use StatusCodes.ApprovalWorkflow.* constants instead
 
 public enum NotificationPriority
 {

@@ -37,6 +37,9 @@ public class EscalationRule
     [Column("notify_role")]
     public string? NotifyRole { get; set; }
 
+    [Column("notify_role_id")]
+    public int? NotifyRoleId { get; set; }
+
     [Column("notify_user_id")]
     public int? NotifyUserId { get; set; }
 
@@ -55,4 +58,5 @@ public class EscalationRule
 
     // Navigation properties
     public virtual User? NotifyUser { get; set; }
+    public virtual Role? NotifyRoleRef { get; set; }
 }

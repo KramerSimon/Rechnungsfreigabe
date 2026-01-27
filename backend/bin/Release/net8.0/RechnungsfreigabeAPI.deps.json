@@ -17,11 +17,11 @@
           "Microsoft.EntityFrameworkCore": "8.0.0",
           "Microsoft.EntityFrameworkCore.Design": "8.0.0",
           "Microsoft.EntityFrameworkCore.Tools": "8.0.0",
+          "PDFtoImage": "5.0.0",
           "Pomelo.EntityFrameworkCore.MySql": "8.0.0",
-          "Serilog.AspNetCore": "7.0.0",
-          "Serilog.Sinks.File": "5.0.0",
           "Swashbuckle.AspNetCore": "6.4.0",
           "System.IdentityModel.Tokens.Jwt": "8.0.0",
+          "Tesseract": "5.2.0",
           "itext7": "9.4.0"
         },
         "runtime": {
@@ -48,6 +48,78 @@
           "lib/netstandard2.1/AutoMapper.Extensions.Microsoft.DependencyInjection.dll": {
             "assemblyVersion": "12.0.0.0",
             "fileVersion": "12.0.1.0"
+          }
+        }
+      },
+      "bblanchon.PDFium.Linux/133.0.6872": {
+        "runtimeTargets": {
+          "runtimes/linux-arm/native/libpdfium.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libpdfium.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-musl-arm64/native/libpdfium.so": {
+            "rid": "linux-musl-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-musl-x64/native/libpdfium.so": {
+            "rid": "linux-musl-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-musl-x86/native/libpdfium.so": {
+            "rid": "linux-musl-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libpdfium.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libpdfium.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "bblanchon.PDFium.macOS/133.0.6872": {
+        "runtimeTargets": {
+          "runtimes/osx-arm64/native/libpdfium.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libpdfium.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "bblanchon.PDFium.Win32/133.0.6872": {
+        "runtimeTargets": {
+          "runtimes/win-arm64/native/pdfium.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "133.0.6872.0"
+          },
+          "runtimes/win-x64/native/pdfium.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "133.0.6872.0"
+          },
+          "runtimes/win-x86/native/pdfium.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "133.0.6872.0"
           }
         }
       },
@@ -513,11 +585,6 @@
           "Microsoft.Extensions.Primitives": "8.0.0"
         }
       },
-      "Microsoft.Extensions.Configuration.Binder/7.0.0": {
-        "dependencies": {
-          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0"
-        }
-      },
       "Microsoft.Extensions.DependencyInjection/8.0.0": {
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0"
@@ -534,18 +601,6 @@
             "assemblyVersion": "8.0.0.0",
             "fileVersion": "8.0.23.53103"
           }
-        }
-      },
-      "Microsoft.Extensions.FileProviders.Abstractions/7.0.0": {
-        "dependencies": {
-          "Microsoft.Extensions.Primitives": "8.0.0"
-        }
-      },
-      "Microsoft.Extensions.Hosting.Abstractions/7.0.0": {
-        "dependencies": {
-          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0",
-          "Microsoft.Extensions.FileProviders.Abstractions": "7.0.0"
         }
       },
       "Microsoft.Extensions.Identity.Core/8.0.0": {
@@ -697,6 +752,25 @@
           }
         }
       },
+      "PDFtoImage/5.0.0": {
+        "dependencies": {
+          "SkiaSharp": "3.116.1",
+          "SkiaSharp.NativeAssets.Linux.NoDependencies": "3.116.1",
+          "SkiaSharp.NativeAssets.WebAssembly": "3.116.1",
+          "SkiaSharp.NativeAssets.Win32": "3.116.1",
+          "SkiaSharp.NativeAssets.macOS": "3.116.1",
+          "Sungaila.PDFium.BlazorWebAssembly": "133.0.6872",
+          "bblanchon.PDFium.Linux": "133.0.6872",
+          "bblanchon.PDFium.Win32": "133.0.6872",
+          "bblanchon.PDFium.macOS": "133.0.6872"
+        },
+        "runtime": {
+          "lib/net8.0/PDFtoImage.dll": {
+            "assemblyVersion": "5.0.0.0",
+            "fileVersion": "5.0.0.0"
+          }
+        }
+      },
       "Pomelo.EntityFrameworkCore.MySql/8.0.0": {
         "dependencies": {
           "Microsoft.EntityFrameworkCore.Relational": "8.0.0",
@@ -745,117 +819,72 @@
       "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {},
       "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {},
       "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {},
-      "Serilog/2.12.0": {
-        "runtime": {
-          "lib/net6.0/Serilog.dll": {
-            "assemblyVersion": "2.0.0.0",
-            "fileVersion": "2.12.0.0"
-          }
-        }
-      },
-      "Serilog.AspNetCore/7.0.0": {
+      "SkiaSharp/3.116.1": {
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection": "8.0.0",
-          "Microsoft.Extensions.Logging": "8.0.0",
-          "Serilog": "2.12.0",
-          "Serilog.Extensions.Hosting": "7.0.0",
-          "Serilog.Formatting.Compact": "1.1.0",
-          "Serilog.Settings.Configuration": "7.0.0",
-          "Serilog.Sinks.Console": "4.0.1",
-          "Serilog.Sinks.Debug": "2.0.0",
-          "Serilog.Sinks.File": "5.0.0"
+          "SkiaSharp.NativeAssets.Win32": "3.116.1",
+          "SkiaSharp.NativeAssets.macOS": "3.116.1"
         },
         "runtime": {
-          "lib/net7.0/Serilog.AspNetCore.dll": {
-            "assemblyVersion": "7.0.0.0",
-            "fileVersion": "7.0.0.0"
+          "lib/net8.0/SkiaSharp.dll": {
+            "assemblyVersion": "3.116.0.0",
+            "fileVersion": "3.116.1.0"
           }
         }
       },
-      "Serilog.Extensions.Hosting/7.0.0": {
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0",
-          "Microsoft.Extensions.Hosting.Abstractions": "7.0.0",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
-          "Serilog": "2.12.0",
-          "Serilog.Extensions.Logging": "7.0.0"
-        },
-        "runtime": {
-          "lib/net7.0/Serilog.Extensions.Hosting.dll": {
-            "assemblyVersion": "7.0.0.0",
-            "fileVersion": "7.0.0.0"
+      "SkiaSharp.NativeAssets.Linux.NoDependencies/3.116.1": {
+        "runtimeTargets": {
+          "runtimes/linux-arm/native/libSkiaSharp.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libSkiaSharp.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-musl-x64/native/libSkiaSharp.so": {
+            "rid": "linux-musl-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libSkiaSharp.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
           }
         }
       },
-      "Serilog.Extensions.Logging/7.0.0": {
-        "dependencies": {
-          "Microsoft.Extensions.Logging": "8.0.0",
-          "Serilog": "2.12.0"
-        },
-        "runtime": {
-          "lib/net7.0/Serilog.Extensions.Logging.dll": {
-            "assemblyVersion": "7.0.0.0",
-            "fileVersion": "7.0.0.0"
+      "SkiaSharp.NativeAssets.macOS/3.116.1": {
+        "runtimeTargets": {
+          "runtimes/osx/native/libSkiaSharp.dylib": {
+            "rid": "osx",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
           }
         }
       },
-      "Serilog.Formatting.Compact/1.1.0": {
-        "dependencies": {
-          "Serilog": "2.12.0"
-        },
-        "runtime": {
-          "lib/netstandard2.0/Serilog.Formatting.Compact.dll": {
-            "assemblyVersion": "1.1.0.0",
-            "fileVersion": "1.1.0.0"
+      "SkiaSharp.NativeAssets.WebAssembly/3.116.1": {},
+      "SkiaSharp.NativeAssets.Win32/3.116.1": {
+        "runtimeTargets": {
+          "runtimes/win-arm64/native/libSkiaSharp.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/libSkiaSharp.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/libSkiaSharp.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
           }
         }
       },
-      "Serilog.Settings.Configuration/7.0.0": {
-        "dependencies": {
-          "Microsoft.Extensions.Configuration.Binder": "7.0.0",
-          "Microsoft.Extensions.DependencyModel": "8.0.0",
-          "Serilog": "2.12.0"
-        },
-        "runtime": {
-          "lib/net7.0/Serilog.Settings.Configuration.dll": {
-            "assemblyVersion": "7.0.0.0",
-            "fileVersion": "7.0.0.0"
-          }
-        }
-      },
-      "Serilog.Sinks.Console/4.0.1": {
-        "dependencies": {
-          "Serilog": "2.12.0"
-        },
-        "runtime": {
-          "lib/net5.0/Serilog.Sinks.Console.dll": {
-            "assemblyVersion": "4.0.1.0",
-            "fileVersion": "4.0.1.0"
-          }
-        }
-      },
-      "Serilog.Sinks.Debug/2.0.0": {
-        "dependencies": {
-          "Serilog": "2.12.0"
-        },
-        "runtime": {
-          "lib/netstandard2.1/Serilog.Sinks.Debug.dll": {
-            "assemblyVersion": "2.0.0.0",
-            "fileVersion": "2.0.0.0"
-          }
-        }
-      },
-      "Serilog.Sinks.File/5.0.0": {
-        "dependencies": {
-          "Serilog": "2.12.0"
-        },
-        "runtime": {
-          "lib/net5.0/Serilog.Sinks.File.dll": {
-            "assemblyVersion": "5.0.0.0",
-            "fileVersion": "5.0.0.0"
-          }
-        }
-      },
+      "Sungaila.PDFium.BlazorWebAssembly/133.0.6872": {},
       "Swashbuckle.AspNetCore/6.4.0": {
         "dependencies": {
           "Microsoft.Extensions.ApiDescription.Server": "6.0.5",
@@ -1123,6 +1152,7 @@
           "System.Runtime": "4.3.1"
         }
       },
+      "System.Reflection.Emit/4.7.0": {},
       "System.Reflection.Metadata/6.0.1": {
         "dependencies": {
           "System.Collections.Immutable": "6.0.0"
@@ -1407,6 +1437,17 @@
           "System.Threading": "4.3.0",
           "System.Xml.ReaderWriter": "4.3.0"
         }
+      },
+      "Tesseract/5.2.0": {
+        "dependencies": {
+          "System.Reflection.Emit": "4.7.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Tesseract.dll": {
+            "assemblyVersion": "5.2.0.0",
+            "fileVersion": "5.2.0.0"
+          }
+        }
       }
     }
   },
@@ -1429,6 +1470,27 @@
       "sha512": "sha512-+g/K+Vpe3gGMKGzjslMOdqNlkikScDjWfVvmWTayrDHaG/n2pPmFBMa+jKX1r/h6BDGFdkyRjAuhFE3ykW+r1g==",
       "path": "automapper.extensions.microsoft.dependencyinjection/12.0.1",
       "hashPath": "automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512"
+    },
+    "bblanchon.PDFium.Linux/133.0.6872": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pMzPLpVhmk0K1wZ0Dg3W3xME3l8d0fKVQELKFR7CgkKj3xi3iTzNnlOxGBJsQmYHCzNsVkwZXjFoXzHjpu6z6g==",
+      "path": "bblanchon.pdfium.linux/133.0.6872",
+      "hashPath": "bblanchon.pdfium.linux.133.0.6872.nupkg.sha512"
+    },
+    "bblanchon.PDFium.macOS/133.0.6872": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-rgFI/2kjIR0qAPcirqd5R+qqS8nevmwqJnkL7AjeTF73lhFb3OmlzMQFJr2E2h1WSpXgXpapAYB0ba/ztKooHA==",
+      "path": "bblanchon.pdfium.macos/133.0.6872",
+      "hashPath": "bblanchon.pdfium.macos.133.0.6872.nupkg.sha512"
+    },
+    "bblanchon.PDFium.Win32/133.0.6872": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-caqKZCdofb+KP2sHA1xsWQDFhcWly95nSHWDbLS4UdDRO8Hr9iFfm59KYnZTcSlrriSXeL8D2O+RFOw8RN/7pQ==",
+      "path": "bblanchon.pdfium.win32/133.0.6872",
+      "hashPath": "bblanchon.pdfium.win32.133.0.6872.nupkg.sha512"
     },
     "BCrypt.Net-Next/4.0.3": {
       "type": "package",
@@ -1626,13 +1688,6 @@
       "path": "microsoft.extensions.configuration.abstractions/8.0.0",
       "hashPath": "microsoft.extensions.configuration.abstractions.8.0.0.nupkg.sha512"
     },
-    "Microsoft.Extensions.Configuration.Binder/7.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-tgU4u7bZsoS9MKVRiotVMAwHtbREHr5/5zSEV+JPhg46+ox47Au84E3D2IacAaB0bk5ePNaNieTlPrfjbbRJkg==",
-      "path": "microsoft.extensions.configuration.binder/7.0.0",
-      "hashPath": "microsoft.extensions.configuration.binder.7.0.0.nupkg.sha512"
-    },
     "Microsoft.Extensions.DependencyInjection/8.0.0": {
       "type": "package",
       "serviceable": true,
@@ -1653,20 +1708,6 @@
       "sha512": "sha512-NSmDw3K0ozNDgShSIpsZcbFIzBX4w28nDag+TfaQujkXGazBm+lid5onlWoCBy4VsLxqnnKjEBbGSJVWJMf43g==",
       "path": "microsoft.extensions.dependencymodel/8.0.0",
       "hashPath": "microsoft.extensions.dependencymodel.8.0.0.nupkg.sha512"
-    },
-    "Microsoft.Extensions.FileProviders.Abstractions/7.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-NyawiW9ZT/liQb34k9YqBSNPLuuPkrjMgQZ24Y/xXX1RoiBkLUdPMaQTmxhZ5TYu8ZKZ9qayzil75JX95vGQUg==",
-      "path": "microsoft.extensions.fileproviders.abstractions/7.0.0",
-      "hashPath": "microsoft.extensions.fileproviders.abstractions.7.0.0.nupkg.sha512"
-    },
-    "Microsoft.Extensions.Hosting.Abstractions/7.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-43n9Je09z0p/7ViPxfRqs5BUItRLNVh5b6JH40F2Agkh2NBsY/jpNYTtbCcxrHCsA3oRmbR6RJBzUutB4VZvNQ==",
-      "path": "microsoft.extensions.hosting.abstractions/7.0.0",
-      "hashPath": "microsoft.extensions.hosting.abstractions.7.0.0.nupkg.sha512"
     },
     "Microsoft.Extensions.Identity.Core/8.0.0": {
       "type": "package",
@@ -1801,6 +1842,13 @@
       "path": "mysqlconnector/2.3.5",
       "hashPath": "mysqlconnector.2.3.5.nupkg.sha512"
     },
+    "PDFtoImage/5.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-eTFpRdgOrVpY3RjyT8K55qOIMkrB1QEhvCD7oE5hkZUMlnqyfQnttpA98x4+fJGObCNQMGQnDeyf4U+w5uzh0w==",
+      "path": "pdftoimage/5.0.0",
+      "hashPath": "pdftoimage.5.0.0.nupkg.sha512"
+    },
     "Pomelo.EntityFrameworkCore.MySql/8.0.0": {
       "type": "package",
       "serviceable": true,
@@ -1906,68 +1954,47 @@
       "path": "runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
       "hashPath": "runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512"
     },
-    "Serilog/2.12.0": {
+    "SkiaSharp/3.116.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-xaiJLIdu6rYMKfQMYUZgTy8YK7SMZjB4Yk50C/u//Z4OsvxkUfSPJy4nknfvwAC34yr13q7kcyh4grbwhSxyZg==",
-      "path": "serilog/2.12.0",
-      "hashPath": "serilog.2.12.0.nupkg.sha512"
+      "sha512": "sha512-DNDwbRjP+aMo27dV2h/uHCVTcWubWWxHnPLiePNyl24f4Pv43mQ8AQQeseOrKR+J3AOCEs6t0sUjo0aa3j3RWQ==",
+      "path": "skiasharp/3.116.1",
+      "hashPath": "skiasharp.3.116.1.nupkg.sha512"
     },
-    "Serilog.AspNetCore/7.0.0": {
+    "SkiaSharp.NativeAssets.Linux.NoDependencies/3.116.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-F6p6rzOmg/R0EPI/PjJXcAlhCzusW5+xFx8kbsy6mJ6/mHI6wWWPxZbsLPoAYTpMiopKFl7HZhAr//KABGHtBQ==",
-      "path": "serilog.aspnetcore/7.0.0",
-      "hashPath": "serilog.aspnetcore.7.0.0.nupkg.sha512"
+      "sha512": "sha512-yER+zmZzK4G642j0fbOBg3ZfLUs93o1kmHEXEOPZgMCzGVSmLvGmsFYIIlIQaMEpWY/TktFiZGqEKkT1RJ/YjQ==",
+      "path": "skiasharp.nativeassets.linux.nodependencies/3.116.1",
+      "hashPath": "skiasharp.nativeassets.linux.nodependencies.3.116.1.nupkg.sha512"
     },
-    "Serilog.Extensions.Hosting/7.0.0": {
+    "SkiaSharp.NativeAssets.macOS/3.116.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-AWsDTs6TeCtyXYDWakzLXCOZA3/IdIfBWBwkYAF0ZvVktVr3E15oYP9pfI7GzKaGVmHaJF9TgFQnFEfcnzEkcw==",
-      "path": "serilog.extensions.hosting/7.0.0",
-      "hashPath": "serilog.extensions.hosting.7.0.0.nupkg.sha512"
+      "sha512": "sha512-3KPvpKysDmEMt0NnAZPX5U6KFk0LmG/72/IjAIJemIksIZ0Tjs9pGpr3L+zboVCv1MLVoJLKl3nJDXUG6Jda6A==",
+      "path": "skiasharp.nativeassets.macos/3.116.1",
+      "hashPath": "skiasharp.nativeassets.macos.3.116.1.nupkg.sha512"
     },
-    "Serilog.Extensions.Logging/7.0.0": {
+    "SkiaSharp.NativeAssets.WebAssembly/3.116.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-9faU0zNQqU7I6soVhLUMYaGNpgWv6cKlKb2S5AnS8gXxzW/em5Ladm/6FMrWTnX41cdbdGPOWNAo6adi4WaJ6A==",
-      "path": "serilog.extensions.logging/7.0.0",
-      "hashPath": "serilog.extensions.logging.7.0.0.nupkg.sha512"
+      "sha512": "sha512-CHopOG9z8P4fCha9KYe9zf0KBJg8N0/bjbCd7viYeviQIgmNf6XcL8Um2H6na7lrCYAfCZHejMmr+ErQ0jreNw==",
+      "path": "skiasharp.nativeassets.webassembly/3.116.1",
+      "hashPath": "skiasharp.nativeassets.webassembly.3.116.1.nupkg.sha512"
     },
-    "Serilog.Formatting.Compact/1.1.0": {
+    "SkiaSharp.NativeAssets.Win32/3.116.1": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-pNroKVjo+rDqlxNG5PXkRLpfSCuDOBY0ri6jp9PLe505ljqwhwZz8ospy2vWhQlFu5GkIesh3FcDs4n7sWZODA==",
-      "path": "serilog.formatting.compact/1.1.0",
-      "hashPath": "serilog.formatting.compact.1.1.0.nupkg.sha512"
+      "sha512": "sha512-dRQ75MCI8oz6zAs2Y1w6pq6ARs4MhdNG+gf3doOxOxdnueDXffQLGQIxON54GDoxc0WjKOoHMKBR4DhaduwwQw==",
+      "path": "skiasharp.nativeassets.win32/3.116.1",
+      "hashPath": "skiasharp.nativeassets.win32.3.116.1.nupkg.sha512"
     },
-    "Serilog.Settings.Configuration/7.0.0": {
+    "Sungaila.PDFium.BlazorWebAssembly/133.0.6872": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-MlabSn74uXAGKNv9WWDdGejmsr7cKhsfi98ZtdeK119s4lTLp+hakBtnPm8OvXNUvtXYs2ijXKA0tIy4IMnjWQ==",
-      "path": "serilog.settings.configuration/7.0.0",
-      "hashPath": "serilog.settings.configuration.7.0.0.nupkg.sha512"
-    },
-    "Serilog.Sinks.Console/4.0.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-apLOvSJQLlIbKlbx+Y2UDHSP05kJsV7mou+fvJoRGs/iR+jC22r8cuFVMjjfVxz/AD4B2UCltFhE1naRLXwKNw==",
-      "path": "serilog.sinks.console/4.0.1",
-      "hashPath": "serilog.sinks.console.4.0.1.nupkg.sha512"
-    },
-    "Serilog.Sinks.Debug/2.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-Y6g3OBJ4JzTyyw16fDqtFcQ41qQAydnEvEqmXjhwhgjsnG/FaJ8GUqF5ldsC/bVkK8KYmqrPhDO+tm4dF6xx4A==",
-      "path": "serilog.sinks.debug/2.0.0",
-      "hashPath": "serilog.sinks.debug.2.0.0.nupkg.sha512"
-    },
-    "Serilog.Sinks.File/5.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-uwV5hdhWPwUH1szhO8PJpFiahqXmzPzJT/sOijH/kFgUx+cyoDTMM8MHD0adw9+Iem6itoibbUXHYslzXsLEAg==",
-      "path": "serilog.sinks.file/5.0.0",
-      "hashPath": "serilog.sinks.file.5.0.0.nupkg.sha512"
+      "sha512": "sha512-CdF8iyQ65sw+XZV9gjkoegNzP3BETpYNPPnOggR7kc/3MhrDBdEHO/FGoDknClRTr1LEzv/Ul8SIUfKRvXB4JQ==",
+      "path": "sungaila.pdfium.blazorwebassembly/133.0.6872",
+      "hashPath": "sungaila.pdfium.blazorwebassembly.133.0.6872.nupkg.sha512"
     },
     "Swashbuckle.AspNetCore/6.4.0": {
       "type": "package",
@@ -2164,6 +2191,13 @@
       "sha512": "sha512-KMiAFoW7MfJGa9nDFNcfu+FpEdiHpWgTcS2HdMpDvt9saK3y/G4GwprPyzqjFH9NTaGPQeWNHU+iDlDILj96aQ==",
       "path": "system.reflection/4.3.0",
       "hashPath": "system.reflection.4.3.0.nupkg.sha512"
+    },
+    "System.Reflection.Emit/4.7.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-VR4kk8XLKebQ4MZuKuIni/7oh+QGFmZW3qORd1GvBq/8026OpW501SzT/oypwiQl4TvT8ErnReh/NzY9u+C6wQ==",
+      "path": "system.reflection.emit/4.7.0",
+      "hashPath": "system.reflection.emit.4.7.0.nupkg.sha512"
     },
     "System.Reflection.Metadata/6.0.1": {
       "type": "package",
@@ -2402,6 +2436,13 @@
       "sha512": "sha512-lJ8AxvkX7GQxpC6GFCeBj8ThYVyQczx2+f/cWHJU8tjS7YfI6Cv6bon70jVEgs2CiFbmmM8b9j1oZVx0dSI2Ww==",
       "path": "system.xml.xmldocument/4.3.0",
       "hashPath": "system.xml.xmldocument.4.3.0.nupkg.sha512"
+    },
+    "Tesseract/5.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-YB7feJlrTWSXtK8+WaCcseGSPK/1r2d2FWeKGyndlrPwYClrzTlCoHD4/oQEUjKafmpkWlhTZZ7pxiRJYZgj6w==",
+      "path": "tesseract/5.2.0",
+      "hashPath": "tesseract.5.2.0.nupkg.sha512"
     }
   }
 }

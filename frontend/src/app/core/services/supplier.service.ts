@@ -8,7 +8,7 @@ import { Supplier } from '../models/supplier.model';
   providedIn: 'root'
 })
 export class SupplierService {
-  private apiUrl = `${environment.apiUrl}/suppliers`;
+  private apiUrl = `${environment.apiUrl}/v1/suppliers`;
 
   constructor(private http: HttpClient) {}
 

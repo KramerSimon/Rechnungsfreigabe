@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/approvals")]
 [Authorize]
 public class ApprovalController : ControllerBase
 {
@@ -169,14 +169,27 @@ public class ApprovalController : ControllerBase
                 return BadRequest(new { message = "Invalid invoice or approver" });
             }
 
-            // Parse Status if provided
-            ApprovalStatus status = ApprovalStatus.Pending;
+            // Parse Status if provided - use status code lookup instead of enum
+            // Status is now handled through the Status relationship with the database
+            int? statusId = null;
             if (!string.IsNullOrWhiteSpace(dto.Status))
             {
-                if (!Enum.TryParse<ApprovalStatus>(dto.Status, true, out status))
+                statusId = await _context.Statuses
+                    .Where(s => s.Code == dto.Status && s.EntityType == EntityTypes.ApprovalWorkflow)
+                    .Select(s => (int?)s.Id)
+                    .FirstOrDefaultAsync();
+                if (!statusId.HasValue)
                 {
                     return BadRequest(new { message = "Invalid status value" });
                 }
+            }
+            else
+            {
+                // Default to Pending status
+                statusId = await _context.Statuses
+                    .Where(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && s.EntityType == EntityTypes.ApprovalWorkflow)
+                    .Select(s => (int?)s.Id)
+                    .FirstOrDefaultAsync();
             }
 
             var workflow = new ApprovalWorkflow
@@ -186,7 +199,7 @@ public class ApprovalController : ControllerBase
                 StepNumber = dto.StepNumber,
                 ApproverId = dto.ApproverId,
                 ApprovalLevel = dto.ApprovalLevel,
-                Status = status,
+                StatusId = statusId,
                 Comments = dto.Comments,
                 CreatedAt = DateTime.UtcNow
             };
@@ -195,7 +208,9 @@ public class ApprovalController : ControllerBase
             await _context.SaveChangesAsync();
 
             // Send notification to approver if workflow is pending (duplicate-safe)
-            if (status == ApprovalStatus.Pending)
+            var pendingStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && s.EntityType == EntityTypes.ApprovalWorkflow);
+            if (statusId == pendingStatus?.Id)
             {
                 await _notificationService.EnsureApprovalNotificationForApproverAsync(dto.InvoiceId, dto.ApproverId);
             }
@@ -207,9 +222,9 @@ public class ApprovalController : ControllerBase
                 RuleId = workflow.RuleId,
                 StepNumber = workflow.StepNumber,
                 ApproverId = workflow.ApproverId,
-                ApproverName = approver.FirstName + " " + approver.LastName,
+                ApproverName = approver != null ? approver.FirstName + " " + approver.LastName : string.Empty,
                 ApprovalLevel = workflow.ApprovalLevel,
-                Status = workflow.Status.ToString(),
+                Status = workflow.Status?.ToString() ?? string.Empty,
                 Comments = workflow.Comments,
                 ApprovedAt = workflow.ApprovedAt,
                 CreatedAt = workflow.CreatedAt
@@ -270,9 +285,13 @@ public class ApprovalController : ControllerBase
 
             if (!string.IsNullOrWhiteSpace(dto.Status))
             {
-                if (Enum.TryParse<ApprovalStatus>(dto.Status, true, out var status))
+                var statusId = await _context.Statuses
+                    .Where(s => s.Code == dto.Status && s.EntityType == EntityTypes.ApprovalWorkflow)
+                    .Select(s => (int?)s.Id)
+                    .FirstOrDefaultAsync();
+                if (statusId.HasValue)
                 {
-                    workflow.Status = status;
+                    workflow.StatusId = statusId.Value;
                 }
                 else
                 {
@@ -298,7 +317,7 @@ public class ApprovalController : ControllerBase
                 ApproverId = workflow.ApproverId,
                 ApproverName = approver != null ? approver.FirstName + " " + approver.LastName : string.Empty,
                 ApprovalLevel = workflow.ApprovalLevel,
-                Status = workflow.Status.ToString(),
+                Status = workflow.Status?.ToString() ?? string.Empty,
                 Comments = workflow.Comments,
                 ApprovedAt = workflow.ApprovedAt,
                 CreatedAt = workflow.CreatedAt

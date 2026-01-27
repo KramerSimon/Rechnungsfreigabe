@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-// [Authorize] // Temporarily disabled for testing
+[Route("api/v1/pdf-upload")]
+[Authorize]
 public class PdfUploadController : ControllerBase
 {
     private readonly IPdfUploadService _pdfUploadService;
@@ -150,7 +150,6 @@ public class PdfUploadController : ControllerBase
     /// Download a PDF by invoice ID (from database)
     /// </summary>
     [HttpGet("download/{invoiceId}")]
-    [AllowAnonymous]
     public async Task<IActionResult> DownloadInvoicePdf(int invoiceId)
     {
         try

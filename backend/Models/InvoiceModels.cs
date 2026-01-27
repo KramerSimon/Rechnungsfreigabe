@@ -114,8 +114,8 @@ public class PurchaseOrder
     [StringLength(3)]
     public string Currency { get; set; } = "EUR";
 
-    [Column("status")]
-    public PurchaseOrderStatus Status { get; set; } = PurchaseOrderStatus.Offen;
+    [Column("status_id")]
+    public int? StatusId { get; set; }
 
     [Column("created_by")]
     public int CreatedBy { get; set; }
@@ -140,6 +140,7 @@ public class PurchaseOrder
     public string? OriginalFilename { get; set; }
 
     // Navigation properties
+    public virtual Status? Status { get; set; }
     public virtual Supplier? Supplier { get; set; }
     public virtual CostCenter? CostCenter { get; set; }
     public virtual Project? Project { get; set; }
@@ -195,8 +196,8 @@ public class Invoice
     [Column("received_date")]
     public DateTime ReceivedDate { get; set; } = DateTime.UtcNow;
 
-    [Column("status")]
-    public InvoiceStatus Status { get; set; } = InvoiceStatus.Eingegangen;
+    [Column("status_id")]
+    public int? StatusId { get; set; }
 
     [Column("requires_approval")]
     public bool RequiresApproval { get; set; } = true;
@@ -240,6 +241,7 @@ public class Invoice
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
+    public virtual Status? Status { get; set; }
     public virtual Supplier Supplier { get; set; } = null!;
     public virtual PurchaseOrder? PurchaseOrder { get; set; }
     public virtual CostCenter? CostCenter { get; set; }
@@ -251,22 +253,5 @@ public class Invoice
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }
 
-public enum PurchaseOrderStatus
-{
-    Offen,
-    Teilweise_Erfuellt,
-    Erfuellt,
-    Storniert
-}
-
-public enum InvoiceStatus
-{
-    Eingegangen,
-    In_Pruefung,
-    Freigabe_Erforderlich,
-    Freigegeben,
-    Abgelehnt,
-    Bezahlt,
-    Ueberfaellig,
-    Storniert
-}
+// Enums removed - statuses are now in the centralized statuses table
+// Use StatusCodes.Invoice.* and StatusCodes.PurchaseOrder.* constants instead

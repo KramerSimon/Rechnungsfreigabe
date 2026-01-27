@@ -12,6 +12,8 @@ public class EscalationRuleDto
     public int? RepeatIntervalHours { get; set; }
     public int? MaxEscalations { get; set; }
     public string? NotifyRole { get; set; }
+    public int? NotifyRoleId { get; set; }
+    public string? NotifyRoleName { get; set; }
     public int? NotifyUserId { get; set; }
     public string? NotifyUserName { get; set; }
     public string? MessageTemplate { get; set; }
@@ -44,6 +46,8 @@ public class CreateEscalationRuleDto
     [StringLength(50)]
     public string? NotifyRole { get; set; }
 
+    public int? NotifyRoleId { get; set; }
+
     public int? NotifyUserId { get; set; }
 
     [StringLength(500)]
@@ -72,6 +76,8 @@ public class UpdateEscalationRuleDto
 
     [StringLength(50)]
     public string? NotifyRole { get; set; }
+
+    public int? NotifyRoleId { get; set; }
 
     public int? NotifyUserId { get; set; }
 

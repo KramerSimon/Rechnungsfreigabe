@@ -6,7 +6,7 @@ using RechnungsfreigabeAPI.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/suppliers")]
 public class SuppliersController : ControllerBase
 {
     private readonly ISupplierService _supplierService;

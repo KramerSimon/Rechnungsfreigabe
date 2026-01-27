@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
+using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Services;
 using BC = BCrypt.Net.BCrypt;
 
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/dev-tools")]
 public class DevToolsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -98,11 +99,15 @@ public class DevToolsController : ControllerBase
     {
         try
         {
+            var pendingStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
+                                            s.EntityType == EntityTypes.ApprovalWorkflow);
+            
             var pendingWorkflows = await _context.ApprovalWorkflows
                 .Include(w => w.Approver)
                 .Include(w => w.Invoice)
                     .ThenInclude(i => i!.Supplier)
-                .Where(w => w.Status == Models.ApprovalStatus.Pending)
+                .Where(w => w.StatusId == pendingStatus!.Id)
                 .ToListAsync();
 
             int created = 0;

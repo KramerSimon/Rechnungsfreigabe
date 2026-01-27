@@ -1,14 +1,14 @@
 // Application-wide enums and constants
 
 export enum InvoiceStatus {
-  Eingegangen = 'Eingegangen',
-  InPruefung = 'In_Pruefung',
-  FreigabeErforderlich = 'Freigabe_Erforderlich',
-  Freigegeben = 'Freigegeben',
-  Abgelehnt = 'Abgelehnt',
-  Bezahlt = 'Bezahlt',
-  Ueberfaellig = 'Ueberfaellig',
-  Storniert = 'Storniert'
+  Eingegangen = 'Received',
+  InPruefung = 'Under_Review',
+  FreigabeErforderlich = 'Approval_Required',
+  Freigegeben = 'Approved',
+  Abgelehnt = 'Rejected',
+  Bezahlt = 'Paid',
+  Ueberfaellig = 'Overdue',
+  Storniert = 'Cancelled'
 }
 
 export enum UserRoles {
@@ -40,15 +40,6 @@ export const APP_CONSTANTS = {
   DATE_FORMAT: 'dd.MM.yyyy',
   CURRENCY_FORMAT: 'EUR',
   DEFAULT_LOCALE: 'de-DE'
-} as const;
-
-export const API_ENDPOINTS = {
-  AUTH: '/api/auth',
-  USERS: '/api/users',
-  INVOICES: '/api/invoices',
-  SUPPLIERS: '/api/suppliers',
-  COST_CENTERS: '/api/cost-centers',
-  DASHBOARD: '/api/dashboard'
 } as const;
 
 export const ROUTE_PATHS = {

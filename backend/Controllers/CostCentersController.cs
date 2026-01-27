@@ -6,7 +6,7 @@ using RechnungsfreigabeAPI.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/cost-centers")]
 // [Authorize] // Temporarily disabled for testing
 public class CostCentersController : ControllerBase
 {

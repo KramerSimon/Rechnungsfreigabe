@@ -12,7 +12,7 @@ import {
   providedIn: 'root'
 })
 export class InvoiceHistoryService {
-  private readonly apiUrl = `${environment.apiUrl}/invoices`;
+  private readonly apiUrl = `${environment.apiUrl}/v1/invoices`;
 
   constructor(private http: HttpClient) {}
 

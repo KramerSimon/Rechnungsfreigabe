@@ -6,7 +6,7 @@ import { CreateEscalationRuleDto, EscalationRule } from '../models/escalation-ru
 
 @Injectable({ providedIn: 'root' })
 export class EscalationRuleService {
-  private readonly apiUrl = `${environment.apiUrl}/escalation-rules`;
+  private readonly apiUrl = `${environment.apiUrl}/v1/escalation-rules`;
 
   constructor(private http: HttpClient) {}
 

@@ -7,8 +7,8 @@ using System.Security.Claims;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-// [Authorize] // Temporarily disabled for testing
+[Route("api/v1/invoices")]
+[Authorize]
 public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
@@ -30,6 +30,24 @@ public class InvoicesController : ControllerBase
             var userId = GetCurrentUserId();
             var userPermissions = await _userService.GetUserPermissionsAsync(userId);
             var result = await _invoiceService.GetInvoicesPagedAsync(pageRequest, userId, userPermissions);
+            return Ok(result);
+        }
+        catch (Exception)
+        {
+            
+            return StatusCode(500, new { message = "An error occurred while retrieving invoices" });
+        }
+    }
+
+    /// <summary>
+    /// Get all invoices without user filtering (for admin master data)
+    /// </summary>
+    [HttpGet("all")]
+    public async Task<ActionResult<PagedResult<InvoiceDto>>> GetAllInvoices([FromQuery] PageRequest pageRequest)
+    {
+        try
+        {
+            var result = await _invoiceService.GetAllInvoicesPagedAsync(pageRequest);
             return Ok(result);
         }
         catch (Exception)
@@ -232,13 +250,13 @@ public class InvoicesController : ControllerBase
     {
         try
         {
-            if (!Enum.TryParse<Models.InvoiceStatus>(status, out var invoiceStatus))
+            if (string.IsNullOrWhiteSpace(status))
             {
-                return BadRequest(new { message = "Invalid status value" });
+                return BadRequest(new { message = "Status is required" });
             }
 
             var userId = GetCurrentUserId();
-            var invoice = await _invoiceService.UpdateInvoiceStatusAsync(id, invoiceStatus, userId);
+            var invoice = await _invoiceService.UpdateInvoiceStatusAsync(id, status, userId);
             
             if (invoice == null)
             {

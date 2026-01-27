@@ -7,7 +7,7 @@ using RechnungsfreigabeAPI.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/system-config")]
+[Route("api/v1/system-config")]
 [Authorize(Roles = "Administrator")]
 public class SystemConfigController : ControllerBase
 {

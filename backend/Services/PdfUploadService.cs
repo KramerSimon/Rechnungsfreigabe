@@ -351,6 +351,10 @@ public class PdfUploadService : IPdfUploadService
             Console.WriteLine($"[PO PDF Upload] Validated Project: {projectId}, belongs to Cost Center: {costCenterId}");
 
             // Erstelle Purchase Order mit extrahierten Daten
+            var offenStatus = await _context.Statuses
+                .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Offen && 
+                                            s.EntityType == EntityTypes.PurchaseOrder);
+            
             var purchaseOrder = new PurchaseOrder
             {
                 Id = poId,
@@ -361,7 +365,7 @@ public class PdfUploadService : IPdfUploadService
                 ProjectId = projectId,  // Required
                 TotalAmount = pdfData.TotalAmount ?? 0,
                 Currency = pdfData.Currency ?? "EUR",
-                Status = PurchaseOrderStatus.Offen,
+                StatusId = offenStatus?.Id,
                 CreatedBy = userId,
                 CreatedAt = DateTime.UtcNow,
                 PdfContent = pdfContent,
@@ -388,43 +392,48 @@ public class PdfUploadService : IPdfUploadService
             }
 
             // Lade vollständige PO mit Navigations-Properties
-            var poDto = await _context.PurchaseOrders
-                .Where(po => po.Id == poId)
-                .Select(po => new PurchaseOrderDto
-                {
-                    Id = po.Id,
-                    Title = po.Title,
-                    Description = po.Description,
-                    CostCenterId = po.CostCenterId,
-                    CostCenterName = po.CostCenter != null ? po.CostCenter.Name : null,
-                    ProjectId = po.ProjectId,
-                    ProjectName = po.Project != null ? po.Project.Name : null,
-                    TotalAmount = po.TotalAmount,
-                    Currency = po.Currency,
-                    Status = po.Status.ToString(),
-                    Creator = po.Creator != null ? new UserDto
-                    {
-                        Id = po.Creator.Id,
-                        FirstName = po.Creator.FirstName,
-                        LastName = po.Creator.LastName,
-                        Email = po.Creator.Email
-                    } : null,
-                    Approver = po.Approver != null ? new UserDto
-                    {
-                        Id = po.Approver.Id,
-                        FirstName = po.Approver.FirstName,
-                        LastName = po.Approver.LastName,
-                        Email = po.Approver.Email
-                    } : null,
-                    CreatedAt = po.CreatedAt,
-                    ApprovedAt = po.ApprovedAt
-                })
-                .FirstOrDefaultAsync();
+            var po = await _context.PurchaseOrders
+                .Include(p => p.Status)
+                .Include(p => p.CostCenter)
+                .Include(p => p.Project)
+                .Include(p => p.Creator)
+                .Include(p => p.Approver)
+                .FirstOrDefaultAsync(p => p.Id == poId);
 
-            if (poDto == null)
+            if (po == null)
             {
                 throw new InvalidOperationException("Failed to retrieve created purchase order");
             }
+
+            var poDto = new PurchaseOrderDto
+            {
+                Id = po.Id,
+                Title = po.Title,
+                Description = po.Description,
+                CostCenterId = po.CostCenterId,
+                CostCenterName = po.CostCenter?.Name,
+                ProjectId = po.ProjectId,
+                ProjectName = po.Project?.Name,
+                TotalAmount = po.TotalAmount,
+                Currency = po.Currency,
+                Status = po.Status?.ToString() ?? string.Empty,
+                Creator = po.Creator != null ? new UserDto
+                {
+                    Id = po.Creator.Id,
+                    FirstName = po.Creator.FirstName,
+                    LastName = po.Creator.LastName,
+                    Email = po.Creator.Email
+                } : null,
+                Approver = po.Approver != null ? new UserDto
+                {
+                    Id = po.Approver.Id,
+                    FirstName = po.Approver.FirstName,
+                    LastName = po.Approver.LastName,
+                    Email = po.Approver.Email
+                } : null,
+                CreatedAt = po.CreatedAt,
+                ApprovedAt = po.ApprovedAt
+            };
 
             Console.WriteLine($"[PO PDF Upload] Upload completed successfully for PO {poDto.Id}");
             return poDto;

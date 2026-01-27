@@ -8,7 +8,7 @@ import { Project } from '../models/project.model';
   providedIn: 'root'
 })
 export class ProjectService {
-  private readonly apiUrl = `${environment.apiUrl}/projects`;
+  private readonly apiUrl = `${environment.apiUrl}/v1/projects`;
 
   constructor(private http: HttpClient) { }
 

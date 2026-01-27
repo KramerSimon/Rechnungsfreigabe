@@ -6,7 +6,7 @@ using RechnungsfreigabeAPI.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/invoices/{invoiceId}/[controller]")]
+[Route("api/v1/invoices/{invoiceId}/history")]
 // [Authorize] // Temporarily disabled for testing
 public class HistoryController : ControllerBase
 {

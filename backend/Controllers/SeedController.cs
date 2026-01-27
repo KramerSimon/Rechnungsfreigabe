@@ -7,7 +7,7 @@ using RechnungsfreigabeAPI.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/seed")]
 public class SeedController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -168,7 +168,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 15),
                     DueDate = new DateTime(2026, 1, 15),
                     Description = "Microsoft Office 365 Lizenzen für 12 Monate",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 2,
                     CreatedAt = DateTime.UtcNow
                 },
@@ -185,7 +184,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 16),
                     DueDate = new DateTime(2025, 12, 30),
                     Description = "Büromaterial: Druckerpapier, Stifte, Ordner",
-                    Status = InvoiceStatus.Eingegangen,
                     CreatedBy = 3,
                     CreatedAt = DateTime.UtcNow
                 },
@@ -201,7 +199,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 17),
                     DueDate = new DateTime(2026, 1, 16),
                     Description = "Reinigungsmittel für Büroküche",
-                    Status = InvoiceStatus.Freigegeben,
                     CreatedBy = 1,
                     CreatedAt = DateTime.UtcNow
                 },
@@ -218,7 +215,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 18),
                     DueDate = new DateTime(2026, 1, 17),
                     Description = "Webentwicklung und Design Services",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 4,
                     CreatedAt = DateTime.UtcNow
                 },
@@ -235,7 +231,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 19),
                     DueDate = new DateTime(2026, 1, 2),
                     Description = "Bürostühle für neue Mitarbeiter",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 3,
                     CreatedAt = DateTime.UtcNow
                 },
@@ -251,7 +246,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 20),
                     DueDate = new DateTime(2026, 1, 19),
                     Description = "Enterprise Software Lizenzen - Jahresvertrag",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 2,
                     CreatedAt = DateTime.UtcNow
                 },
@@ -268,7 +262,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 21),
                     DueDate = new DateTime(2026, 1, 4),
                     Description = "Kritisches Security Update & Performance Optimization",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 4,
                     CreatedAt = DateTime.UtcNow
                 },
@@ -284,7 +277,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 22),
                     DueDate = new DateTime(2026, 1, 21),
                     Description = "Premium Office Equipment & Furniture",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 3,
                     CreatedAt = DateTime.UtcNow
                 },
@@ -301,7 +293,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 23),
                     DueDate = new DateTime(2026, 1, 22),
                     Description = "Geschäftsreise: Flugtickets für Konferenz Berlin",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 1,
                     CreatedAt = DateTime.UtcNow.AddHours(-2)
                 },
@@ -318,7 +309,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 24),
                     DueDate = new DateTime(2026, 1, 23),
                     Description = "Wartung und Support: Server-Infrastruktur (Q4)",
-                    Status = InvoiceStatus.Eingegangen,
                     CreatedBy = 1,
                     CreatedAt = DateTime.UtcNow.AddHours(-12)
                 },
@@ -335,7 +325,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 26),
                     DueDate = new DateTime(2026, 1, 25),
                     Description = "Schulung: Advanced .NET Development für Team",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 1,
                     CreatedAt = DateTime.UtcNow.AddHours(-6)
                 },
@@ -352,7 +341,6 @@ public class SeedController : ControllerBase
                     InvoiceDate = new DateTime(2025, 12, 27),
                     DueDate = new DateTime(2026, 1, 26),
                     Description = "Lizenzen: Development Tools & IDE (Annual)",
-                    Status = InvoiceStatus.Freigabe_Erforderlich,
                     CreatedBy = 1,
                     CreatedAt = DateTime.UtcNow.AddHours(-1)
                 }
@@ -371,7 +359,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval
                     ApprovalLevel = 1,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -381,7 +368,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval
                     ApprovalLevel = 1,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -391,7 +377,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval
                     ApprovalLevel = 1,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -401,7 +386,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval for high-value invoice
                     ApprovalLevel = 2,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -411,7 +395,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval for urgent invoice
                     ApprovalLevel = 2,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -421,7 +404,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval
                     ApprovalLevel = 1,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -431,7 +413,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval for travel expenses
                     ApprovalLevel = 1,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -441,7 +422,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval for maintenance
                     ApprovalLevel = 1,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -451,7 +431,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval for training
                     ApprovalLevel = 1,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 },
                 new ApprovalWorkflow
@@ -461,7 +440,6 @@ public class SeedController : ControllerBase
                     StepNumber = 1,
                     ApproverId = 1, // Admin approval for software licenses
                     ApprovalLevel = 2,
-                    Status = ApprovalStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 }
             };

@@ -147,7 +147,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             // Send email if we have an address
             if (!string.IsNullOrWhiteSpace(targetUser.Email))
             {
-                await _emailService.SendEmailAsync(targetUser.Email, subject, body);
+                await _emailService.SendEmailAsync(targetUser.Email, subject, body, isHtml: false);
             }
 
             // Also create an in-app notification

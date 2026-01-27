@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Models;
-using backend.DTOs;
+using RechnungsfreigabeAPI.DTOs;
 
 namespace backend.Services
 {
@@ -56,6 +56,8 @@ namespace backend.Services
                 ? Guid.NewGuid().ToString("N")[..20].ToUpperInvariant()
                 : createProjectDto.Id.Trim();
 
+            var statusId = await GetProjectStatusIdAsync(createProjectDto.Status ?? RechnungsfreigabeAPI.Models.StatusCodes.Project.Geplant);
+
             var project = new Project
             {
                 Id = projectId,
@@ -64,7 +66,7 @@ namespace backend.Services
                 CostCenterId = createProjectDto.CostCenterId,
                 Budget = createProjectDto.Budget,
                 SpentAmount = createProjectDto.SpentAmount,
-                Status = MapStatus(createProjectDto.Status),
+                StatusId = statusId,
                 StartDate = createProjectDto.StartDate,
                 EndDate = createProjectDto.EndDate,
                 ProjectManagerId = createProjectDto.ProjectManagerId,
@@ -95,11 +97,13 @@ namespace backend.Services
                 project.CostCenterId = updateProjectDto.CostCenterId;
             }
 
+            var statusId = await GetProjectStatusIdAsync(updateProjectDto.Status ?? RechnungsfreigabeAPI.Models.StatusCodes.Project.Geplant);
+
             project.Name = updateProjectDto.Name;
             project.Description = updateProjectDto.Description;
             project.Budget = updateProjectDto.Budget;
             project.SpentAmount = updateProjectDto.SpentAmount;
-            project.Status = MapStatus(updateProjectDto.Status);
+            project.StatusId = statusId;
             project.StartDate = updateProjectDto.StartDate;
             project.EndDate = updateProjectDto.EndDate;
             project.ProjectManagerId = updateProjectDto.ProjectManagerId;
@@ -124,14 +128,13 @@ namespace backend.Services
             return true;
         }
 
-        private static ProjectStatus MapStatus(string status)
+        private async Task<int?> GetProjectStatusIdAsync(string statusCode)
         {
-            if (Enum.TryParse<ProjectStatus>(status, true, out var parsed))
-            {
-                return parsed;
-            }
-
-            return ProjectStatus.Geplant;
+            var status = await _context.Statuses
+                .Where(s => s.Code == statusCode && s.EntityType == EntityTypes.Project)
+                .Select(s => s.Id)
+                .FirstOrDefaultAsync();
+            return status;
         }
 
         private static ProjectDto MapToDto(Project project)
@@ -145,7 +148,7 @@ namespace backend.Services
                 CostCenterName = project.CostCenter?.Name,
                 Budget = project.Budget,
                 SpentAmount = project.SpentAmount,
-                Status = project.Status.ToString(),
+                Status = project.Status?.Code ?? RechnungsfreigabeAPI.Models.StatusCodes.Project.Geplant,
                 StartDate = project.StartDate,
                 EndDate = project.EndDate,
                 ProjectManagerId = project.ProjectManagerId

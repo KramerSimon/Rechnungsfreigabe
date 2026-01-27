@@ -12,7 +12,7 @@ export type { UserTaskSummary, AccountingOverview, SystemStatus };
   providedIn: 'root'
 })
 export class DashboardService {
-  private readonly apiUrl = `${environment.apiUrl}/dashboard`;
+  private readonly apiUrl = `${environment.apiUrl}/v1/dashboards`;
 
   constructor(private http: HttpClient) {}
 

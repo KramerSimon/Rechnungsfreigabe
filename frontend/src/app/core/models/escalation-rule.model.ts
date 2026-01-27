@@ -7,6 +7,8 @@ export interface EscalationRule {
   repeatIntervalHours?: number | null;
   maxEscalations?: number | null;
   notifyRole?: string | null;
+  notifyRoleId?: number | null;
+  notifyRoleName?: string | null;
   notifyUserId?: number | null;
   notifyUserName?: string | null;
   messageTemplate?: string | null;
@@ -23,6 +25,7 @@ export interface CreateEscalationRuleDto {
   repeatIntervalHours?: number | null;
   maxEscalations?: number | null;
   notifyRole?: string | null;
+  notifyRoleId?: number | null;
   notifyUserId?: number | null;
   messageTemplate?: string | null;
   isActive?: boolean;

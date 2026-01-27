@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,12 +21,17 @@ import { ApprovalWorkflow } from '../../core/models/approval.model';
           <span>Lade Genehmigungsschritte...</span>
         </div>
 
-        <div *ngIf="!loading && steps.length === 0" class="timeline-empty">
+        <div *ngIf="error" class="timeline-error">
+          <mat-icon color="warn">error</mat-icon>
+          <span>{{ error }}</span>
+        </div>
+
+        <div *ngIf="!loading && !error && steps.length === 0" class="timeline-empty">
           <mat-icon>timeline</mat-icon>
           <span>Keine Genehmigungsschritte vorhanden</span>
         </div>
 
-        <div *ngIf="!loading && steps.length > 0" class="timeline">
+        <div *ngIf="!loading && !error && steps.length > 0" class="timeline">
           <div *ngFor="let s of steps; let i = index" class="timeline-step" [ngClass]="statusClass(s.status)">
             <div class="step-number">{{ s.stepNumber }}</div>
             <div class="step-content">
@@ -78,14 +83,17 @@ import { ApprovalWorkflow } from '../../core/models/approval.model';
     .timeline-step.status-pending  { border-color: #ffe0b2; }
     .timeline-step.status-waiting  { border-color: #cfd8dc; }
     .timeline-step.status-skipped  { border-color: #e0e0e0; }
+
+    .timeline-error { display: flex; align-items: center; gap: 8px; color: #d32f2f; padding: 8px 0; }
   `]
 })
-export class ApprovalTimelineComponent implements OnInit {
+export class ApprovalTimelineComponent implements OnInit, OnChanges {
   @Input() invoiceId!: number;
   @Input() workflows: ApprovalWorkflow[] | null = null;
 
   loading = false;
   steps: ApprovalWorkflow[] = [];
+  error: string | null = null;
 
   constructor(private approvalService: ApprovalService) {}
 
@@ -93,22 +101,22 @@ export class ApprovalTimelineComponent implements OnInit {
     this.refresh();
   }
 
-  ngOnChanges(): void {
-    this.refresh();
+  ngOnChanges(changes: SimpleChanges): void {
+    // Refresh whenever either the invoiceId or provided workflows change
+    if (changes['invoiceId'] || changes['workflows']) {
+      this.refresh();
+    }
   }
 
   private refresh(): void {
+    // Prefer data passed in with the invoice to avoid extra calls
     if (this.workflows && this.workflows.length) {
+      this.error = null;
       this.steps = [...this.workflows].sort((a, b) => a.stepNumber - b.stepNumber);
       return;
     }
-    // If no workflows provided as input and no invoiceId, just show empty state
-    if (!this.invoiceId) {
-      this.steps = [];
-      return;
-    }
-    // Don't try to load all workflows via admin endpoint
-    // The workflows should be provided via the invoice's pendingApprovals
+
+    // If nothing to load or no invoice id, show empty state; backend already embeds pendingApprovals in invoice DTO
     this.steps = [];
   }
 

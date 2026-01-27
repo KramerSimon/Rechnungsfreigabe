@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/purchase-orders")]
 // [Authorize] // Temporarily disabled for testing
 public class PurchaseOrdersController : ControllerBase
 {

@@ -42,12 +42,14 @@ builder.Services.AddScoped<IEscalationRuleService, EscalationRuleService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IEscalationEmailService, EscalationEmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IPdfUploadService, PdfUploadService>();
 builder.Services.AddScoped<backend.Services.IProjectService, backend.Services.ProjectService>();
 builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IEscalationEmailService, EscalationEmailService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -147,8 +149,7 @@ var dbLogger = loggerFactory.CreateLogger("Database");
 startupLogger.LogInformation("Server starting.");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -159,11 +160,6 @@ if (app.Environment.IsDevelopment())
     // Only use HTTPS redirection in development if HTTPS is configured
     // For development on HTTP only, comment out the next line
     // app.UseHttpsRedirection();
-}
-else
-{
-    app.UseHttpsRedirection();
-}
 
 app.UseCors("FrontendCors");
 

@@ -168,8 +168,8 @@ public class Project
     [Column("spent_amount", TypeName = "decimal(12,2)")]
     public decimal SpentAmount { get; set; } = 0;
 
-    [Column("status")]
-    public ProjectStatus Status { get; set; } = ProjectStatus.Geplant;
+    [Column("status_id")]
+    public int? StatusId { get; set; }
 
     [Column("start_date")]
     public DateTime? StartDate { get; set; }
@@ -184,17 +184,12 @@ public class Project
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
+    public virtual Status? Status { get; set; }
     public virtual CostCenter CostCenter { get; set; } = null!;
     public virtual User? ProjectManager { get; set; }
     public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
     public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
 }
 
-public enum ProjectStatus
-{
-    Geplant,
-    Aktiv,
-    Pausiert,
-    Abgeschlossen,
-    Abgebrochen
-}
+// Enum removed - statuses are now in the centralized statuses table
+// Use StatusCodes.Project.* constants instead
