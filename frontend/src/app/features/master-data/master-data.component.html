@@ -372,17 +372,13 @@
       </div>
     </mat-tab>
 
-    <!-- Benutzer & Rollen -->
-    <mat-tab label="Benutzer & Rollen">
+    <!-- Benutzer -->
+    <mat-tab label="Benutzer">
       <div class="tab-content">
         <div class="header-actions">
           <button mat-raised-button color="primary" (click)="createUser()">
             <mat-icon>person_add</mat-icon>
             Neuer Benutzer
-          </button>
-          <button mat-raised-button (click)="manageRoles()">
-            <mat-icon>admin_panel_settings</mat-icon>
-            Rollen verwalten
           </button>
           <button mat-icon-button (click)="loadUsers()" matTooltip="Aktualisieren">
             <mat-icon>refresh</mat-icon>
@@ -407,9 +403,18 @@
             </ng-container>
 
             <ng-container matColumnDef="role">
-              <th mat-header-cell *matHeaderCellDef>Rolle</th>
+              <th mat-header-cell *matHeaderCellDef>Rollen</th>
               <td mat-cell *matCellDef="let element">
-                <span class="role-badge">{{element.role}}</span>
+                <div class="role-badges-container">
+                  <span *ngFor="let role of (element.roles || [])"
+                        class="role-badge"
+                        [style.backgroundColor]="role.color || '#ff9800'">
+                    {{role.name}}
+                  </span>
+                  <span *ngIf="!element.roles || element.roles.length === 0" class="role-badge empty">
+                    Keine Rolle
+                  </span>
+                </div>
               </td>
             </ng-container>
 
@@ -424,7 +429,7 @@
 
             <ng-container matColumnDef="lastLogin">
               <th mat-header-cell *matHeaderCellDef>Letzter Login</th>
-              <td mat-cell *matCellDef="let element">{{element.lastLogin ? formatDate(element.lastLogin) : '-'}}</td>
+              <td mat-cell *matCellDef="let element">{{element.lastLogin ? (element.lastLogin | date:'dd.MM.yyyy HH:mm:ss') : '-'}}</td>
             </ng-container>
 
             <ng-container matColumnDef="actions">
@@ -432,9 +437,6 @@
               <td mat-cell *matCellDef="let element">
                 <button mat-icon-button matTooltip="Bearbeiten" (click)="editUser(element)">
                   <mat-icon>edit</mat-icon>
-                </button>
-                <button mat-icon-button matTooltip="Rollen verwalten">
-                  <mat-icon>admin_panel_settings</mat-icon>
                 </button>
                 <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteUser(element.id)">
                   <mat-icon>delete</mat-icon>
@@ -454,6 +456,84 @@
           <div *ngIf="!loadingUsers && users.length === 0" class="empty-state">
             <mat-icon>group</mat-icon>
             <p>Keine Benutzer vorhanden</p>
+          </div>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Rollen -->
+    <mat-tab label="Rollen">
+      <div class="tab-content">
+        <div class="header-actions">
+          <button mat-raised-button color="primary" (click)="createRole()">
+            <mat-icon>add</mat-icon>
+            Neue Rolle
+          </button>
+          <button mat-icon-button (click)="loadRoles()" matTooltip="Aktualisieren">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+
+        <mat-card>
+          <table mat-table [dataSource]="roles" class="data-table">
+            <ng-container matColumnDef="color">
+              <th mat-header-cell *matHeaderCellDef>Farbe</th>
+              <td mat-cell *matCellDef="let role">
+                <span class="role-color-dot" [style.backgroundColor]="role.color || '#ff9800'"></span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let role">{{role.name}}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="description">
+              <th mat-header-cell *matHeaderCellDef>Beschreibung</th>
+              <td mat-cell *matCellDef="let role">{{role.description || '-'}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="permissions">
+              <th mat-header-cell *matHeaderCellDef>Berechtigungen</th>
+              <td mat-cell *matCellDef="let role">
+                <div class="permission-chip" *ngFor="let perm of role.permissions">{{perm}}</div>
+                <span *ngIf="!role.permissions || role.permissions.length === 0" class="permission-empty">Keine</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="isSystemRole">
+              <th mat-header-cell *matHeaderCellDef>Systemrolle</th>
+              <td mat-cell *matCellDef="let role">
+                <span [class.active-badge]="role.isSystemRole" [class.inactive-badge]="!role.isSystemRole">
+                  {{role.isSystemRole ? 'Ja' : 'Nein'}}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+              <td mat-cell *matCellDef="let role">
+                <button mat-icon-button matTooltip="Bearbeiten" (click)="editRole(role)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteRole(role)" [disabled]="role.isSystemRole">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="roleColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: roleColumns;"></tr>
+          </table>
+
+          <div *ngIf="loadingRoles" class="loading-overlay">
+            <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+            <p>Lade Rollen...</p>
+          </div>
+
+          <div *ngIf="!loadingRoles && roles.length === 0" class="empty-state">
+            <mat-icon>admin_panel_settings</mat-icon>
+            <p>Keine Rollen vorhanden</p>
           </div>
         </mat-card>
       </div>

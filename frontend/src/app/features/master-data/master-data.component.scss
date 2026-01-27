@@ -90,11 +90,47 @@ mat-card {
 .role-badge {
   display: inline-block;
   padding: 4px 12px;
+  margin-right: 8px;
+  margin-bottom: 4px;
   border-radius: 12px;
   background-color: #ff9800;
   color: white;
   font-size: 12px;
   font-weight: 500;
+
+  &.empty {
+    background-color: #9e9e9e;
+    font-style: italic;
+  }
+}
+
+.role-badges-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.role-color-dot {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.12);
+}
+
+.permission-chip {
+  display: inline-block;
+  padding: 4px 8px;
+  margin: 2px;
+  border-radius: 10px;
+  background-color: #e0e0e0;
+  font-size: 12px;
+  color: #424242;
+}
+
+.permission-empty {
+  color: #999;
+  font-style: italic;
 }
 
 .loading-overlay {

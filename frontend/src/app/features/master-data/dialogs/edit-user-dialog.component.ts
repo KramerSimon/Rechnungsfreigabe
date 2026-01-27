@@ -6,22 +6,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { RoleDto, User } from '../../../core/models/user.models';
 
-interface User {
-  id: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  lastLogin?: string;
-  createdAt: string;
-}
-
-interface Role {
-  id: number;
-  name: string;
+interface EditUserDialogData {
+  user: User;
+  availableRoles: RoleDto[];
 }
 
 @Component({
@@ -119,75 +108,65 @@ interface Role {
       </div>
     </div>
   `,
-  styles: [`
-    .dialog-container {
-      width: 500px;
-      max-width: 90vw;
-    }
+  styles: [
+    `
+      .dialog-container {
+        width: 500px;
+        max-width: 90vw;
+      }
 
-    .form-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 8px;
-    }
+      .form-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 8px;
+      }
 
-    .form-row mat-form-field {
-      flex: 1;
-    }
+      .form-row mat-form-field {
+        flex: 1;
+      }
 
-    .full-width {
-      width: 100%;
-    }
+      .full-width {
+        width: 100%;
+      }
 
-    .dialog-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 16px 0;
-    }
-  `]
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 16px 0;
+      }
+    `
+  ]
 })
 export class EditUserDialogComponent {
   userForm: FormGroup;
-  availableRoles: Role[] = [
-    { id: 1, name: 'Administrator' },
-    { id: 2, name: 'Freigeber' },
-    { id: 3, name: 'Buchhaltung' },
-    { id: 4, name: 'Benutzer' },
-    { id: 5, name: 'Manager' }
-  ];
+  availableRoles: RoleDto[] = [];
 
   constructor(
     private dialogRef: MatDialogRef<EditUserDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: User,
+    @Inject(MAT_DIALOG_DATA) public data: EditUserDialogData,
     private fb: FormBuilder
   ) {
-    // Extract role IDs from role name (simplified mapping)
-    const roleIds = this.getRoleIdsFromRoleName(data.role);
+    this.availableRoles = data?.availableRoles || [];
+    const user = data?.user || {} as User;
+    const roleIds = this.getRoleIds(user.roles);
 
     this.userForm = this.fb.group({
-      username: [{ value: data.username || '', disabled: true }], // Username is readonly
-      email: [data.email || '', [Validators.required, Validators.email, Validators.maxLength(255)]],
-      firstName: [data.firstName || '', [Validators.required, Validators.maxLength(100)]],
-      lastName: [data.lastName || '', [Validators.required, Validators.maxLength(100)]],
-      activeDirectorySid: ['', [Validators.maxLength(255)]], // Not available in current User interface
+      username: [{ value: user.username || '', disabled: true }], // Username is readonly
+      email: [user.email || '', [Validators.required, Validators.email, Validators.maxLength(255)]],
+      firstName: [user.firstName || '', [Validators.required, Validators.maxLength(100)]],
+      lastName: [user.lastName || '', [Validators.required, Validators.maxLength(100)]],
+      activeDirectorySid: ['', [Validators.maxLength(255)]],
       roleIds: [roleIds, []],
-      isActive: [data.isActive]
+      isActive: [user.isActive]
     });
   }
 
-  private getRoleIdsFromRoleName(roleName: string): number[] {
-    // Simple mapping - in real app this would come from API
-    const roleMap: { [key: string]: number } = {
-      'Administrator': 1,
-      'Freigeber': 2,
-      'Buchhaltung': 3,
-      'Benutzer': 4,
-      'Manager': 5
-    };
-
-    const roleId = roleMap[roleName];
-    return roleId ? [roleId] : [];
+  private getRoleIds(roles?: Array<{ id: number; name: string }>): number[] {
+    if (!roles || roles.length === 0) {
+      return [];
+    }
+    return roles.map(role => role.id);
   }
 
   onCancel(): void {
@@ -196,7 +175,6 @@ export class EditUserDialogComponent {
 
   onSave(): void {
     if (this.userForm.valid) {
-      // Don't include the disabled username field
       const formValue = { ...this.userForm.value };
       delete formValue.username;
       this.dialogRef.close(formValue);

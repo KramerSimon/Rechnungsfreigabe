@@ -5,10 +5,21 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
+  role?: string; // Legacy single role field
+  roles?: RoleDto[]; // Array of roles from backend
+  roleIds?: number[]; // Optional helper for update payloads
   isActive: boolean;
   lastLogin?: string;
   createdAt: string;
+}
+
+export interface RoleDto {
+  id: number;
+  name: string;
+  description?: string;
+  permissions: (string | number)[];
+  isSystemRole?: boolean;
+  color?: string;
 }
 
 export interface Role {
@@ -17,6 +28,7 @@ export interface Role {
   description: string;
   permissions: string[];
   isSystemRole: boolean;
+  color?: string;
 }
 
 export interface Permission {

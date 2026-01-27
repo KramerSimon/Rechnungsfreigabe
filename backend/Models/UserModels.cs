@@ -47,6 +47,9 @@ public class User
     [Column("locked_until")]
     public DateTime? LockedUntil { get; set; }
 
+    [Column("last_login")]
+    public DateTime? LastLogin { get; set; }
+
     [Column("is_active")]
     public bool IsActive { get; set; } = true;
 
@@ -79,11 +82,16 @@ public class Role
     [Column("description")]
     public string? Description { get; set; }
 
-    [Column("permissions", TypeName = "json")]
-    public string Permissions { get; set; } = "[]";
+    [StringLength(7)]
+    [Column("color")]
+    public string? Color { get; set; } = "#ff9800"; // Default orange color
+
+    [Column("is_system_role")]
+    public bool IsSystemRole { get; set; } = false;
 
     // Navigation properties
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+    public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
 }
 
 public class UserRole

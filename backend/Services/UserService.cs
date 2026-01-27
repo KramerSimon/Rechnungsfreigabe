@@ -2,7 +2,6 @@
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
-using System.Text.Json;
 
 namespace RechnungsfreigabeAPI.Services;
 
@@ -21,6 +20,7 @@ public interface IUserService
     Task ResetFailedLoginAttemptsAsync(int userId);
     Task LockUserAccountAsync(int userId, DateTime lockedUntil);
     Task UpdatePasswordAsync(int userId, string passwordHash);
+    Task UpdateLastLoginAsync(int userId);
 }
 
 public class UserService : IUserService
@@ -57,6 +57,8 @@ public class UserService : IUserService
         return await _context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
+            .ThenInclude(r => r.RolePermissions)
+            .ThenInclude(rp => rp.Permission)
             .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
     }
 
@@ -65,6 +67,8 @@ public class UserService : IUserService
         return await _context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
+            .ThenInclude(r => r.RolePermissions)
+            .ThenInclude(rp => rp.Permission)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
@@ -198,24 +202,17 @@ public class UserService : IUserService
 
     public async Task<string[]> GetUserPermissionsAsync(int userId)
     {
-        var userRoles = await _context.UserRoles
-            .Include(ur => ur.Role)
+        var rolePermissions = await _context.UserRoles
             .Where(ur => ur.UserId == userId)
-            .Select(ur => ur.Role.Permissions)
+            .Include(ur => ur.Role)
+            .ThenInclude(r => r.RolePermissions)
+            .ThenInclude(rp => rp.Permission)
+            .SelectMany(ur => ur.Role.RolePermissions)
+            .Select(rp => rp.Permission.Code)
+            .Distinct()
             .ToListAsync();
 
-        var allPermissions = new HashSet<string>();
-
-        foreach (var rolePermissions in userRoles)
-        {
-            var permissions = JsonSerializer.Deserialize<string[]>(rolePermissions) ?? Array.Empty<string>();
-            foreach (var permission in permissions)
-            {
-                allPermissions.Add(permission);
-            }
-        }
-
-        return allPermissions.ToArray();
+        return rolePermissions.ToArray();
     }
 
     public async Task<PagedResult<UserDto>> GetUsersPagedAsync(PageRequest pageRequest)
@@ -274,12 +271,15 @@ public class UserService : IUserService
             LastName = user.LastName,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
+            LastLogin = user.LastLogin,
             Roles = user.UserRoles.Select(ur => new RoleDto
             {
                 Id = ur.Role.Id,
                 Name = ur.Role.Name,
                 Description = ur.Role.Description,
-                Permissions = JsonSerializer.Deserialize<string[]>(ur.Role.Permissions) ?? Array.Empty<string>()
+                Permissions = ur.Role.RolePermissions?.Select(rp => (object)rp.PermissionId).ToList() ?? new List<object>(),
+                Color = ur.Role.Color,
+                IsSystemRole = ur.Role.IsSystemRole
             }).ToArray()
         };
     }
@@ -325,6 +325,17 @@ public class UserService : IUserService
         {
             user.PasswordHash = passwordHash;
             user.PasswordChangedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task UpdateLastLoginAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.LastLogin = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }

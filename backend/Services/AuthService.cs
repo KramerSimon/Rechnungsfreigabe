@@ -4,7 +4,6 @@ using RechnungsfreigabeAPI.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 
 namespace RechnungsfreigabeAPI.Services;
 
@@ -71,6 +70,9 @@ public class AuthService : IAuthService
             // Reset failed login attempts on successful login
             await _userService.ResetFailedLoginAttemptsAsync(user.Id);
 
+            // Update last login timestamp
+            await _userService.UpdateLastLoginAsync(user.Id);
+
             // Get user permissions from roles
             var permissions = await _userService.GetUserPermissionsAsync(user.Id);
             
@@ -86,12 +88,13 @@ public class AuthService : IAuthService
                 LastName = user.LastName,
                 IsActive = user.IsActive,
                 CreatedAt = user.CreatedAt,
+                LastLogin = DateTime.UtcNow,
                 Roles = user.UserRoles.Select(ur => new RoleDto
                 {
                     Id = ur.Role.Id,
                     Name = ur.Role.Name,
                     Description = ur.Role.Description,
-                    Permissions = JsonSerializer.Deserialize<string[]>(ur.Role.Permissions) ?? Array.Empty<string>()
+                    Permissions = ur.Role.RolePermissions?.Select(rp => (object)rp.PermissionId).ToList() ?? new List<object>()
                 }).ToArray()
             };
 

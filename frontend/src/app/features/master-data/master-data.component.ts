@@ -13,7 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { User } from '../../core/models/user.models';
+import { RoleDto, User } from '../../core/models/user.models';
 import { TabConfig } from '../../core/interfaces/common.interfaces';
 import { CreateSupplierDialogComponent } from './dialogs/create-supplier-dialog.component';
 import { CreateCostCenterDialogComponent } from './dialogs/create-cost-center-dialog.component';
@@ -24,7 +24,7 @@ import { EditSupplierDialogComponent } from './dialogs/edit-supplier-dialog.comp
 import { EditCostCenterDialogComponent } from './dialogs/edit-cost-center-dialog.component';
 import { EditProjectDialogComponent } from './dialogs/edit-project-dialog.component';
 import { EditUserDialogComponent } from './dialogs/edit-user-dialog.component';
-import { RoleManagementDialogComponent } from './dialogs/role-management-dialog.component';
+import { RoleDialogComponent } from './dialogs/role-dialog.component';
 // Use the Admin Rules dialog for consistent rule UI
 import { RuleDialogComponent } from '../smart-dashboard/dashboard/rule-dashboard/rule-dialog/rule-dialog.component';
 import { ApprovalRule as AdminRule, RuleDialogData } from '../../core/models';
@@ -45,6 +45,7 @@ import { ApprovalWorkflowDialogComponent, ApprovalWorkflowDialogData } from './d
 import { EscalationRule, CreateEscalationRuleDto } from '../../core/models/escalation-rule.model';
 import { EscalationRuleService } from '../../core/services/escalation-rule.service';
 import { EscalationRuleDialogComponent, EscalationRuleDialogData } from './dialogs/escalation-rule-dialog.component';
+import { RolesApiService } from '../../core/services/roles-api.service';
 
 @Component({
   selector: 'app-master-data',
@@ -71,6 +72,19 @@ import { EscalationRuleDialogComponent, EscalationRuleDialogData } from './dialo
 export class MasterDataComponent implements OnInit {
   private apiUrl = environment.apiUrl;
 
+  // Default colors for common roles when backend color is missing
+  private roleColorMap: Record<string, string> = {
+    administrator: '#F44336',
+    admin: '#F44336',
+    benutzer: '#2196F3',
+    user: '#2196F3',
+    buchhaltung: '#4CAF50',
+    accounting: '#4CAF50',
+    manager: '#FF9800',
+    freigeber: '#FF9800',
+    mitarbeiter: '#795548',
+  };
+
   // Data arrays
   suppliers: Supplier[] = [];
   costCenters: CostCenter[] = [];
@@ -78,6 +92,7 @@ export class MasterDataComponent implements OnInit {
   purchaseOrders: PurchaseOrder[] = [];
   invoices: Invoice[] = [];
   users: User[] = [];
+  roles: RoleDto[] = [];
   approvalRules: ApprovalRule[] = [];
   approvalWorkflows: ApprovalWorkflow[] = [];
   escalationRules: EscalationRule[] = [];
@@ -89,6 +104,7 @@ export class MasterDataComponent implements OnInit {
   loadingPurchaseOrders = false;
   loadingInvoices = false;
   loadingUsers = false;
+  loadingRoles = false;
   loadingApprovalRules = false;
   loadingApprovalWorkflows = false;
   loadingEscalationRules = false;
@@ -101,10 +117,11 @@ export class MasterDataComponent implements OnInit {
     { id: 'projects', label: 'Projekte', index: 2 },
     { id: 'purchaseorders', label: 'Bestellungen', index: 3 },
     { id: 'invoices', label: 'Rechnungen', index: 4 },
-    { id: 'users', label: 'Benutzer & Rollen', index: 5 },
-    { id: 'escalation', label: 'Eskalations-Einstellungen', index: 6 },
-    { id: 'rules', label: 'Genehmigungsregeln', index: 7 },
-    { id: 'workflows', label: 'Genehmigungsworkflows', index: 8 },
+    { id: 'users', label: 'Benutzer', index: 5 },
+    { id: 'roles', label: 'Rollen', index: 6 },
+    { id: 'escalation', label: 'Eskalations-Einstellungen', index: 7 },
+    { id: 'rules', label: 'Genehmigungsregeln', index: 8 },
+    { id: 'workflows', label: 'Genehmigungsworkflows', index: 9 },
   ];
 
   invoiceStatuses = [
@@ -157,6 +174,7 @@ export class MasterDataComponent implements OnInit {
     'lastLogin',
     'actions',
   ];
+  roleColumns = ['color', 'name', 'description', 'permissions', 'isSystemRole', 'actions'];
   approvalRuleColumns = [
     'id',
     'name',
@@ -198,7 +216,8 @@ export class MasterDataComponent implements OnInit {
     private invoiceService: InvoiceService,
     private userService: UserService,
     private approvalService: ApprovalService,
-    private escalationRuleService: EscalationRuleService
+    private escalationRuleService: EscalationRuleService,
+    private rolesApi: RolesApiService
   ) {}
 
   ngOnInit(): void {
@@ -223,6 +242,7 @@ export class MasterDataComponent implements OnInit {
     this.loadPurchaseOrders();
     this.loadInvoices();
     this.loadUsers();
+    this.loadRoles();
     this.loadApprovalRules();
     this.loadApprovalWorkflows();
     this.loadEscalationRules();
@@ -419,7 +439,13 @@ export class MasterDataComponent implements OnInit {
     this.loadingUsers = true;
     this.userService.getUsers().subscribe({
       next: (data) => {
-        this.users = data;
+        this.users = data.map((u) => ({
+          ...u,
+          roles: (u.roles || []).map((r) => ({
+            ...r,
+            color: r.color || this.getDefaultRoleColor(r.name),
+          })),
+        }));
         this.loadingUsers = false;
       },
       error: (error) => {
@@ -449,6 +475,101 @@ export class MasterDataComponent implements OnInit {
         },
       });
     }
+  }
+
+  // Roles
+  loadRoles(): void {
+    this.loadingRoles = true;
+    this.rolesApi.getRoles().subscribe({
+      next: (roles) => {
+        this.roles = roles;
+        this.loadingRoles = false;
+      },
+      error: (error) => {
+        console.error('Error loading roles:', error);
+        this.loadingRoles = false;
+        this.snackBar.open('Fehler beim Laden der Rollen', 'Schließen', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  createRole(): void {
+    const dialogRef = this.dialog.open(RoleDialogComponent, {
+      width: '520px',
+      data: { mode: 'create' },
+    });
+
+    dialogRef.afterClosed().subscribe((payload) => {
+      if (payload) {
+        this.rolesApi.createRole(payload).subscribe({
+          next: () => {
+            this.snackBar.open('Rolle erstellt', 'Schließen', { duration: 3000 });
+            this.loadRoles();
+          },
+          error: (error) => {
+            console.error('Error creating role:', error);
+            this.snackBar.open('Fehler beim Erstellen der Rolle', 'Schließen', {
+              duration: 3000,
+            });
+          },
+        });
+      }
+    });
+  }
+
+  editRole(role: RoleDto): void {
+    if (!role) {
+      return;
+    }
+    const dialogRef = this.dialog.open(RoleDialogComponent, {
+      width: '520px',
+      data: { mode: 'edit', role },
+    });
+
+    dialogRef.afterClosed().subscribe((payload) => {
+      if (payload) {
+        this.rolesApi.updateRole(role.id, payload).subscribe({
+          next: () => {
+            this.snackBar.open('Rolle aktualisiert', 'Schließen', { duration: 3000 });
+            this.loadRoles();
+          },
+          error: (error) => {
+            console.error('Error updating role:', error);
+            this.snackBar.open('Fehler beim Aktualisieren der Rolle', 'Schließen', {
+              duration: 3000,
+            });
+          },
+        });
+      }
+    });
+  }
+
+  deleteRole(role: RoleDto): void {
+    if (role.isSystemRole) {
+      this.snackBar.open('Systemrollen können nicht gelöscht werden', 'Schließen', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!confirm(`Rolle "${role.name}" wirklich löschen?`)) {
+      return;
+    }
+
+    this.rolesApi.deleteRole(role.id).subscribe({
+      next: () => {
+        this.snackBar.open('Rolle gelöscht', 'Schließen', { duration: 3000 });
+        this.loadRoles();
+      },
+      error: (error) => {
+        console.error('Error deleting role:', error);
+        this.snackBar.open('Fehler beim Löschen der Rolle', 'Schließen', {
+          duration: 3000,
+        });
+      },
+    });
   }
 
   // Create Methods
@@ -616,7 +737,7 @@ export class MasterDataComponent implements OnInit {
 
     const dialogRef = this.dialog.open(CreateUserDialogComponent, {
       width: '500px',
-      data: dialogData,
+      data: { user: dialogData, availableRoles: this.roles },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -830,7 +951,7 @@ export class MasterDataComponent implements OnInit {
   editUser(user: User): void {
     const dialogRef = this.dialog.open(EditUserDialogComponent, {
       width: '500px',
-      data: user,
+      data: { user, availableRoles: this.roles },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -870,25 +991,12 @@ export class MasterDataComponent implements OnInit {
     return new Date(date).toLocaleDateString('de-DE');
   }
 
-  // Rollen verwalten
-  manageRoles(): void {
-    const dialogRef = this.dialog.open(RoleManagementDialogComponent, {
-      width: '900px',
-      maxWidth: '95vw',
-      height: '700px',
-      maxHeight: '95vh',
-      disableClose: false,
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        // Wenn Änderungen gespeichert wurden, lade Benutzer neu
-        this.loadUsers();
-        this.snackBar.open('Rollen-Konfiguration aktualisiert', 'Schließen', {
-          duration: 3000,
-        });
-      }
-    });
+  private getDefaultRoleColor(roleName?: string): string {
+    if (!roleName) {
+      return '#ff9800';
+    }
+    const key = roleName.trim().toLowerCase();
+    return this.roleColorMap[key] || '#ff9800';
   }
 
   // Approval Rules

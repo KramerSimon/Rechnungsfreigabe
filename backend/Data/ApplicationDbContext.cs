@@ -13,6 +13,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; }
     public DbSet<CostCenter> CostCenters { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<Supplier> Suppliers { get; set; }
@@ -33,6 +35,8 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<User>().ToTable("users");
         modelBuilder.Entity<Role>().ToTable("roles");
         modelBuilder.Entity<UserRole>().ToTable("user_roles");
+        modelBuilder.Entity<Permission>().ToTable("permissions");
+        modelBuilder.Entity<RolePermission>().ToTable("role_permissions");
         modelBuilder.Entity<CostCenter>().ToTable("cost_centers");
         modelBuilder.Entity<Project>().ToTable("projects");
         modelBuilder.Entity<Supplier>().ToTable("suppliers");
@@ -48,6 +52,9 @@ public class ApplicationDbContext : DbContext
         // Configure primary keys
         modelBuilder.Entity<UserRole>()
             .HasKey(ur => new { ur.UserId, ur.RoleId });
+
+        modelBuilder.Entity<RolePermission>()
+            .HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
         modelBuilder.Entity<CostCenter>()
             .HasKey(cc => cc.Id);
@@ -69,6 +76,18 @@ public class ApplicationDbContext : DbContext
             .HasOne(ur => ur.Role)
             .WithMany(r => r.UserRoles)
             .HasForeignKey(ur => ur.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(rp => rp.Role)
+            .WithMany(r => r.RolePermissions)
+            .HasForeignKey(rp => rp.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(rp => rp.Permission)
+            .WithMany(p => p.RolePermissions)
+            .HasForeignKey(rp => rp.PermissionId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<CostCenter>()

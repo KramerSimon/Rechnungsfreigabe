@@ -50,6 +50,7 @@ public class UserDto
     public string FullName => $"{FirstName} {LastName}";
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? LastLogin { get; set; }
     public RoleDto[] Roles { get; set; } = Array.Empty<RoleDto>();
 }
 
@@ -101,7 +102,9 @@ public class RoleDto
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public string[] Permissions { get; set; } = Array.Empty<string>();
+    public List<object> Permissions { get; set; } = new();
+    public string? Color { get; set; } = "#ff9800"; // Default orange color
+    public bool IsSystemRole { get; set; } = false;
 }
 
 public class CreateRoleDto
@@ -112,7 +115,27 @@ public class CreateRoleDto
 
     public string? Description { get; set; }
 
-    public string[] Permissions { get; set; } = Array.Empty<string>();
+    public List<object>? Permissions { get; set; }
+
+    [StringLength(7)]
+    public string? Color { get; set; } = "#ff9800";
+
+    public bool? IsSystemRole { get; set; }
+}
+
+public class UpdateRoleDto
+{
+    [StringLength(50)]
+    public string? Name { get; set; }
+
+    public string? Description { get; set; }
+
+    public List<object>? Permissions { get; set; }
+
+    [StringLength(7)]
+    public string? Color { get; set; }
+
+    public bool? IsSystemRole { get; set; }
 }
 
 // Cost Center DTOs

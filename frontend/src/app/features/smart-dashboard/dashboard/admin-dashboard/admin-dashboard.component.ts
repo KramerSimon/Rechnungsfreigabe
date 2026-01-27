@@ -100,10 +100,17 @@ export class AdminDashboardComponent implements OnInit {
     },
     {
       id: 'users',
-      title: 'Benutzer & Rollen',
-      description: 'Wer darf freigeben?',
+      title: 'Benutzer',
+      description: 'Welche Rollen haben die Nutzer?',
       icon: 'group',
       route: '/admin/users'
+    },
+    {
+      id: 'roles',
+      title: 'Rollen',
+      description: 'Rollen verwalten',
+      icon: 'security',
+      route: '/admin/roles'
     },
     {
       id: 'escalation',

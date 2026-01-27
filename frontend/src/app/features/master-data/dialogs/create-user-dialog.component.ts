@@ -6,11 +6,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { User } from '../../../core';
+import { RoleDto, User } from '../../../core/models/user.models';
 
-interface Role {
-  id: number;
-  name: string;
+interface CreateUserDialogData {
+  user: User;
+  availableRoles: RoleDto[];
 }
 
 @Component({
@@ -133,25 +133,21 @@ interface Role {
 })
 export class CreateUserDialogComponent {
   userForm: FormGroup;
-  availableRoles: Role[] = [
-    { id: 1, name: 'Administrator' },
-    { id: 2, name: 'Freigeber' },
-    { id: 3, name: 'Buchhaltung' },
-    { id: 4, name: 'Benutzer' },
-    { id: 5, name: 'Manager' }
-  ];
+  availableRoles: RoleDto[] = [];
 
   constructor(
     private dialogRef: MatDialogRef<CreateUserDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: User,
+    @Inject(MAT_DIALOG_DATA) public data: CreateUserDialogData,
     private fb: FormBuilder
   ) {
+    this.availableRoles = data?.availableRoles || [];
+    const user = data?.user || {} as User;
     this.userForm = this.fb.group({
-      username: [data.username || '', [Validators.required, Validators.maxLength(50)]],
-      email: [data.email || '', [Validators.required, Validators.email, Validators.maxLength(255)]],
-      firstName: [data.firstName || '', [Validators.required, Validators.maxLength(100)]],
-      lastName: [data.lastName || '', [Validators.required, Validators.maxLength(100)]],
-      roleIds: [data.roles || [], []]
+      username: [user.username || '', [Validators.required, Validators.maxLength(50)]],
+      email: [user.email || '', [Validators.required, Validators.email, Validators.maxLength(255)]],
+      firstName: [user.firstName || '', [Validators.required, Validators.maxLength(100)]],
+      lastName: [user.lastName || '', [Validators.required, Validators.maxLength(100)]],
+      roleIds: [(user as any).roleIds || []]
     });
   }
 

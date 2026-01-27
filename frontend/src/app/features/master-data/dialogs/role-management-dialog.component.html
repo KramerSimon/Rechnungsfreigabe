@@ -17,6 +17,13 @@
           </div>
 
           <table mat-table [dataSource]="availableRoles" class="roles-table">
+            <ng-container matColumnDef="color">
+              <th mat-header-cell *matHeaderCellDef>Farbe</th>
+              <td mat-cell *matCellDef="let role">
+                <div class="color-badge" [style.backgroundColor]="role.color || '#ff9800'"></div>
+              </td>
+            </ng-container>
+
             <ng-container matColumnDef="name">
               <th mat-header-cell *matHeaderCellDef>Name</th>
               <td mat-cell *matCellDef="let role">
@@ -93,7 +100,10 @@
               <th mat-header-cell *matHeaderCellDef>Rollen</th>
               <td mat-cell *matCellDef="let userRole">
                 <div class="role-chips">
-                  <span *ngFor="let roleId of userRole.roles" class="role-chip">
+                  <span *ngFor="let roleId of userRole.roles"
+                        class="role-chip"
+                        [style.backgroundColor]="getRoleColor(roleId)"
+                        [style.color]="getRoleTextColor(roleId)">
                     {{getRoleName(roleId)}}
                   </span>
                 </div>

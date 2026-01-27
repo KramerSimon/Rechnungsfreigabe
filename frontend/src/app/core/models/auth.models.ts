@@ -26,6 +26,8 @@ export interface Role {
   name: string;
   description: string;
   permissions: Permission[];
+  color?: string;
+  isSystemRole?: boolean;
 }
 
 export interface Permission {

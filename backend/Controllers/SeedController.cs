@@ -35,12 +35,12 @@ public class SeedController : ControllerBase
             // Create Roles
             var roles = new List<Role>
             {
-                new Role { Id = 1, Name = "Administrator", Description = "Vollzugriff auf alle Funktionen", Permissions = "[\"all\"]" },
-                new Role { Id = 2, Name = "Freigeber", Description = "Kann Rechnungen freigeben", Permissions = "[\"approve_invoices\", \"view_all_invoices\"]" },
-                new Role { Id = 3, Name = "Buchhaltung", Description = "Buchhaltungsfunktionen", Permissions = "[\"view_all_invoices\", \"process_payments\", \"view_reports\"]" },
-                new Role { Id = 4, Name = "Sachbearbeiter", Description = "Grundlegende Rechnungserfassung", Permissions = "[\"create_invoices\", \"view_own_invoices\"]" },
-                new Role { Id = 5, Name = "Controller", Description = "Kann Reports einsehen", Permissions = "[\"view_reports\", \"view_all_invoices\"]" },
-                new Role { Id = 6, Name = "Manager", Description = "Kann Team-Rechnungen verwalten", Permissions = "[\"approve_cost_center_invoices\", \"view_team_invoices\"]" }
+                new Role { Id = 1, Name = "Administrator", Description = "Vollzugriff auf alle Funktionen", Color = "#2196F3", IsSystemRole = true },
+                new Role { Id = 2, Name = "Freigeber", Description = "Kann Rechnungen freigeben", Color = "#4CAF50", IsSystemRole = false },
+                new Role { Id = 3, Name = "Buchhaltung", Description = "Buchhaltungsfunktionen", Color = "#FF9800", IsSystemRole = false },
+                new Role { Id = 4, Name = "Sachbearbeiter", Description = "Grundlegende Rechnungserfassung", Color = "#9C27B0", IsSystemRole = false },
+                new Role { Id = 5, Name = "Controller", Description = "Kann Reports einsehen", Color = "#F44336", IsSystemRole = false },
+                new Role { Id = 6, Name = "Manager", Description = "Kann Team-Rechnungen verwalten", Color = "#00BCD4", IsSystemRole = false }
             };
             await _context.Roles.AddRangeAsync(roles);
             await _context.SaveChangesAsync();

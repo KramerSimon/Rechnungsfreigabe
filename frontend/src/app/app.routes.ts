@@ -26,6 +26,7 @@ export const routes: Routes = [
   { path: 'dashboard/rules', component: RuleDashboardComponent, canActivate: [authGuard] },
 
   { path: 'admin/users', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'users' } },
+  { path: 'admin/roles', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'roles' } },
   { path: 'admin/cost-centers', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'costcenters' } },
   { path: 'admin/suppliers', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'suppliers' } },
   { path: 'admin/purchase-orders', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'purchaseorders' } },

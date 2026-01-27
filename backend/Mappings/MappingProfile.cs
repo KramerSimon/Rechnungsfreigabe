@@ -17,6 +17,8 @@ public class MappingProfile : Profile
         // Role mappings
         CreateMap<Role, RoleDto>();
         CreateMap<CreateRoleDto, Role>();
+        CreateMap<UpdateRoleDto, Role>()
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
         // Supplier mappings
         CreateMap<Supplier, SupplierDto>();

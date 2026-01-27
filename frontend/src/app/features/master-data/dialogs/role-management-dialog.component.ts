@@ -41,28 +41,32 @@ export class RoleManagementDialogComponent {
       name: 'Benutzer',
       description: 'Standard-Benutzer mit grundlegenden Rechten',
       permissions: ['invoices.read', 'invoices.approve'],
-      isSystemRole: true
+      isSystemRole: true,
+      color: '#2196F3'
     },
     {
       id: 'ACCOUNTING',
       name: 'Buchhaltung',
       description: 'Buchhaltungs-Mitarbeiter mit erweiterten Rechten',
       permissions: ['invoices.read', 'invoices.approve', 'invoices.process', 'reports.read'],
-      isSystemRole: true
+      isSystemRole: true,
+      color: '#4CAF50'
     },
     {
       id: 'ADMIN',
       name: 'Administrator',
       description: 'Vollzugriff auf alle Funktionen',
       permissions: ['*'],
-      isSystemRole: true
+      isSystemRole: true,
+      color: '#F44336'
     },
     {
       id: 'MANAGER',
       name: 'Manager',
       description: 'Management-Rechte für Genehmigungen',
       permissions: ['invoices.read', 'invoices.approve', 'invoices.reject', 'reports.read', 'users.read'],
-      isSystemRole: false
+      isSystemRole: false,
+      color: '#FF9800'
     }
   ];
 
@@ -111,7 +115,7 @@ export class RoleManagementDialogComponent {
   ];
 
   // Tabellenspalten
-  roleColumns = ['name', 'description', 'permissions', 'isSystemRole', 'actions'];
+  roleColumns = ['color', 'name', 'description', 'permissions', 'isSystemRole', 'actions'];
   userRoleColumns = ['username', 'fullName', 'email', 'roles', 'actions'];
   permissionColumns = ['name', 'description', 'category'];
 
@@ -181,7 +185,24 @@ export class RoleManagementDialogComponent {
   }
 
   getRoleName(roleId: string): string {
-    const role = this.availableRoles.find(r => r.id === roleId);
+    const rid = String(roleId);
+    const role = this.availableRoles.find(r => String(r.id) === rid);
     return role ? role.name : roleId;
+  }
+
+  getRoleColor(roleId: string): string {
+    const rid = String(roleId);
+    const role = this.availableRoles.find(r => String(r.id) === rid);
+    return role?.color || '#ff9800';
+  }
+
+  getRoleTextColor(roleId: string): string {
+    // Simple contrast check: use white for darker colors, otherwise default to dark text
+    const hex = (this.getRoleColor(roleId) || '#ff9800').replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance < 0.6 ? '#fff' : '#212121';
   }
 }
