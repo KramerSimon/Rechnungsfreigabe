@@ -8,16 +8,16 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class SystemConfigService : ISystemConfigService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
 
     public SystemConfigService(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<SystemConfigDto>> GetAllAsync()
     {
-        var configs = await _unitOfWork.SystemConfigs.Query()
+        var configs = await unitOfWork.SystemConfigs.Query()
             .Include(c => c.UpdatedByUser)
             .OrderBy(c => c.ConfigKey)
             .ToListAsync();
@@ -29,7 +29,7 @@ public class SystemConfigService : ISystemConfigService
     {
         if (string.IsNullOrWhiteSpace(key)) return null;
 
-        var config = await _unitOfWork.SystemConfigs.Query()
+        var config = await unitOfWork.SystemConfigs.Query()
             .Include(c => c.UpdatedByUser)
             .FirstOrDefaultAsync(c => c.ConfigKey == key);
 
@@ -44,7 +44,7 @@ public class SystemConfigService : ISystemConfigService
             throw new ArgumentException("Config key is required");
         }
 
-        var config = await _unitOfWork.SystemConfigs.Query()
+        var config = await unitOfWork.SystemConfigs.Query()
             .Include(c => c.UpdatedByUser)
             .FirstOrDefaultAsync(c => c.ConfigKey == normalizedKey);
 
@@ -61,11 +61,11 @@ public class SystemConfigService : ISystemConfigService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _unitOfWork.SystemConfigs.Add(config);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.SystemConfigs.Add(config);
+            await unitOfWork.SaveChangesAsync();
             
             // Reload with UpdatedByUser
-            config = await _unitOfWork.SystemConfigs.Query()
+            config = await unitOfWork.SystemConfigs.Query()
                 .Include(c => c.UpdatedByUser)
                 .FirstOrDefaultAsync(c => c.Id == config.Id);
             
@@ -88,10 +88,10 @@ public class SystemConfigService : ISystemConfigService
         config.UpdatedBy = updatedByUserId;
         config.UpdatedAt = DateTime.UtcNow;
 
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.SaveChangesAsync();
         
         // Reload with UpdatedByUser
-        config = await _unitOfWork.SystemConfigs.Query()
+        config = await unitOfWork.SystemConfigs.Query()
             .Include(c => c.UpdatedByUser)
             .FirstOrDefaultAsync(c => c.Id == config.Id);
 

@@ -8,16 +8,16 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class RoleService : IRoleService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
 
     public RoleService(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<RoleDto>> GetAllAsync()
     {
-        var roles = await _unitOfWork.Roles.Query()
+        var roles = await unitOfWork.Roles.Query()
             .Include(r => r.RolePermissions)
             .ThenInclude(rp => rp.Permission)
             .ToListAsync();
@@ -26,7 +26,7 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto?> GetByIdAsync(int id)
     {
-        var role = await _unitOfWork.Roles.Query()
+        var role = await unitOfWork.Roles.Query()
             .Include(r => r.RolePermissions)
             .ThenInclude(rp => rp.Permission)
             .FirstOrDefaultAsync(r => r.Id == id);
@@ -43,8 +43,8 @@ public class RoleService : IRoleService
             IsSystemRole = dto.IsSystemRole ?? false
         };
 
-        _unitOfWork.Roles.Add(role);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.Roles.Add(role);
+        await unitOfWork.SaveChangesAsync();
 
         // Add permissions
         if (dto.Permissions != null && dto.Permissions.Any())
@@ -64,17 +64,17 @@ public class RoleService : IRoleService
 
             foreach (var permId in permissionIds)
             {
-                _unitOfWork.RolePermissions.Add(new RolePermission
+                unitOfWork.RolePermissions.Add(new RolePermission
                 {
                     RoleId = role.Id,
                     PermissionId = permId
                 });
             }
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
         }
 
         // Reload with permissions
-        role = await _unitOfWork.Roles.Query()
+        role = await unitOfWork.Roles.Query()
             .Include(r => r.RolePermissions)
             .FirstOrDefaultAsync(r => r.Id == role.Id);
         
@@ -83,7 +83,7 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto?> UpdateAsync(int id, UpdateRoleDto dto)
     {
-        var role = await _unitOfWork.Roles.Query()
+        var role = await unitOfWork.Roles.Query()
             .Include(r => r.RolePermissions)
             .FirstOrDefaultAsync(r => r.Id == id);
         
@@ -102,8 +102,8 @@ public class RoleService : IRoleService
         if (dto.Permissions != null)
         {
             // Remove old permissions
-            var oldPermissions = _unitOfWork.RolePermissions.Query().Where(rp => rp.RoleId == id).ToList();
-            _unitOfWork.RolePermissions.RemoveRange(oldPermissions);
+            var oldPermissions = unitOfWork.RolePermissions.Query().Where(rp => rp.RoleId == id).ToList();
+            unitOfWork.RolePermissions.RemoveRange(oldPermissions);
 
             // Add new permissions
             var permissionIds = new List<int>();
@@ -121,7 +121,7 @@ public class RoleService : IRoleService
 
             foreach (var permId in permissionIds)
             {
-                _unitOfWork.RolePermissions.Add(new RolePermission
+                unitOfWork.RolePermissions.Add(new RolePermission
                 {
                     RoleId = role.Id,
                     PermissionId = permId
@@ -129,10 +129,10 @@ public class RoleService : IRoleService
             }
         }
 
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.SaveChangesAsync();
         
         // Reload with permissions
-        role = await _unitOfWork.Roles.Query()
+        role = await unitOfWork.Roles.Query()
             .Include(r => r.RolePermissions)
             .FirstOrDefaultAsync(r => r.Id == role.Id);
         
@@ -141,14 +141,14 @@ public class RoleService : IRoleService
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var role = await _unitOfWork.Roles.GetByIdAsync(id);
+        var role = await unitOfWork.Roles.GetByIdAsync(id);
         if (role == null || role.IsSystemRole) return false;
 
-        var isInUse = await _unitOfWork.UserRoles.Query().AnyAsync(ur => ur.RoleId == id);
+        var isInUse = await unitOfWork.UserRoles.Query().AnyAsync(ur => ur.RoleId == id);
         if (isInUse) return false;
 
-        _unitOfWork.Roles.Remove(role);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.Roles.Remove(role);
+        await unitOfWork.SaveChangesAsync();
         return true;
     }
 

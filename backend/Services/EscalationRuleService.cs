@@ -8,16 +8,16 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class EscalationRuleService : IEscalationRuleService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
     
     public EscalationRuleService(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<EscalationRuleDto>> GetAllAsync()
     {
-        var rules = await _unitOfWork.EscalationRules.Query()
+        var rules = await unitOfWork.EscalationRules.Query()
             .Include(r => r.TriggerStatuses)
             .ThenInclude(ts => ts.Status)
             .Include(r => r.NotifyRoles)
@@ -33,7 +33,7 @@ public class EscalationRuleService : IEscalationRuleService
 
     public async Task<EscalationRuleDto?> GetByIdAsync(int id)
     {
-        var rule = await _unitOfWork.EscalationRules.Query()
+        var rule = await unitOfWork.EscalationRules.Query()
             .Include(r => r.TriggerStatuses)
             .ThenInclude(ts => ts.Status)
             .Include(r => r.NotifyRoles)
@@ -63,7 +63,7 @@ public class EscalationRuleService : IEscalationRuleService
         // Add trigger status relationships
         if (dto.TriggerStatusIds.Any())
         {
-            var statuses = await _unitOfWork.Statuses.Query()
+            var statuses = await unitOfWork.Statuses.Query()
                 .Where(s => dto.TriggerStatusIds.Contains(s.Id))
                 .ToListAsync();
 
@@ -81,7 +81,7 @@ public class EscalationRuleService : IEscalationRuleService
         // Add role notification relationships
         if (dto.NotifyRoleIds.Any())
         {
-            var roles = await _unitOfWork.Roles.Query()
+            var roles = await unitOfWork.Roles.Query()
                 .Where(r => dto.NotifyRoleIds.Contains(r.Id))
                 .ToListAsync();
 
@@ -99,7 +99,7 @@ public class EscalationRuleService : IEscalationRuleService
         // Add user notification relationships
         if (dto.NotifyUserIds.Any())
         {
-            var users = await _unitOfWork.Users.Query()
+            var users = await unitOfWork.Users.Query()
                 .Where(u => dto.NotifyUserIds.Contains(u.Id))
                 .ToListAsync();
 
@@ -114,8 +114,8 @@ public class EscalationRuleService : IEscalationRuleService
             }
         }
 
-        _unitOfWork.EscalationRules.Add(rule);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.EscalationRules.Add(rule);
+        await unitOfWork.SaveChangesAsync();
 
         // Reload with relationships
         return await GetByIdAsync(rule.Id) ?? throw new InvalidOperationException("Failed to retrieve created rule");
@@ -123,7 +123,7 @@ public class EscalationRuleService : IEscalationRuleService
 
     public async Task<EscalationRuleDto?> UpdateAsync(int id, UpdateEscalationRuleDto dto)
     {
-        var rule = await _unitOfWork.EscalationRules.Query()
+        var rule = await unitOfWork.EscalationRules.Query()
             .Include(r => r.TriggerStatuses)
             .Include(r => r.NotifyRoles)
             .Include(r => r.NotifyUsers)
@@ -156,10 +156,10 @@ public class EscalationRuleService : IEscalationRuleService
         if (dto.TriggerStatusIds != null)
         {
             // Remove old associations
-            _unitOfWork.EscalationRuleTriggerStatuses.RemoveRange(rule.TriggerStatuses);
+            unitOfWork.EscalationRuleTriggerStatuses.RemoveRange(rule.TriggerStatuses);
             
             // Add new associations
-            var statuses = await _unitOfWork.Statuses.Query()
+            var statuses = await unitOfWork.Statuses.Query()
                 .Where(s => dto.TriggerStatusIds.Contains(s.Id))
                 .ToListAsync();
 
@@ -178,10 +178,10 @@ public class EscalationRuleService : IEscalationRuleService
         if (dto.NotifyRoleIds != null)
         {
             // Remove old associations
-            _unitOfWork.EscalationRuleNotifyRoles.RemoveRange(rule.NotifyRoles);
+            unitOfWork.EscalationRuleNotifyRoles.RemoveRange(rule.NotifyRoles);
             
             // Add new associations
-            var roles = await _unitOfWork.Roles.Query()
+            var roles = await unitOfWork.Roles.Query()
                 .Where(r => dto.NotifyRoleIds.Contains(r.Id))
                 .ToListAsync();
 
@@ -200,10 +200,10 @@ public class EscalationRuleService : IEscalationRuleService
         if (dto.NotifyUserIds != null)
         {
             // Remove old associations
-            _unitOfWork.EscalationRuleNotifyUsers.RemoveRange(rule.NotifyUsers);
+            unitOfWork.EscalationRuleNotifyUsers.RemoveRange(rule.NotifyUsers);
             
             // Add new associations
-            var users = await _unitOfWork.Users.Query()
+            var users = await unitOfWork.Users.Query()
                 .Where(u => dto.NotifyUserIds.Contains(u.Id))
                 .ToListAsync();
 
@@ -219,18 +219,18 @@ public class EscalationRuleService : IEscalationRuleService
         }
 
         rule.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.SaveChangesAsync();
 
         return await GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var rule = await _unitOfWork.EscalationRules.GetByIdAsync(id);
+        var rule = await unitOfWork.EscalationRules.GetByIdAsync(id);
         if (rule == null) return false;
 
-        _unitOfWork.EscalationRules.Remove(rule);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.EscalationRules.Remove(rule);
+        await unitOfWork.SaveChangesAsync();
 
         return true;
     }

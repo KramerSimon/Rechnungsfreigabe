@@ -8,19 +8,19 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class PurchaseOrderService : IPurchaseOrderService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
     public PurchaseOrderService(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
         }
 
     public async Task<IEnumerable<PurchaseOrderDto>> GetAllPurchaseOrdersAsync()
     {
-        var storniertStatus = await _unitOfWork.Statuses.Query()
+        var storniertStatus = await unitOfWork.Statuses.Query()
             .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Storniert && 
                                         s.EntityType == EntityTypes.PurchaseOrder);
         
-        var purchaseOrders = await _unitOfWork.PurchaseOrders.Query()
+        var purchaseOrders = await unitOfWork.PurchaseOrders.Query()
             .Include(po => po.CostCenter)
             .Include(po => po.Project)
             .Include(po => po.Creator)
@@ -34,7 +34,7 @@ public class PurchaseOrderService : IPurchaseOrderService
 
     public async Task<PurchaseOrderDto?> GetPurchaseOrderByIdAsync(string id)
     {
-        var purchaseOrder = await _unitOfWork.PurchaseOrders.Query()
+        var purchaseOrder = await unitOfWork.PurchaseOrders.Query()
             .Include(po => po.CostCenter)
             .Include(po => po.Project)
             .Include(po => po.Creator)
@@ -46,7 +46,7 @@ public class PurchaseOrderService : IPurchaseOrderService
 
     public async Task<PurchaseOrderDto> CreatePurchaseOrderAsync(CreatePurchaseOrderDto createDto, int createdBy)
     {
-        var offenStatus = await _unitOfWork.Statuses.Query()
+        var offenStatus = await unitOfWork.Statuses.Query()
             .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Offen && 
                                         s.EntityType == EntityTypes.PurchaseOrder);
         
@@ -64,8 +64,8 @@ public class PurchaseOrderService : IPurchaseOrderService
             CreatedAt = DateTime.UtcNow
         };
 
-        _unitOfWork.PurchaseOrders.Add(purchaseOrder);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.PurchaseOrders.Add(purchaseOrder);
+        await unitOfWork.SaveChangesAsync();
 
         return await GetPurchaseOrderByIdAsync(purchaseOrder.Id) 
             ?? throw new InvalidOperationException("Failed to retrieve created purchase order");

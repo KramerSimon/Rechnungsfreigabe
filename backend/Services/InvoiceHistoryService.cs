@@ -9,7 +9,7 @@ namespace RechnungsfreigabeAPI.Services.Interfaces;
 
 public class InvoiceHistoryService : IInvoiceHistoryService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
     private readonly IMapper mapper;
     private readonly IEmailService emailService;
     private readonly INotificationService notificationService;
@@ -20,7 +20,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         IEmailService emailService,
         INotificationService notificationService)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
         this.mapper = mapper;
         this.emailService = emailService;
         this.notificationService = notificationService;
@@ -52,14 +52,14 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             ChangedAt = DateTime.UtcNow
         };
 
-        _unitOfWork.InvoiceHistories.Add(history);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.InvoiceHistories.Add(history);
+        await unitOfWork.SaveChangesAsync();
 
     }
 
     public async Task<List<InvoiceHistoryDto>> GetInvoiceHistoryAsync(int invoiceId)
     {
-        var histories = await _unitOfWork.InvoiceHistories.Query()
+        var histories = await unitOfWork.InvoiceHistories.Query()
             .Include(h => h.ChangedByUser)
             .Where(h => h.InvoiceId == invoiceId)
             .OrderByDescending(h => h.ChangedAt)
@@ -114,7 +114,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         });
 
         // Determine target user for notification/email
-        var invoice = await _unitOfWork.Invoices.Query()
+        var invoice = await unitOfWork.Invoices.Query()
             .Include(i => i.CostCenter)
                 .ThenInclude(cc => cc!.Manager)
             .Include(i => i.Project)
@@ -123,7 +123,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
         var targetUser = escalatedTo.HasValue
-            ? await _unitOfWork.Users.Query().FirstOrDefaultAsync(u => u.Id == escalatedTo.Value)
+            ? await unitOfWork.Users.Query().FirstOrDefaultAsync(u => u.Id == escalatedTo.Value)
             : invoice?.CostCenter?.Manager ?? invoice?.Project?.ProjectManager ?? invoice?.Creator;
 
         if (targetUser != null)

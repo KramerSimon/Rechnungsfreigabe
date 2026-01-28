@@ -8,16 +8,16 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class ProjectService : IProjectService
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUnitOfWork unitOfWork;
 
         public ProjectService(IUnitOfWork unitOfWork)
         {
-            _unitOfWork = unitOfWork;
+            this.unitOfWork = unitOfWork;
         }
 
         public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync()
         {
-            var projects = await _unitOfWork.Projects.Query()
+            var projects = await unitOfWork.Projects.Query()
                 .Include(p => p.CostCenter)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
@@ -27,7 +27,7 @@ public class ProjectService : IProjectService
 
         public async Task<ProjectDto?> GetProjectByIdAsync(string id)
         {
-            var project = await _unitOfWork.Projects.Query()
+            var project = await unitOfWork.Projects.Query()
                 .Include(p => p.CostCenter)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
@@ -36,7 +36,7 @@ public class ProjectService : IProjectService
 
         public async Task<ProjectDto> CreateProjectAsync(CreateProjectDto createProjectDto)
         {
-            var costCenter = await _unitOfWork.CostCenters.Query()
+            var costCenter = await unitOfWork.CostCenters.Query()
                 .FirstOrDefaultAsync(cc => cc.Id == createProjectDto.CostCenterId);
 
             if (costCenter == null)
@@ -65,15 +65,15 @@ public class ProjectService : IProjectService
                 CreatedAt = DateTime.UtcNow
             };
 
-            _unitOfWork.Projects.Add(project);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.Projects.Add(project);
+            await unitOfWork.SaveChangesAsync();
 
             return MapToDto(project);
         }
 
         public async Task<ProjectDto?> UpdateProjectAsync(string id, CreateProjectDto updateProjectDto)
         {
-            var project = await _unitOfWork.Projects.FirstOrDefaultAsync(p => p.Id == id);
+            var project = await unitOfWork.Projects.FirstOrDefaultAsync(p => p.Id == id);
             if (project == null)
             {
                 return null;
@@ -81,7 +81,7 @@ public class ProjectService : IProjectService
 
             if (!string.Equals(project.CostCenterId, updateProjectDto.CostCenterId, StringComparison.Ordinal))
             {
-                var costCenterExists = await _unitOfWork.CostCenters.Query().AnyAsync(cc => cc.Id == updateProjectDto.CostCenterId);
+                var costCenterExists = await unitOfWork.CostCenters.Query().AnyAsync(cc => cc.Id == updateProjectDto.CostCenterId);
                 if (!costCenterExists)
                 {
                     throw new ArgumentException($"Kostenstelle {updateProjectDto.CostCenterId} wurde nicht gefunden.");
@@ -100,29 +100,29 @@ public class ProjectService : IProjectService
             project.EndDate = updateProjectDto.EndDate;
             project.ProjectManagerId = updateProjectDto.ProjectManagerId;
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return MapToDto(project);
         }
 
         public async Task<bool> DeleteProjectAsync(string id)
         {
-            var project = await _unitOfWork.Projects.FirstOrDefaultAsync(p => p.Id == id);
+            var project = await unitOfWork.Projects.FirstOrDefaultAsync(p => p.Id == id);
             if (project == null)
             {
                 return false;
             }
 
-            _unitOfWork.Projects.Remove(project);
+            unitOfWork.Projects.Remove(project);
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return true;
         }
 
         private async Task<int?> GetProjectStatusIdAsync(string statusCode)
         {
-            var status = await _unitOfWork.Statuses.Query()
+            var status = await unitOfWork.Statuses.Query()
                 .Where(s => s.Code == statusCode && s.EntityType == EntityTypes.Project)
                 .Select(s => s.Id)
                 .FirstOrDefaultAsync();

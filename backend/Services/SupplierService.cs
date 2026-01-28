@@ -8,15 +8,15 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class SupplierService : ISupplierService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
     public SupplierService(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
         }
 
     public async Task<IEnumerable<SupplierDto>> GetAllSuppliersAsync()
     {
-        var suppliers = await _unitOfWork.Suppliers.Query()
+        var suppliers = await unitOfWork.Suppliers.Query()
             .OrderBy(s => s.Name)
             .ToListAsync();
 
@@ -25,7 +25,7 @@ public class SupplierService : ISupplierService
 
     public async Task<SupplierDto?> GetSupplierByIdAsync(int id)
     {
-        var supplier = await _unitOfWork.Suppliers.GetByIdAsync(id);
+        var supplier = await unitOfWork.Suppliers.GetByIdAsync(id);
         return supplier != null ? MapToDto(supplier) : null;
     }
 
@@ -55,8 +55,8 @@ public class SupplierService : ISupplierService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _unitOfWork.Suppliers.Add(supplier);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.Suppliers.Add(supplier);
+            await unitOfWork.SaveChangesAsync();
 
             return MapToDto(supplier);
         }
@@ -71,7 +71,7 @@ public class SupplierService : ISupplierService
     {
         try
         {
-            var supplier = await _unitOfWork.Suppliers.GetByIdAsync(id);
+            var supplier = await unitOfWork.Suppliers.GetByIdAsync(id);
             if (supplier == null) return null;
 
             supplier.Name = updateSupplierDto.Name;
@@ -91,7 +91,7 @@ public class SupplierService : ISupplierService
             supplier.PaymentTermsDays = updateSupplierDto.PaymentTermsDays;
             supplier.UpdatedAt = DateTime.UtcNow;
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return MapToDto(supplier);
         }
@@ -106,12 +106,12 @@ public class SupplierService : ISupplierService
     {
         try
         {
-            var supplier = await _unitOfWork.Suppliers.GetByIdAsync(id);
+            var supplier = await unitOfWork.Suppliers.GetByIdAsync(id);
             if (supplier == null) return false;
 
             // Hard delete - completely remove the supplier
-            _unitOfWork.Suppliers.Remove(supplier);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.Suppliers.Remove(supplier);
+            await unitOfWork.SaveChangesAsync();
 
             return true;
         }
@@ -124,7 +124,7 @@ public class SupplierService : ISupplierService
 
     public async Task<PagedResult<SupplierDto>> GetSuppliersPagedAsync(PageRequest pageRequest)
     {
-        var query = _unitOfWork.Suppliers.Query().AsQueryable();
+        var query = unitOfWork.Suppliers.Query().AsQueryable();
 
         // Apply search filter
         if (!string.IsNullOrEmpty(pageRequest.SearchTerm))

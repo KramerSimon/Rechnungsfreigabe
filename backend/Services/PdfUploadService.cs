@@ -17,7 +17,7 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class PdfUploadService : IPdfUploadService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
     private readonly IInvoiceService invoiceService;
     private readonly ILogger<PdfUploadService> logger;
     private readonly string uploadDirectory;
@@ -31,7 +31,7 @@ public class PdfUploadService : IPdfUploadService
         IWebHostEnvironment webHostEnvironment,
         ILogger<PdfUploadService> logger)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
         this.invoiceService = invoiceService;
         this.logger = logger;
         uploadDirectory = Path.Combine(webHostEnvironment.ContentRootPath, "uploads", "invoices");
@@ -64,7 +64,7 @@ public class PdfUploadService : IPdfUploadService
             logger.LogInformation("[PDF Upload] File validation passed");
 
             // Validiere dass der User existiert
-            var userExists = await _unitOfWork.Users.Query().AnyAsync(u => u.Id == userId);
+            var userExists = await unitOfWork.Users.Query().AnyAsync(u => u.Id == userId);
             if (!userExists)
             {
                 throw new InvalidOperationException($"User with ID {userId} not found");
@@ -107,7 +107,7 @@ public class PdfUploadService : IPdfUploadService
             if (supplierId.HasValue && supplierId.Value > 0)
             {
                 // Verwende die �bergebene SupplierId
-                var supplier = await _unitOfWork.Suppliers.GetByIdAsync(supplierId.Value);
+                var supplier = await unitOfWork.Suppliers.GetByIdAsync(supplierId.Value);
                 if (supplier == null)
                 {
             logger.LogInformation("[PDF Upload] ERROR: Supplier with ID {SupplierId} not found", supplierId);
@@ -127,7 +127,7 @@ public class PdfUploadService : IPdfUploadService
             string? validatedPurchaseOrderId = null;
             if (!string.IsNullOrWhiteSpace(purchaseOrderId))
             {
-                var purchaseOrderExists = await _unitOfWork.PurchaseOrders.Query().AnyAsync(po => po.Id == purchaseOrderId);
+                var purchaseOrderExists = await unitOfWork.PurchaseOrders.Query().AnyAsync(po => po.Id == purchaseOrderId);
                 if (!purchaseOrderExists)
                 {
                     // Log warnung aber blockiere nicht - setze einfach null
@@ -144,7 +144,7 @@ public class PdfUploadService : IPdfUploadService
             string? validatedCostCenterId = null;
             if (!string.IsNullOrWhiteSpace(costCenterId))
             {
-                var costCenterExists = await _unitOfWork.CostCenters.Query().AnyAsync(cc => cc.Id == costCenterId);
+                var costCenterExists = await unitOfWork.CostCenters.Query().AnyAsync(cc => cc.Id == costCenterId);
                 if (!costCenterExists)
                 {
                     // Log warnung aber blockiere nicht - setze einfach null
@@ -203,14 +203,14 @@ public class PdfUploadService : IPdfUploadService
             // Speichere PDF-Content direkt in der Datenbank (kein dauerhaftes Filesystem mehr)
             try
             {
-                var invoiceDb = await _unitOfWork.Invoices.GetByIdAsync(invoice.Id);
+                var invoiceDb = await unitOfWork.Invoices.GetByIdAsync(invoice.Id);
                 if (invoiceDb != null)
                 {
                     invoiceDb.PdfContent = pdfContent;
                     invoiceDb.PdfFileSize = file.Length;
                     invoiceDb.OriginalFilename = file.FileName;
                     invoiceDb.PdfFilePath = null; // keine lokale Ablage mehr
-                    await _unitOfWork.SaveChangesAsync();
+                    await unitOfWork.SaveChangesAsync();
             logger.LogInformation("[PDF Upload] PDF content saved to database for invoice {InvoiceId}", invoice.Id);
                 }
             }
@@ -253,7 +253,7 @@ public class PdfUploadService : IPdfUploadService
             logger.LogInformation("[PO PDF Upload] File validation passed");
 
             // Validiere dass der User existiert
-            var userExists = await _unitOfWork.Users.Query().AnyAsync(u => u.Id == userId);
+            var userExists = await unitOfWork.Users.Query().AnyAsync(u => u.Id == userId);
             if (!userExists)
             {
                 throw new InvalidOperationException($"User with ID {userId} not found");
@@ -293,7 +293,7 @@ public class PdfUploadService : IPdfUploadService
             if (supplierId.HasValue && supplierId.Value > 0)
             {
                 // Verwende die �bergebene SupplierId
-                var supplier = await _unitOfWork.Suppliers.GetByIdAsync(supplierId.Value);
+                var supplier = await unitOfWork.Suppliers.GetByIdAsync(supplierId.Value);
                 if (supplier == null)
                 {
             logger.LogInformation("[PO PDF Upload] ERROR: Supplier with ID {SupplierId} not found", supplierId);
@@ -316,7 +316,7 @@ public class PdfUploadService : IPdfUploadService
                 throw new InvalidOperationException("Cost Center is required for purchase order uploads");
             }
 
-            var costCenterExists = await _unitOfWork.CostCenters.Query().AnyAsync(cc => cc.Id == costCenterId);
+            var costCenterExists = await unitOfWork.CostCenters.Query().AnyAsync(cc => cc.Id == costCenterId);
             if (!costCenterExists)
             {
             logger.LogInformation("[PO PDF Upload] ERROR: Cost Center '{CostCenterId}' not found", costCenterId);
@@ -331,7 +331,7 @@ public class PdfUploadService : IPdfUploadService
                 throw new InvalidOperationException("Project is required for purchase order uploads");
             }
 
-            var project = await _unitOfWork.Projects.Query().FirstOrDefaultAsync(p => p.Id == projectId);
+            var project = await unitOfWork.Projects.Query().FirstOrDefaultAsync(p => p.Id == projectId);
             if (project == null)
             {
             logger.LogInformation("[PO PDF Upload] ERROR: Project '{ProjectId}' not found", projectId);
@@ -347,7 +347,7 @@ public class PdfUploadService : IPdfUploadService
             logger.LogInformation("[PO PDF Upload] Validated Project: {ProjectId}, belongs to Cost Center: {CostCenterId}", projectId, costCenterId);
 
             // Erstelle Purchase Order mit extrahierten Daten
-            var offenStatus = await _unitOfWork.Statuses.Query()
+            var offenStatus = await unitOfWork.Statuses.Query()
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Offen && 
                                             s.EntityType == EntityTypes.PurchaseOrder);
             
@@ -371,8 +371,8 @@ public class PdfUploadService : IPdfUploadService
 
             logger.LogInformation("[PO PDF Upload] Creating purchase order - ID: {Id}, Total: {TotalAmount}", purchaseOrder.Id, purchaseOrder.TotalAmount);
 
-            _unitOfWork.PurchaseOrders.Add(purchaseOrder);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.PurchaseOrders.Add(purchaseOrder);
+            await unitOfWork.SaveChangesAsync();
 
             logger.LogInformation("[PO PDF Upload] Purchase Order created successfully with ID: {Id}", purchaseOrder.Id);
 
@@ -388,7 +388,7 @@ public class PdfUploadService : IPdfUploadService
             }
 
             // Lade vollst�ndige PO mit Navigations-Properties
-            var po = await _unitOfWork.PurchaseOrders.Query()
+            var po = await unitOfWork.PurchaseOrders.Query()
                 .Include(p => p.Status)
                 .Include(p => p.CostCenter)
                 .Include(p => p.Project)
@@ -446,7 +446,7 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            var invoice = await _unitOfWork.Invoices.GetByIdAsync(invoiceId);
+            var invoice = await unitOfWork.Invoices.GetByIdAsync(invoiceId);
             if (invoice?.PdfContent == null || invoice.PdfContent.Length == 0)
             {
                 throw new FileNotFoundException($"PDF for invoice {invoiceId} not found in database");
@@ -464,7 +464,7 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            var invoice = await _unitOfWork.Invoices.GetByIdAsync(invoiceId);
+            var invoice = await unitOfWork.Invoices.GetByIdAsync(invoiceId);
             if (invoice == null)
             {
                 return false;
@@ -475,7 +475,7 @@ public class PdfUploadService : IPdfUploadService
             invoice.PdfFilePath = null;
             invoice.PdfFileSize = null;
             invoice.OriginalFilename = null;
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return true;
         }
@@ -489,12 +489,12 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            var totalInvoices = await _unitOfWork.Invoices.Query().CountAsync();
-            var invoicesWithPdf = await _unitOfWork.Invoices.Query()
+            var totalInvoices = await unitOfWork.Invoices.Query().CountAsync();
+            var invoicesWithPdf = await unitOfWork.Invoices.Query()
                 .Where(i => i.PdfContent != null && i.PdfContent.Length > 0)
                 .CountAsync();
             
-            var totalPdfSize = await _unitOfWork.Invoices.Query()
+            var totalPdfSize = await unitOfWork.Invoices.Query()
                 .Where(i => i.PdfFileSize.HasValue)
                 .SumAsync(i => i.PdfFileSize!.Value);
 
@@ -1111,7 +1111,7 @@ public class PdfUploadService : IPdfUploadService
         // Wenn projectId vorhanden ist, validiere dass es zur Kostenstelle passt
         if (!string.IsNullOrEmpty(projectId))
         {
-            var project = await _unitOfWork.Projects.Query().FirstOrDefaultAsync(p => p.Id == projectId);
+            var project = await unitOfWork.Projects.Query().FirstOrDefaultAsync(p => p.Id == projectId);
             if (project == null)
             {
                 throw new ArgumentException($"Project with ID '{projectId}' not found");
@@ -1133,7 +1133,7 @@ public class PdfUploadService : IPdfUploadService
         // Wenn purchaseOrderId vorhanden ist, validiere dass es zur Kostenstelle und Projekt passt
         if (!string.IsNullOrEmpty(purchaseOrderId))
         {
-            var purchaseOrder = await _unitOfWork.PurchaseOrders.Query().FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+            var purchaseOrder = await unitOfWork.PurchaseOrders.Query().FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
             if (purchaseOrder == null)
             {
                 throw new ArgumentException($"Purchase Order with ID '{purchaseOrderId}' not found");
@@ -1211,7 +1211,7 @@ public class PdfUploadService : IPdfUploadService
         var currentYear = DateTime.UtcNow.Year;
         
         // Finde die h�chste Nummer des aktuellen Jahres
-        var invoicesThisYear = await _unitOfWork.Invoices.Query()
+        var invoicesThisYear = await unitOfWork.Invoices.Query()
             .Where(i => i.InvoiceNumber.EndsWith(currentYear.ToString()))
             .Select(i => i.InvoiceNumber)
             .ToListAsync();
@@ -1249,7 +1249,7 @@ public class PdfUploadService : IPdfUploadService
         var currentYear = DateTime.UtcNow.Year;
         
         // Finde die h�chste Nummer des aktuellen Jahres
-        var posThisYear = await _unitOfWork.PurchaseOrders.Query()
+        var posThisYear = await unitOfWork.PurchaseOrders.Query()
             .Where(po => po.Id.EndsWith(currentYear.ToString()))
             .Select(po => po.Id)
             .ToListAsync();
@@ -1288,7 +1288,7 @@ public class PdfUploadService : IPdfUploadService
         {
             
             // Suche oder erstelle einen Standard-Lieferanten
-            var defaultSupplier = await _unitOfWork.Suppliers.Query().FirstOrDefaultAsync(s => s.Name == "Unbekannter Lieferant");
+            var defaultSupplier = await unitOfWork.Suppliers.Query().FirstOrDefaultAsync(s => s.Name == "Unbekannter Lieferant");
             if (defaultSupplier == null)
             {
                 defaultSupplier = new Supplier
@@ -1296,15 +1296,15 @@ public class PdfUploadService : IPdfUploadService
                     Name = "Unbekannter Lieferant",
                     Country = "Deutschland"
                 };
-                _unitOfWork.Suppliers.Add(defaultSupplier);
-                await _unitOfWork.SaveChangesAsync();
+                unitOfWork.Suppliers.Add(defaultSupplier);
+                await unitOfWork.SaveChangesAsync();
                 
             }
             return defaultSupplier.Id;
         }
 
         // Suche nach existierendem Lieferanten
-        var existingSupplier = await _unitOfWork.Suppliers.Query()
+        var existingSupplier = await unitOfWork.Suppliers.Query()
             .FirstOrDefaultAsync(s => 
                 s.Name.ToLower() == supplierInfo.Name.ToLower() ||
                 (supplierInfo.VatNumber != null && s.VatNumber == supplierInfo.VatNumber) ||
@@ -1331,8 +1331,8 @@ public class PdfUploadService : IPdfUploadService
             Country = (supplierInfo.Country ?? "Italien").Length > 50 ? (supplierInfo.Country ?? "Italien").Substring(0, 50) : supplierInfo.Country ?? "Italien"
         };
 
-        _unitOfWork.Suppliers.Add(newSupplier);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.Suppliers.Add(newSupplier);
+        await unitOfWork.SaveChangesAsync();
 
         return newSupplier.Id;
     }

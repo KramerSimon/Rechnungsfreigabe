@@ -8,10 +8,10 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class NotificationService : INotificationService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
     public NotificationService(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
         }
 
     /// <summary>
@@ -22,12 +22,12 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var exists = await _unitOfWork.Notifications.Query().AnyAsync(n =>
+            var exists = await unitOfWork.Notifications.Query().AnyAsync(n =>
                 n.UserId == approverId && n.InvoiceId == invoiceId && n.Type == "invoice_approval_required");
 
             if (exists) return;
 
-            var invoice = await _unitOfWork.Invoices.Query()
+            var invoice = await unitOfWork.Invoices.Query()
                 .Include(i => i.Supplier)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
@@ -50,7 +50,7 @@ public class NotificationService : INotificationService
 
     public async Task<IEnumerable<NotificationDto>> GetUserNotificationsAsync(int userId, bool unreadOnly = false)
     {
-        var query = _unitOfWork.Notifications.Query()
+        var query = unitOfWork.Notifications.Query()
             .Include(n => n.Invoice)
             .ThenInclude(i => i!.Supplier)
             .Where(n => n.UserId == userId);
@@ -90,11 +90,11 @@ public class NotificationService : INotificationService
                 notification.ActionUrl = $"/invoices/{invoiceId}";
             }
 
-            _unitOfWork.Notifications.Add(notification);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.Notifications.Add(notification);
+            await unitOfWork.SaveChangesAsync();
 
             // Reload with invoice details
-            var createdNotification = await _unitOfWork.Notifications.Query()
+            var createdNotification = await unitOfWork.Notifications.Query()
                 .Include(n => n.Invoice)
                 .ThenInclude(i => i!.Supplier)
                 .FirstAsync(n => n.Id == notification.Id);
@@ -112,7 +112,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var notification = await _unitOfWork.Notifications.Query()
+            var notification = await unitOfWork.Notifications.Query()
                 .FirstOrDefaultAsync(n => n.Id == notificationId && n.UserId == userId);
 
             if (notification == null) return false;
@@ -120,7 +120,7 @@ public class NotificationService : INotificationService
             notification.IsRead = true;
             notification.ReadAt = DateTime.UtcNow;
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
             return true;
         }
         catch (Exception)
@@ -134,7 +134,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var unreadNotifications = await _unitOfWork.Notifications.Query()
+            var unreadNotifications = await unitOfWork.Notifications.Query()
                 .Where(n => n.UserId == userId && !n.IsRead)
                 .ToListAsync();
 
@@ -144,7 +144,7 @@ public class NotificationService : INotificationService
                 notification.ReadAt = DateTime.UtcNow;
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
             
             return true;
         }
@@ -157,7 +157,7 @@ public class NotificationService : INotificationService
 
     public async Task<int> GetUnreadCountAsync(int userId)
     {
-        return await _unitOfWork.Notifications.Query()
+        return await unitOfWork.Notifications.Query()
             .CountAsync(n => n.UserId == userId && !n.IsRead);
     }
 
@@ -165,7 +165,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var invoice = await _unitOfWork.Invoices.Query()
+            var invoice = await unitOfWork.Invoices.Query()
                 .Include(i => i.Supplier)
                 .Include(i => i.ApprovalWorkflows)
                 .ThenInclude(aw => aw.Approver)
@@ -176,7 +176,7 @@ public class NotificationService : INotificationService
             var notifiedUserIds = new HashSet<int>();
 
             // Notify approvers
-            var pendingStatus = await _unitOfWork.Statuses.Query()
+            var pendingStatus = await unitOfWork.Statuses.Query()
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
                                             s.EntityType == EntityTypes.ApprovalWorkflow);
             
@@ -200,7 +200,7 @@ public class NotificationService : INotificationService
             }
 
             // Notify accounting team
-            var accountingUsers = await _unitOfWork.Users.Query()
+            var accountingUsers = await unitOfWork.Users.Query()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Buchhaltung"))
@@ -220,7 +220,7 @@ public class NotificationService : INotificationService
             }
 
             // Notify admins (if not already notified)
-            var adminUsers = await _unitOfWork.Users.Query()
+            var adminUsers = await unitOfWork.Users.Query()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Administrator"))
@@ -251,7 +251,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var invoice = await _unitOfWork.Invoices.Query()
+            var invoice = await unitOfWork.Invoices.Query()
                 .Include(i => i.Supplier)
                 .Include(i => i.Creator)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
@@ -277,7 +277,7 @@ public class NotificationService : INotificationService
             }
 
             // Notify accounting team
-            var accountingUsers = await _unitOfWork.Users.Query()
+            var accountingUsers = await unitOfWork.Users.Query()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Buchhaltung"))
@@ -305,17 +305,17 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var bezahltStatus = await _unitOfWork.Statuses.Query()
+            var bezahltStatus = await unitOfWork.Statuses.Query()
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Bezahlt && 
                                             s.EntityType == EntityTypes.Invoice);
-            var storniert = await _unitOfWork.Statuses.Query()
+            var storniert = await unitOfWork.Statuses.Query()
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Storniert && 
                                             s.EntityType == EntityTypes.Invoice);
-            var ueberfaellig = await _unitOfWork.Statuses.Query()
+            var ueberfaellig = await unitOfWork.Statuses.Query()
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Ueberfaellig && 
                                             s.EntityType == EntityTypes.Invoice);
             
-            var overdueInvoices = await _unitOfWork.Invoices.Query()
+            var overdueInvoices = await unitOfWork.Invoices.Query()
                 .Include(i => i.Supplier)
                 .Where(i => i.DueDate < DateTime.UtcNow && 
                            i.StatusId != bezahltStatus!.Id && 
@@ -333,10 +333,10 @@ public class NotificationService : INotificationService
                 invoice.UpdatedAt = DateTime.UtcNow;
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             // Notify relevant users about overdue invoices
-            var financeUsers = await _unitOfWork.Users.Query()
+            var financeUsers = await unitOfWork.Users.Query()
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.UserRoles.Any(ur => 
@@ -398,7 +398,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var invoice = await _unitOfWork.Invoices.Query()
+            var invoice = await unitOfWork.Invoices.Query()
                 .Include(i => i.Creator)
                 .Include(i => i.Supplier)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);

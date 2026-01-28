@@ -8,16 +8,16 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class PermissionService : IPermissionService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
 
     public PermissionService(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
     }
 
     public async Task<List<PermissionDto>> GetAllPermissionsAsync()
     {
-        return await _unitOfWork.Permissions.Query()
+        return await unitOfWork.Permissions.Query()
             .OrderBy(p => p.Category)
             .ThenBy(p => p.Name)
             .Select(p => new PermissionDto
@@ -34,7 +34,7 @@ public class PermissionService : IPermissionService
 
     public async Task<PermissionDto?> GetPermissionByIdAsync(int id)
     {
-        var permission = await _unitOfWork.Permissions.GetByIdAsync(id);
+        var permission = await unitOfWork.Permissions.GetByIdAsync(id);
         if (permission == null) return null;
 
         return new PermissionDto
@@ -59,8 +59,8 @@ public class PermissionService : IPermissionService
             IsSystemPermission = dto.IsSystemPermission
         };
 
-        _unitOfWork.Permissions.Add(permission);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.Permissions.Add(permission);
+        await unitOfWork.SaveChangesAsync();
 
         return new PermissionDto
         {
@@ -75,7 +75,7 @@ public class PermissionService : IPermissionService
 
     public async Task<PermissionDto> UpdatePermissionAsync(int id, UpdatePermissionDto dto)
     {
-        var permission = await _unitOfWork.Permissions.GetByIdAsync(id);
+        var permission = await unitOfWork.Permissions.GetByIdAsync(id);
         if (permission == null)
             throw new KeyNotFoundException($"Permission with ID {id} not found");
 
@@ -86,7 +86,7 @@ public class PermissionService : IPermissionService
             if (dto.Category != null) permission.Category = dto.Category;
         }
 
-        await _unitOfWork.SaveChangesAsync();
+        await unitOfWork.SaveChangesAsync();
 
         return new PermissionDto
         {
@@ -101,14 +101,14 @@ public class PermissionService : IPermissionService
 
     public async Task DeletePermissionAsync(int id)
     {
-        var permission = await _unitOfWork.Permissions.GetByIdAsync(id);
+        var permission = await unitOfWork.Permissions.GetByIdAsync(id);
         if (permission == null)
             throw new KeyNotFoundException($"Permission with ID {id} not found");
 
         if (permission.IsSystemPermission)
             throw new InvalidOperationException("System permissions cannot be deleted");
 
-        _unitOfWork.Permissions.Remove(permission);
-        await _unitOfWork.SaveChangesAsync();
+        unitOfWork.Permissions.Remove(permission);
+        await unitOfWork.SaveChangesAsync();
     }
 }

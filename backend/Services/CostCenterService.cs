@@ -8,15 +8,15 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class CostCenterService : ICostCenterService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
     public CostCenterService(IUnitOfWork unitOfWork)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
         }
 
     public async Task<IEnumerable<CostCenterDto>> GetAllCostCentersAsync()
     {
-        var costCenters = await _unitOfWork.CostCenters.Query()
+        var costCenters = await unitOfWork.CostCenters.Query()
             .Include(cc => cc.Manager)
             .Where(cc => cc.IsActive)
             .OrderBy(cc => cc.Name)
@@ -27,7 +27,7 @@ public class CostCenterService : ICostCenterService
 
     public async Task<CostCenterDto?> GetCostCenterByIdAsync(string id)
     {
-        var costCenter = await _unitOfWork.CostCenters.Query()
+        var costCenter = await unitOfWork.CostCenters.Query()
             .Include(cc => cc.Manager)
             .FirstOrDefaultAsync(cc => cc.Id == id);
 
@@ -49,11 +49,11 @@ public class CostCenterService : ICostCenterService
                 CreatedAt = DateTime.UtcNow
             };
 
-            _unitOfWork.CostCenters.Add(costCenter);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.CostCenters.Add(costCenter);
+            await unitOfWork.SaveChangesAsync();
 
             // Reload with manager details
-            var createdCostCenter = await _unitOfWork.CostCenters.Query()
+            var createdCostCenter = await unitOfWork.CostCenters.Query()
                 .Include(cc => cc.Manager)
                 .FirstAsync(cc => cc.Id == costCenter.Id);
 
@@ -70,7 +70,7 @@ public class CostCenterService : ICostCenterService
     {
         try
         {
-            var costCenter = await _unitOfWork.CostCenters.Query()
+            var costCenter = await unitOfWork.CostCenters.Query()
                 .Include(cc => cc.Manager)
                 .FirstOrDefaultAsync(cc => cc.Id == id);
 
@@ -81,10 +81,10 @@ public class CostCenterService : ICostCenterService
             costCenter.Budget = updateCostCenterDto.Budget;
             costCenter.ManagerId = updateCostCenterDto.ManagerId;
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             // Reload with updated manager details
-            var updatedCostCenter = await _unitOfWork.CostCenters.Query()
+            var updatedCostCenter = await unitOfWork.CostCenters.Query()
                 .Include(cc => cc.Manager)
                 .FirstAsync(cc => cc.Id == id);
 
@@ -101,12 +101,12 @@ public class CostCenterService : ICostCenterService
     {
         try
         {
-            var costCenter = await _unitOfWork.CostCenters.FirstOrDefaultAsync(cc => cc.Id == id);
+            var costCenter = await unitOfWork.CostCenters.FirstOrDefaultAsync(cc => cc.Id == id);
             if (costCenter == null) return false;
 
             // Check if cost center has associated invoices or projects
-            var hasInvoices = await _unitOfWork.Invoices.Query().AnyAsync(i => i.CostCenterId == id);
-            var hasProjects = await _unitOfWork.Projects.Query().AnyAsync(p => p.CostCenterId == id);
+            var hasInvoices = await unitOfWork.Invoices.Query().AnyAsync(i => i.CostCenterId == id);
+            var hasProjects = await unitOfWork.Projects.Query().AnyAsync(p => p.CostCenterId == id);
 
             if (hasInvoices || hasProjects)
             {
@@ -116,10 +116,10 @@ public class CostCenterService : ICostCenterService
             else
             {
                 // Hard delete if no dependencies
-                _unitOfWork.CostCenters.Remove(costCenter);
+                unitOfWork.CostCenters.Remove(costCenter);
             }
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return true;
         }
@@ -132,7 +132,7 @@ public class CostCenterService : ICostCenterService
 
     public async Task<IEnumerable<ProjectDto>> GetCostCenterProjectsAsync(string costCenterId)
     {
-        var projects = await _unitOfWork.Projects.Query()
+        var projects = await unitOfWork.Projects.Query()
             .Include(p => p.CostCenter)
             .Include(p => p.ProjectManager)
             .Where(p => p.CostCenterId == costCenterId)
@@ -144,7 +144,7 @@ public class CostCenterService : ICostCenterService
 
     public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync()
     {
-        var projects = await _unitOfWork.Projects.Query()
+        var projects = await unitOfWork.Projects.Query()
             .Include(p => p.CostCenter)
             .Include(p => p.ProjectManager)
             .OrderBy(p => p.Name)
@@ -157,7 +157,7 @@ public class CostCenterService : ICostCenterService
     {
         try
         {
-            var projectStatusId = await _unitOfWork.Statuses.Query()
+            var projectStatusId = await unitOfWork.Statuses.Query()
                 .Where(s => s.Code == createProjectDto.Status && s.EntityType == EntityTypes.Project)
                 .Select(s => (int?)s.Id)
                 .FirstOrDefaultAsync();
@@ -176,11 +176,11 @@ public class CostCenterService : ICostCenterService
                 CreatedAt = DateTime.UtcNow
             };
 
-            _unitOfWork.Projects.Add(project);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.Projects.Add(project);
+            await unitOfWork.SaveChangesAsync();
 
             // Reload with includes
-            var createdProject = await _unitOfWork.Projects.Query()
+            var createdProject = await unitOfWork.Projects.Query()
                 .Include(p => p.CostCenter)
                 .Include(p => p.ProjectManager)
                 .FirstOrDefaultAsync(p => p.Id == project.Id);

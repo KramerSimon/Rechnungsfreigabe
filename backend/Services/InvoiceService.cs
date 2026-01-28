@@ -8,7 +8,7 @@ namespace RechnungsfreigabeAPI.Services.Interfaces;
 
 public class InvoiceService : IInvoiceService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork unitOfWork;
     private readonly IApprovalService approvalService;
     private readonly INotificationService notificationService;
     private readonly IInvoiceHistoryService historyService;
@@ -21,7 +21,7 @@ public class InvoiceService : IInvoiceService
         IInvoiceHistoryService historyService,
         IUserService userService)
     {
-        _unitOfWork = unitOfWork;
+        this.unitOfWork = unitOfWork;
         this.approvalService = approvalService;
         this.notificationService = notificationService;
         this.historyService = historyService;
@@ -30,7 +30,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task<PagedResult<InvoiceDto>> GetInvoicesPagedAsync(PageRequest pageRequest, int userId, string[] userPermissions)
     {
-        var query = _unitOfWork.Invoices.Query()
+        var query = unitOfWork.Invoices.Query()
             .Include(i => i.Status)
             .Include(i => i.Supplier)
             .Include(i => i.CostCenter)
@@ -87,7 +87,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task<PagedResult<InvoiceDto>> GetAllInvoicesPagedAsync(PageRequest pageRequest)
     {
-        var query = _unitOfWork.Invoices.Query()
+        var query = unitOfWork.Invoices.Query()
             .Include(i => i.Status)
             .Include(i => i.Supplier)
             .Include(i => i.CostCenter)
@@ -141,7 +141,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task<InvoiceDto?> GetInvoiceByIdAsync(int id, int userId, string[] userPermissions)
     {
-        var query = _unitOfWork.Invoices.Query()
+        var query = unitOfWork.Invoices.Query()
             .Include(i => i.Status)
             .Include(i => i.Supplier)
             .Include(i => i.CostCenter)
@@ -163,7 +163,7 @@ public class InvoiceService : IInvoiceService
 
     private async Task<InvoiceDto?> GetInvoiceByIdInternalAsync(int id)
     {
-        var invoice = await _unitOfWork.Invoices.Query()
+        var invoice = await unitOfWork.Invoices.Query()
             .Include(i => i.Status)
             .Include(i => i.Supplier)
             .Include(i => i.CostCenter)
@@ -181,7 +181,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task<InvoiceDto> CreateInvoiceAsync(CreateInvoiceDto createInvoiceDto, int createdBy)
     {
-        await _unitOfWork.BeginTransactionAsync();
+        await unitOfWork.BeginTransactionAsync();
         
         try
         {
@@ -207,12 +207,12 @@ public class InvoiceService : IInvoiceService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _unitOfWork.Invoices.Add(invoice);
+            unitOfWork.Invoices.Add(invoice);
             
             try
             {
                 Console.WriteLine($"[InvoiceService] About to call SaveChangesAsync...");
-                await _unitOfWork.SaveChangesAsync();
+                await unitOfWork.SaveChangesAsync();
                 Console.WriteLine($"[InvoiceService] SaveChangesAsync completed successfully");
             }
             catch (DbUpdateException dbEx)
@@ -250,7 +250,7 @@ public class InvoiceService : IInvoiceService
                 ChangedBy = createdBy
             });
 
-            await _unitOfWork.CommitTransactionAsync();
+            await unitOfWork.CommitTransactionAsync();
 
             // Send notifications
             await notificationService.NotifyInvoiceCreatedAsync(invoice.Id);
@@ -260,7 +260,7 @@ public class InvoiceService : IInvoiceService
         }
         catch (Exception)
         {
-            await _unitOfWork.RollbackTransactionAsync();
+            await unitOfWork.RollbackTransactionAsync();
             
             throw;
         }
@@ -268,11 +268,11 @@ public class InvoiceService : IInvoiceService
 
     public async Task<InvoiceDto?> UpdateInvoiceAsync(int id, UpdateInvoiceDto updateInvoiceDto, int updatedBy)
     {
-        await _unitOfWork.BeginTransactionAsync();
+        await unitOfWork.BeginTransactionAsync();
         
         try
         {
-            var invoice = await _unitOfWork.Invoices.GetByIdAsync(id);
+            var invoice = await unitOfWork.Invoices.GetByIdAsync(id);
             if (invoice == null) return null;
 
             var oldStatus = invoice.Status?.ToString() ?? string.Empty;
@@ -364,7 +364,7 @@ public class InvoiceService : IInvoiceService
             invoice.ProcessedBy = updatedBy;
             invoice.UpdatedAt = DateTime.UtcNow;
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             // Create audit trail entry if there were changes
             if (changes.Any())
@@ -385,13 +385,13 @@ public class InvoiceService : IInvoiceService
                 await historyService.CreateDataCompletionAsync(invoice.Id, fieldChangesList, updatedBy);
             }
 
-            await _unitOfWork.CommitTransactionAsync();
+            await unitOfWork.CommitTransactionAsync();
 
             return await GetInvoiceByIdInternalAsync(id);
         }
         catch (Exception)
         {
-            await _unitOfWork.RollbackTransactionAsync();
+            await unitOfWork.RollbackTransactionAsync();
             
             throw;
         }
@@ -401,7 +401,7 @@ public class InvoiceService : IInvoiceService
     {
         try
         {
-            var invoice = await _unitOfWork.Invoices.Query()
+            var invoice = await unitOfWork.Invoices.Query()
                 .Include(i => i.ApprovalWorkflows)
                 .Include(i => i.InvoiceHistories)
                 .Include(i => i.Notifications)
@@ -412,22 +412,22 @@ public class InvoiceService : IInvoiceService
             // Hard delete - remove all related entities first
             if (invoice.ApprovalWorkflows != null && invoice.ApprovalWorkflows.Any())
             {
-                _unitOfWork.ApprovalWorkflows.RemoveRange(invoice.ApprovalWorkflows);
+                unitOfWork.ApprovalWorkflows.RemoveRange(invoice.ApprovalWorkflows);
             }
 
             if (invoice.InvoiceHistories != null && invoice.InvoiceHistories.Any())
             {
-                _unitOfWork.InvoiceHistories.RemoveRange(invoice.InvoiceHistories);
+                unitOfWork.InvoiceHistories.RemoveRange(invoice.InvoiceHistories);
             }
 
             if (invoice.Notifications != null && invoice.Notifications.Any())
             {
-                _unitOfWork.Notifications.RemoveRange(invoice.Notifications);
+                unitOfWork.Notifications.RemoveRange(invoice.Notifications);
             }
 
             // Finally delete the invoice itself
-            _unitOfWork.Invoices.Remove(invoice);
-            await _unitOfWork.SaveChangesAsync();
+            unitOfWork.Invoices.Remove(invoice);
+            await unitOfWork.SaveChangesAsync();
 
             return true;
         }
@@ -443,13 +443,13 @@ public class InvoiceService : IInvoiceService
         var now = DateTime.UtcNow;
         var startOfMonth = new DateTime(now.Year, now.Month, 1);
 
-        var statusEingegangen = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen && s.EntityType == EntityTypes.Invoice);
-        var statusFreigabeErforderlich = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && s.EntityType == EntityTypes.Invoice);
-        var statusFreigegeben = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben && s.EntityType == EntityTypes.Invoice);
-        var statusUeberfaellig = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Ueberfaellig && s.EntityType == EntityTypes.Invoice);
-        var statusBezahlt = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Bezahlt && s.EntityType == EntityTypes.Invoice);
+        var statusEingegangen = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen && s.EntityType == EntityTypes.Invoice);
+        var statusFreigabeErforderlich = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && s.EntityType == EntityTypes.Invoice);
+        var statusFreigegeben = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben && s.EntityType == EntityTypes.Invoice);
+        var statusUeberfaellig = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Ueberfaellig && s.EntityType == EntityTypes.Invoice);
+        var statusBezahlt = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Bezahlt && s.EntityType == EntityTypes.Invoice);
 
-        var stats = await _unitOfWork.Invoices.Query()
+        var stats = await unitOfWork.Invoices.Query()
             .GroupBy(i => 1)
             .Select(g => new DashboardStatsDto
             {
@@ -472,11 +472,11 @@ public class InvoiceService : IInvoiceService
 
     public async Task<IEnumerable<InvoiceDto>> GetPendingApprovalsAsync(int userId)
     {
-        var pendingStatus = await _unitOfWork.Statuses.Query()
+        var pendingStatus = await unitOfWork.Statuses.Query()
             .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
                                         s.EntityType == EntityTypes.ApprovalWorkflow);
 
-        var invoices = await _unitOfWork.Invoices.Query()
+        var invoices = await unitOfWork.Invoices.Query()
             .Include(i => i.Supplier)
             .Include(i => i.CostCenter)
             .Include(i => i.Project)
@@ -491,11 +491,11 @@ public class InvoiceService : IInvoiceService
 
     public async Task<bool> ApproveInvoiceAsync(int invoiceId, int approverId, ApproveInvoiceDto approveDto)
     {
-        await _unitOfWork.BeginTransactionAsync();
+        await unitOfWork.BeginTransactionAsync();
         
         try
         {
-            var invoice = await _unitOfWork.Invoices.Query()
+            var invoice = await unitOfWork.Invoices.Query()
                 .Include(i => i.ApprovalWorkflows)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
@@ -505,11 +505,11 @@ public class InvoiceService : IInvoiceService
             var userPermissions = await userService.GetUserPermissionsAsync(approverId);
             var isAdmin = userPermissions.Contains("all");
 
-            var pendingStatus2 = await _unitOfWork.Statuses.Query()
+            var pendingStatus2 = await unitOfWork.Statuses.Query()
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
                                             s.EntityType == EntityTypes.ApprovalWorkflow);
             
-            var allWorkflows = await _unitOfWork.ApprovalWorkflows.Query()
+            var allWorkflows = await unitOfWork.ApprovalWorkflows.Query()
                 .Where(aw => aw.InvoiceId == invoiceId && aw.ApproverId == approverId)
                 .ToListAsync();
             
@@ -531,7 +531,7 @@ public class InvoiceService : IInvoiceService
                     // Admin approves all pending workflows at once
                     foreach (var workflow in allPendingWorkflows)
                     {
-                        var approvedStatus = await _unitOfWork.Statuses.Query()
+                        var approvedStatus = await unitOfWork.Statuses.Query()
                             .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Approved && 
                                                         s.EntityType == EntityTypes.ApprovalWorkflow);
                         workflow.StatusId = approvedStatus?.Id;
@@ -546,8 +546,8 @@ public class InvoiceService : IInvoiceService
                     await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, 
                         $"Admin hat alle ausstehenden Freigaben erteilt: {approveDto.Comments}");
 
-                    await _unitOfWork.SaveChangesAsync();
-                    await _unitOfWork.CommitTransactionAsync();
+                    await unitOfWork.SaveChangesAsync();
+                    await unitOfWork.CommitTransactionAsync();
 
                     await notificationService.NotifyInvoiceApprovalAsync(invoiceId, true);
 
@@ -561,8 +561,8 @@ public class InvoiceService : IInvoiceService
                     invoice.UpdatedAt = DateTime.UtcNow;
 
                     await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
-                    await _unitOfWork.SaveChangesAsync();
-                    await _unitOfWork.CommitTransactionAsync();
+                    await unitOfWork.SaveChangesAsync();
+                    await unitOfWork.CommitTransactionAsync();
                     await notificationService.NotifyInvoiceApprovalAsync(invoiceId, true);
 
                     return true;
@@ -578,7 +578,7 @@ public class InvoiceService : IInvoiceService
 
                 foreach (var workflow in allPendingWorkflows)
                 {
-                    var rejectedStatus = await _unitOfWork.Statuses.Query()
+                    var rejectedStatus = await unitOfWork.Statuses.Query()
                         .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Rejected && 
                                                     s.EntityType == EntityTypes.ApprovalWorkflow);
                     workflow.StatusId = rejectedStatus?.Id;
@@ -591,8 +591,8 @@ public class InvoiceService : IInvoiceService
                 invoice.UpdatedAt = DateTime.UtcNow;
 
                 await historyService.CreateApprovalActionAsync(invoiceId, false, approverId, approveDto.Comments);
-                await _unitOfWork.SaveChangesAsync();
-                await _unitOfWork.CommitTransactionAsync();
+                await unitOfWork.SaveChangesAsync();
+                await unitOfWork.CommitTransactionAsync();
                 await notificationService.NotifyInvoiceApprovalAsync(invoiceId, false);
 
                 return true;
@@ -603,7 +603,7 @@ public class InvoiceService : IInvoiceService
 
             // Update workflow status
             var approvalStatus = approveDto.Approved ? RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Approved : RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Rejected;
-            var statusId = await _unitOfWork.Statuses.Query()
+            var statusId = await unitOfWork.Statuses.Query()
                 .Where(s => s.Code == approvalStatus && s.EntityType == EntityTypes.ApprovalWorkflow)
                 .Select(s => (int?)s.Id)
                 .FirstOrDefaultAsync();
@@ -643,8 +643,8 @@ public class InvoiceService : IInvoiceService
                 }
             }
 
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
+            await unitOfWork.SaveChangesAsync();
+            await unitOfWork.CommitTransactionAsync();
 
             // Send notifications
             await notificationService.NotifyInvoiceApprovalAsync(invoiceId, approveDto.Approved);
@@ -653,7 +653,7 @@ public class InvoiceService : IInvoiceService
         }
         catch (Exception)
         {
-            await _unitOfWork.RollbackTransactionAsync();
+            await unitOfWork.RollbackTransactionAsync();
             
             throw;
         }
@@ -663,7 +663,7 @@ public class InvoiceService : IInvoiceService
     {
         try
         {
-            var invoice = await _unitOfWork.Invoices.Query().Include(i => i.Status).FirstOrDefaultAsync(i => i.Id == id);
+            var invoice = await unitOfWork.Invoices.Query().Include(i => i.Status).FirstOrDefaultAsync(i => i.Id == id);
             if (invoice == null) return null;
 
             var oldStatus = invoice.Status?.Code ?? "Unknown";
@@ -675,7 +675,7 @@ public class InvoiceService : IInvoiceService
             invoice.ProcessedBy = updatedBy;
             invoice.UpdatedAt = DateTime.UtcNow;
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             await historyService.CreateStatusChangeAsync(id, oldStatus, statusCode, updatedBy);
 
@@ -728,7 +728,7 @@ public class InvoiceService : IInvoiceService
         if (userPermissions.Contains("invoices.view_team"))
         {
             // Get cost centers where the user is a manager
-            var managedCostCenters = await _unitOfWork.CostCenters.Query()
+            var managedCostCenters = await unitOfWork.CostCenters.Query()
                 .Where(cc => cc.ManagerId == userId)
                 .Select(cc => cc.Id)
                 .ToListAsync();
@@ -852,13 +852,13 @@ public class InvoiceService : IInvoiceService
     // Implementierung der neuen Statistik-Methoden f�r Dashboard
     public async Task<double> GetAutoApprovalRateAsync()
     {
-        var totalInvoices = await _unitOfWork.Invoices.Query()
+        var totalInvoices = await unitOfWork.Invoices.Query()
             .Where(i => i.CreatedAt >= DateTime.Now.AddMonths(-3)) // Letzten 3 Monate
             .CountAsync();
 
         if (totalInvoices == 0) return 0;
 
-        var autoApprovedCount = await _unitOfWork.Invoices.Query()
+        var autoApprovedCount = await unitOfWork.Invoices.Query()
             .Where(i => i.CreatedAt >= DateTime.Now.AddMonths(-3) && i.AutoApproved)
             .CountAsync();
 
@@ -868,17 +868,17 @@ public class InvoiceService : IInvoiceService
     public async Task<int> GetInvoiceCountThisMonthAsync()
     {
         var startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-        return await _unitOfWork.Invoices.Query()
+        return await unitOfWork.Invoices.Query()
             .Where(i => i.CreatedAt >= startOfMonth)
             .CountAsync();
     }
 
     public async Task<double> GetAverageProcessingTimeAsync()
     {
-        var statusEingegangen = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen && s.EntityType == EntityTypes.Invoice);
-        var statusInPruefung = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung && s.EntityType == EntityTypes.Invoice);
+        var statusEingegangen = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen && s.EntityType == EntityTypes.Invoice);
+        var statusInPruefung = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung && s.EntityType == EntityTypes.Invoice);
 
-        var processedInvoices = await _unitOfWork.Invoices.Query()
+        var processedInvoices = await unitOfWork.Invoices.Query()
             .Where(i => i.StatusId != statusEingegangen!.Id && 
                        i.StatusId != statusInPruefung!.Id &&
                        i.CreatedAt >= DateTime.Now.AddMonths(-3))
@@ -905,8 +905,8 @@ public class InvoiceService : IInvoiceService
 
     public async Task<(int Count, decimal Amount)> GetRejectedInvoiceStatsAsync()
     {
-        var statusAbgelehnt = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Abgelehnt && s.EntityType == EntityTypes.Invoice);
-        var rejectedInvoices = await _unitOfWork.Invoices.Query()
+        var statusAbgelehnt = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Abgelehnt && s.EntityType == EntityTypes.Invoice);
+        var rejectedInvoices = await unitOfWork.Invoices.Query()
             .Where(i => i.StatusId == statusAbgelehnt!.Id)
             .Select(i => i.TotalAmount)
             .ToListAsync();
@@ -916,8 +916,8 @@ public class InvoiceService : IInvoiceService
 
     public async Task<(int Count, decimal Amount)> GetReadyForPaymentStatsAsync()
     {
-        var statusFreigegeben = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben && s.EntityType == EntityTypes.Invoice);
-        var readyInvoices = await _unitOfWork.Invoices.Query()
+        var statusFreigegeben = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben && s.EntityType == EntityTypes.Invoice);
+        var readyInvoices = await unitOfWork.Invoices.Query()
             .Where(i => i.StatusId == statusFreigegeben!.Id)
             .Select(i => i.TotalAmount)
             .ToListAsync();
@@ -927,11 +927,11 @@ public class InvoiceService : IInvoiceService
 
     public async Task<decimal> GetOpenVolumeAmountAsync()
     {
-        var statusInPruefung = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung && s.EntityType == EntityTypes.Invoice);
-        var statusEingegangen = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen && s.EntityType == EntityTypes.Invoice);
-        var statusFreigabeErforderlich = await _unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && s.EntityType == EntityTypes.Invoice);
+        var statusInPruefung = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung && s.EntityType == EntityTypes.Invoice);
+        var statusEingegangen = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen && s.EntityType == EntityTypes.Invoice);
+        var statusFreigabeErforderlich = await unitOfWork.Statuses.Query().FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && s.EntityType == EntityTypes.Invoice);
 
-        return await _unitOfWork.Invoices.Query()
+        return await unitOfWork.Invoices.Query()
             .Where(i => i.StatusId == statusInPruefung!.Id || 
                        i.StatusId == statusEingegangen!.Id ||
                        i.StatusId == statusFreigabeErforderlich!.Id)
@@ -965,7 +965,7 @@ public class InvoiceService : IInvoiceService
 
     private async Task<int?> GetStatusIdByCodeAsync(string statusCode)
     {
-        var status = await _unitOfWork.Statuses.Query()
+        var status = await unitOfWork.Statuses.Query()
             .FirstOrDefaultAsync(s => s.Code == statusCode && s.EntityType == "Invoice");
         return status?.Id;
     }
