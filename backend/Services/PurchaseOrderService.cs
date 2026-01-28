@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using RechnungsfreigabeAPI.Data;
+using RechnungsfreigabeAPI.Repositories.Interfaces;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 
@@ -8,19 +8,19 @@ namespace RechnungsfreigabeAPI.Services;
 
 public class PurchaseOrderService : IPurchaseOrderService
 {
-    private readonly ApplicationDbContext context;
-    public PurchaseOrderService(ApplicationDbContext context)
+    private readonly IUnitOfWork _unitOfWork;
+    public PurchaseOrderService(IUnitOfWork unitOfWork)
     {
-        this.context = context;
+        _unitOfWork = unitOfWork;
         }
 
     public async Task<IEnumerable<PurchaseOrderDto>> GetAllPurchaseOrdersAsync()
     {
-        var storniertStatus = await context.Statuses
+        var storniertStatus = await _unitOfWork.Statuses.Query()
             .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Storniert && 
                                         s.EntityType == EntityTypes.PurchaseOrder);
         
-        var purchaseOrders = await context.PurchaseOrders
+        var purchaseOrders = await _unitOfWork.PurchaseOrders.Query()
             .Include(po => po.CostCenter)
             .Include(po => po.Project)
             .Include(po => po.Creator)
@@ -34,7 +34,7 @@ public class PurchaseOrderService : IPurchaseOrderService
 
     public async Task<PurchaseOrderDto?> GetPurchaseOrderByIdAsync(string id)
     {
-        var purchaseOrder = await context.PurchaseOrders
+        var purchaseOrder = await _unitOfWork.PurchaseOrders.Query()
             .Include(po => po.CostCenter)
             .Include(po => po.Project)
             .Include(po => po.Creator)
@@ -46,7 +46,7 @@ public class PurchaseOrderService : IPurchaseOrderService
 
     public async Task<PurchaseOrderDto> CreatePurchaseOrderAsync(CreatePurchaseOrderDto createDto, int createdBy)
     {
-        var offenStatus = await context.Statuses
+        var offenStatus = await _unitOfWork.Statuses.Query()
             .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Offen && 
                                         s.EntityType == EntityTypes.PurchaseOrder);
         
@@ -64,8 +64,8 @@ public class PurchaseOrderService : IPurchaseOrderService
             CreatedAt = DateTime.UtcNow
         };
 
-        context.PurchaseOrders.Add(purchaseOrder);
-        await context.SaveChangesAsync();
+        _unitOfWork.PurchaseOrders.Add(purchaseOrder);
+        await _unitOfWork.SaveChangesAsync();
 
         return await GetPurchaseOrderByIdAsync(purchaseOrder.Id) 
             ?? throw new InvalidOperationException("Failed to retrieve created purchase order");

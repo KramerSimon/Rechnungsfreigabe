@@ -1,6 +1,6 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using RechnungsfreigabeAPI.Data;
+using RechnungsfreigabeAPI.Repositories.Interfaces;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 using System.Text.Json;
@@ -9,18 +9,18 @@ namespace RechnungsfreigabeAPI.Services.Interfaces;
 
 public class InvoiceHistoryService : IInvoiceHistoryService
 {
-    private readonly ApplicationDbContext context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper mapper;
     private readonly IEmailService emailService;
     private readonly INotificationService notificationService;
 
     public InvoiceHistoryService(
-        ApplicationDbContext context,
+        IUnitOfWork unitOfWork,
         IMapper mapper,
         IEmailService emailService,
         INotificationService notificationService)
     {
-        this.context = context;
+        _unitOfWork = unitOfWork;
         this.mapper = mapper;
         this.emailService = emailService;
         this.notificationService = notificationService;
@@ -52,14 +52,14 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             ChangedAt = DateTime.UtcNow
         };
 
-        context.InvoiceHistories.Add(history);
-        await context.SaveChangesAsync();
+        _unitOfWork.InvoiceHistories.Add(history);
+        await _unitOfWork.SaveChangesAsync();
 
     }
 
     public async Task<List<InvoiceHistoryDto>> GetInvoiceHistoryAsync(int invoiceId)
     {
-        var histories = await context.InvoiceHistories
+        var histories = await _unitOfWork.InvoiceHistories.Query()
             .Include(h => h.ChangedByUser)
             .Where(h => h.InvoiceId == invoiceId)
             .OrderByDescending(h => h.ChangedAt)
@@ -114,7 +114,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         });
 
         // Determine target user for notification/email
-        var invoice = await context.Invoices
+        var invoice = await _unitOfWork.Invoices.Query()
             .Include(i => i.CostCenter)
                 .ThenInclude(cc => cc!.Manager)
             .Include(i => i.Project)
@@ -123,13 +123,13 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
         var targetUser = escalatedTo.HasValue
-            ? await context.Users.FirstOrDefaultAsync(u => u.Id == escalatedTo.Value)
+            ? await _unitOfWork.Users.Query().FirstOrDefaultAsync(u => u.Id == escalatedTo.Value)
             : invoice?.CostCenter?.Manager ?? invoice?.Project?.ProjectManager ?? invoice?.Creator;
 
         if (targetUser != null)
         {
-            var subject = $"Eskalation für Rechnung {invoice?.InvoiceNumber ?? invoiceId.ToString()}";
-            var body = reason ?? "Eine Eskalation wurde ausgelöst.";
+            var subject = $"Eskalation fï¿½r Rechnung {invoice?.InvoiceNumber ?? invoiceId.ToString()}";
+            var body = reason ?? "Eine Eskalation wurde ausgelï¿½st.";
 
             // Send email if we have an address
             if (!string.IsNullOrWhiteSpace(targetUser.Email))
@@ -153,7 +153,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         await CreateHistoryEntryAsync(new CreateHistoryEntryDto
         {
             InvoiceId = invoiceId,
-            Action = "Status geändert",
+            Action = "Status geï¿½ndert",
             ActionType = HistoryActionType.StatusChanged.ToString(),
             ActionSource = HistoryActionSource.User.ToString(),
             OldStatus = oldStatus,
@@ -168,7 +168,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         await CreateHistoryEntryAsync(new CreateHistoryEntryDto
         {
             InvoiceId = invoiceId,
-            Action = "Daten vervollständigt",
+            Action = "Daten vervollstï¿½ndigt",
             ActionType = HistoryActionType.DataCompleted.ToString(),
             ActionSource = HistoryActionSource.User.ToString(),
             FieldChanges = fieldChanges,

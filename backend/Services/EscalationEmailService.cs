@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using RechnungsfreigabeAPI.Data;
+using RechnungsfreigabeAPI.Repositories.Interfaces;
 using RechnungsfreigabeAPI.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
@@ -13,18 +13,18 @@ namespace RechnungsfreigabeAPI.Services;
 /// </summary>
 public class EscalationEmailService : IEscalationEmailService
 {
-    private readonly ApplicationDbContext context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IEmailService emailService;
     private readonly ILogger<EscalationEmailService> logger;
     private readonly IConfiguration configuration;
 
     public EscalationEmailService(
-        ApplicationDbContext context,
+        IUnitOfWork unitOfWork,
         IEmailService emailService,
         ILogger<EscalationEmailService> logger,
         IConfiguration configuration)
     {
-        this.context = context;
+        _unitOfWork = unitOfWork;
         this.emailService = emailService;
         this.logger = logger;
         this.configuration = configuration;
@@ -38,7 +38,7 @@ public class EscalationEmailService : IEscalationEmailService
     {
         try
         {
-            var invoice = await context.Invoices
+            var invoice = await _unitOfWork.Invoices.Query()
                 .Include(i => i.Supplier)
                 .Include(i => i.CostCenter)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
@@ -46,7 +46,7 @@ public class EscalationEmailService : IEscalationEmailService
             if (invoice == null)
                 return false;
 
-            var rule = await context.EscalationRules
+            var rule = await _unitOfWork.EscalationRules.Query()
                 .Include(r => r.NotifyUsers)
                 .Include(r => r.NotifyRoles)
                 .FirstOrDefaultAsync(r => r.Id == escalationRuleId);
@@ -105,7 +105,7 @@ public class EscalationEmailService : IEscalationEmailService
     {
         try
         {
-            var activeRules = await context.EscalationRules
+            var activeRules = await _unitOfWork.EscalationRules.Query()
                 .Include(r => r.TriggerStatuses)
                 .Include(r => r.NotifyUsers)
                 .Include(r => r.NotifyRoles)
@@ -116,10 +116,10 @@ public class EscalationEmailService : IEscalationEmailService
                 return;
 
             // Get all invoices with status matching escalation triggers
-            var inPruefung = await context.Statuses
+            var inPruefung = await _unitOfWork.Statuses.Query()
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung && 
                                             s.EntityType == EntityTypes.Invoice);
-            var freigabeErforderlich2 = await context.Statuses
+            var freigabeErforderlich2 = await _unitOfWork.Statuses.Query()
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && 
                                             s.EntityType == EntityTypes.Invoice);
             
@@ -127,7 +127,7 @@ public class EscalationEmailService : IEscalationEmailService
             if (inPruefung?.Id != null) statusIds.Add(inPruefung.Id);
             if (freigabeErforderlich2?.Id != null) statusIds.Add(freigabeErforderlich2.Id);
 
-            var invoicesToCheck = await context.Invoices
+            var invoicesToCheck = await _unitOfWork.Invoices.Query()
                 .Include(i => i.Supplier)
                 .Include(i => i.CostCenter)
                 .Where(i => statusIds.Contains(i.StatusId ?? -1))
@@ -147,7 +147,7 @@ public class EscalationEmailService : IEscalationEmailService
                     {
                         
                         // Check if already escalated with this rule
-                        var alreadyEscalated = await context.EscalationLogs
+                        var alreadyEscalated = await _unitOfWork.EscalationLogs.Query()
                             .AnyAsync(el =>
                                 el.InvoiceId == invoice.Id &&
                                 el.EscalationRuleId == rule.Id &&
@@ -176,15 +176,15 @@ public class EscalationEmailService : IEscalationEmailService
     {
         try
         {
-            var invoice = await context.Invoices.FindAsync(invoiceId);
-            var rule = await context.EscalationRules.FindAsync(escalationRuleId);
+            var invoice = await _unitOfWork.Invoices.GetByIdAsync(invoiceId);
+            var rule = await _unitOfWork.EscalationRules.GetByIdAsync(escalationRuleId);
 
             if (invoice == null || rule == null)
                 return;
 
             // Create tracking entry if not already exists for today
             var today = DateTime.UtcNow.Date;
-            var existingLog = await context.EscalationLogs
+            var existingLog = await _unitOfWork.EscalationLogs.Query()
                 .Where(el =>
                     el.InvoiceId == invoiceId &&
                     el.EscalationRuleId == escalationRuleId &&
@@ -203,8 +203,8 @@ public class EscalationEmailService : IEscalationEmailService
                     Status = "Sent"
                 };
 
-                context.EscalationLogs.Add(log);
-                await context.SaveChangesAsync();
+                _unitOfWork.EscalationLogs.Add(log);
+                await _unitOfWork.SaveChangesAsync();
             }
         }
         catch (Exception)
@@ -233,7 +233,7 @@ public class EscalationEmailService : IEscalationEmailService
         if (rule.NotifyUsers?.Any() == true)
         {
             var notifyUserIds = rule.NotifyUsers.Select(nu => nu.UserId).ToList();
-            var users = await context.Users
+            var users = await _unitOfWork.Users.Query()
                 .Where(u => notifyUserIds.Contains(u.Id) && u.IsActive && !string.IsNullOrWhiteSpace(u.Email))
                 .ToListAsync();
             recipients.AddRange(users);
@@ -243,7 +243,7 @@ public class EscalationEmailService : IEscalationEmailService
         if (rule.NotifyRoles?.Any() == true)
         {
             var notifyRoleIds = rule.NotifyRoles.Select(nr => nr.RoleId).ToList();
-            var roleUsers = await context.Users
+            var roleUsers = await _unitOfWork.Users.Query()
                 .Include(u => u.UserRoles)
                 .Where(u => u.IsActive && 
                            !string.IsNullOrWhiteSpace(u.Email) &&
@@ -384,8 +384,8 @@ public class EscalationEmailService : IEscalationEmailService
                 Status = "Sent"
             };
 
-            context.EscalationLogs.Add(log);
-            await context.SaveChangesAsync();
+            _unitOfWork.EscalationLogs.Add(log);
+            await _unitOfWork.SaveChangesAsync();
         }
         catch (Exception ex)
         {

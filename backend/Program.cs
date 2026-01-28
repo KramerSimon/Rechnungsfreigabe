@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RechnungsfreigabeAPI.Data;
+using RechnungsfreigabeAPI.Repositories;
+using RechnungsfreigabeAPI.Repositories.Interfaces;
 using RechnungsfreigabeAPI.Services;
 using RechnungsfreigabeAPI.Services.Interfaces;
 using RechnungsfreigabeAPI.Utilities;
@@ -33,6 +35,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
+
+// Register Repository Pattern
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 // Register services
 builder.Services.AddScoped<IUserService, UserService>();
