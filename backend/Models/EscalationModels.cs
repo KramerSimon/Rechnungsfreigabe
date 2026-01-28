@@ -16,14 +16,9 @@ public class EscalationRule
     [Column("description")]
     public string? Description { get; set; }
 
-    [Required]
-    [StringLength(50)]
-    [Column("trigger_status")]
-    public string TriggerStatus { get; set; } = "In_Pruefung";
-
-    [Range(1, 240)]
-    [Column("trigger_after_hours")]
-    public int TriggerAfterHours { get; set; } = 48;
+    [Range(1, 14400)]
+    [Column("trigger_after_minutes")]
+    public int TriggerAfterMinutes { get; set; } = 2880; // Default: 48 hours = 2880 minutes
 
     [Range(1, 240)]
     [Column("repeat_interval_hours")]
@@ -33,17 +28,7 @@ public class EscalationRule
     [Column("max_escalations")]
     public int? MaxEscalations { get; set; } = 3;
 
-    [StringLength(50)]
-    [Column("notify_role")]
-    public string? NotifyRole { get; set; }
-
-    [Column("notify_role_id")]
-    public int? NotifyRoleId { get; set; }
-
-    [Column("notify_user_id")]
-    public int? NotifyUserId { get; set; }
-
-    [StringLength(500)]
+    [StringLength(2000)]
     [Column("message_template")]
     public string? MessageTemplate { get; set; }
 
@@ -57,6 +42,55 @@ public class EscalationRule
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
-    public virtual User? NotifyUser { get; set; }
-    public virtual Role? NotifyRoleRef { get; set; }
+    public virtual ICollection<EscalationRuleTriggerStatus> TriggerStatuses { get; set; } = new List<EscalationRuleTriggerStatus>();
+    public virtual ICollection<EscalationRuleNotifyRole> NotifyRoles { get; set; } = new List<EscalationRuleNotifyRole>();
+    public virtual ICollection<EscalationRuleNotifyUser> NotifyUsers { get; set; } = new List<EscalationRuleNotifyUser>();
+}
+
+public class EscalationRuleTriggerStatus
+{
+    [Column("escalation_rule_id")]
+    public int EscalationRuleId { get; set; }
+
+    [Column("status_id")]
+    public int StatusId { get; set; }
+
+    [Column("added_at")]
+    public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual EscalationRule EscalationRule { get; set; } = null!;
+    public virtual Status Status { get; set; } = null!;
+}
+
+public class EscalationRuleNotifyRole
+{
+    [Column("escalation_rule_id")]
+    public int EscalationRuleId { get; set; }
+
+    [Column("role_id")]
+    public int RoleId { get; set; }
+
+    [Column("added_at")]
+    public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual EscalationRule EscalationRule { get; set; } = null!;
+    public virtual Role Role { get; set; } = null!;
+}
+
+public class EscalationRuleNotifyUser
+{
+    [Column("escalation_rule_id")]
+    public int EscalationRuleId { get; set; }
+
+    [Column("user_id")]
+    public int UserId { get; set; }
+
+    [Column("added_at")]
+    public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual EscalationRule EscalationRule { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 }

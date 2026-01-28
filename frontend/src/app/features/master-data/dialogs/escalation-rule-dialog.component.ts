@@ -7,12 +7,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { CreateEscalationRuleDto, EscalationRule } from '../../../core/models/escalation-rule.model';
+import { CreateEscalationRuleDto, EscalationRule, StatusDto } from '../../../core/models/escalation-rule.model';
 import { RoleDto, User } from '../../../core/models/user.models';
 
 export interface EscalationRuleDialogData {
   mode: 'create' | 'edit';
-  statuses: string[];
+  statuses: StatusDto[];
   roles: RoleDto[];
   users: User[];
   rule?: EscalationRule;
@@ -44,23 +44,27 @@ export interface EscalationRuleDialogData {
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Status-Auslöser *</mat-label>
-            <mat-select formControlName="triggerStatus">
-              <mat-option *ngFor="let status of data.statuses" [value]="status">{{status}}</mat-option>
+            <mat-label>Status-Auslöser (mehrfach möglich) *</mat-label>
+            <mat-select formControlName="triggerStatusIds" multiple>
+              <mat-option *ngFor="let status of data.statuses" [value]="status.id">{{status.displayName}}</mat-option>
             </mat-select>
-            <mat-error *ngIf="form.get('triggerStatus')?.hasError('required')">Status ist erforderlich</mat-error>
+            <mat-error *ngIf="form.get('triggerStatusIds')?.hasError('required')">Mindestens ein Status ist erforderlich</mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Auslöser nach (Stunden)</mat-label>
-            <input matInput type="number" formControlName="triggerAfterHours" min="1">
+            <mat-label>Auslöser nach (Minuten) *</mat-label>
+            <input matInput type="number" formControlName="triggerAfterMinutes" min="1" [max]="14400">
+            <mat-hint>Min: 1 Minute, Max: 10 Tage (14400 Minuten)</mat-hint>
+            <mat-error *ngIf="form.get('triggerAfterMinutes')?.hasError('required')">Zeit ist erforderlich</mat-error>
+            <mat-error *ngIf="form.get('triggerAfterMinutes')?.hasError('min')">Mindestens 1 Minute</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Wiederholung alle (Stunden)</mat-label>
             <input matInput type="number" formControlName="repeatIntervalHours" min="1">
+            <mat-hint>Optional. Wenn leer, wird nicht wiederholt.</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -71,17 +75,15 @@ export interface EscalationRuleDialogData {
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Benachrichtigte Rolle</mat-label>
-            <mat-select formControlName="notifyRoleId">
-              <mat-option [value]="null">- Keine Rolle -</mat-option>
+            <mat-label>Benachrichtigte Rollen (mehrfach möglich)</mat-label>
+            <mat-select formControlName="notifyRoleIds" multiple>
               <mat-option *ngFor="let role of data.roles" [value]="role.id">{{role.name}}</mat-option>
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Benutzer (optional)</mat-label>
-            <mat-select formControlName="notifyUserId">
-              <mat-option [value]="null">- Kein Benutzer -</mat-option>
+            <mat-label>Benutzer (mehrfach möglich)</mat-label>
+            <mat-select formControlName="notifyUserIds" multiple>
               <mat-option *ngFor="let user of data.users" [value]="user.id">{{user.firstName}} {{user.lastName}} ({{user.username}})</mat-option>
             </mat-select>
           </mat-form-field>
@@ -90,7 +92,9 @@ export interface EscalationRuleDialogData {
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Nachrichtenvorlage</mat-label>
-            <textarea matInput formControlName="messageTemplate" rows="3" placeholder="Freitext, z.B. Erinnerungstext"></textarea>
+            <textarea matInput formControlName="messageTemplate" rows="4"
+              placeholder="Die Standard-Vorlage enthält bereits Rechnungs- und Workflow-Informationen. Geben Sie hier zusätzlichen Text ein, falls gewünscht."></textarea>
+            <mat-hint>Verfügbare Platzhalter: {{dQ}}InvoiceNumber{{dQ}}, {{dQ}}SupplierName{{dQ}}, {{dQ}}Amount{{dQ}}, {{dQ}}Status{{dQ}}, {{dQ}}RuleName{{dQ}}</mat-hint>
           </mat-form-field>
         </div>
 
@@ -232,6 +236,7 @@ export interface EscalationRuleDialogData {
 })
 export class EscalationRuleDialogComponent {
   form: FormGroup;
+  dQ = '{'; // for displaying curly braces in template hints
 
   constructor(
     private dialogRef: MatDialogRef<EscalationRuleDialogComponent>,
@@ -242,12 +247,12 @@ export class EscalationRuleDialogComponent {
     this.form = this.fb.group({
       name: [rule?.name || '', Validators.required],
       description: [rule?.description || ''],
-      triggerStatus: [rule?.triggerStatus || data.statuses[0], Validators.required],
-      triggerAfterHours: [rule?.triggerAfterHours ?? 48, [Validators.required, Validators.min(1)]],
+      triggerStatusIds: [rule?.triggerStatusIds || (data.statuses.length > 0 ? [data.statuses[0].id] : []), Validators.required],
+      triggerAfterMinutes: [rule?.triggerAfterMinutes ?? 2880, [Validators.required, Validators.min(1), Validators.max(14400)]],
       repeatIntervalHours: [rule?.repeatIntervalHours ?? null, [Validators.min(1)]],
       maxEscalations: [rule?.maxEscalations ?? 3, [Validators.min(0)]],
-      notifyRoleId: [rule?.notifyRoleId ?? null],
-      notifyUserId: [rule?.notifyUserId ?? null],
+      notifyRoleIds: [rule?.notifyRoleIds || []],
+      notifyUserIds: [rule?.notifyUserIds || []],
       messageTemplate: [rule?.messageTemplate || ''],
       isActive: [rule?.isActive ?? true],
     });
@@ -263,21 +268,23 @@ export class EscalationRuleDialogComponent {
     }
 
     const payload: CreateEscalationRuleDto = {
-      ...this.form.value,
-      notifyUserId: this.form.value.notifyUserId === null || this.form.value.notifyUserId === ''
-        ? null
-        : Number(this.form.value.notifyUserId),
-      notifyRoleId: this.form.value.notifyRoleId === null || this.form.value.notifyRoleId === ''
-        ? null
-        : Number(this.form.value.notifyRoleId),
+      name: this.form.value.name,
+      description: this.form.value.description,
+      triggerStatusIds: this.form.value.triggerStatusIds || [],
+      triggerAfterMinutes: Number(this.form.value.triggerAfterMinutes),
       repeatIntervalHours: this.form.value.repeatIntervalHours === null || this.form.value.repeatIntervalHours === ''
         ? null
         : Number(this.form.value.repeatIntervalHours),
       maxEscalations: this.form.value.maxEscalations === null || this.form.value.maxEscalations === ''
         ? null
         : Number(this.form.value.maxEscalations),
+      notifyRoleIds: this.form.value.notifyRoleIds || [],
+      notifyUserIds: this.form.value.notifyUserIds || [],
+      messageTemplate: this.form.value.messageTemplate,
+      isActive: this.form.value.isActive,
     };
 
     this.dialogRef.close(payload);
   }
 }
+

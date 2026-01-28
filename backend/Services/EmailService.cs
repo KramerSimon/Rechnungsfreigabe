@@ -56,12 +56,17 @@ public class EmailService : IEmailService
 
         try
         {
+            _logger.LogInformation("Attempting to send email to {To} - Subject: {Subject}, SMTP: {Host}:{Port}, SSL: {EnableSsl}, IsHtml: {IsHtml}, BodyLength: {BodyLength}", 
+                to, subject, host, port, enableSsl, isHtml, body?.Length ?? 0);
+            
             using var client = new SmtpClient(host, port)
             {
                 EnableSsl = enableSsl,
                 Timeout = timeout,
                 Credentials = string.IsNullOrWhiteSpace(username) ? CredentialCache.DefaultNetworkCredentials : new NetworkCredential(username, password)
             };
+
+            _logger.LogDebug("SMTP client configured - From: {From}, Username: {Username}, Timeout: {Timeout}ms", from, string.IsNullOrWhiteSpace(username) ? "(default)" : username, timeout);
 
             var mail = new MailMessage(from!, to, subject, body)
             {
@@ -75,6 +80,7 @@ public class EmailService : IEmailService
                 {
                     mail.CC.Add(cc);
                 }
+                _logger.LogDebug("Added {Count} CC recipients: {Recipients}", ccAddresses.Length, string.Join(", ", ccAddresses));
             }
 
             // Add BCC addresses if provided
@@ -84,8 +90,10 @@ public class EmailService : IEmailService
                 {
                     mail.Bcc.Add(bcc);
                 }
+                _logger.LogDebug("Added {Count} BCC recipients", bccAddresses.Length);
             }
 
+            _logger.LogInformation("Sending email via SMTP server {Host}:{Port}...", host, port);
             await client.SendMailAsync(mail);
             _logger.LogInformation("Email sent successfully to {To} with subject: {Subject}", to, subject);
         }

@@ -9,7 +9,7 @@ namespace RechnungsfreigabeAPI.Services;
 
 public interface IEscalationEmailService
 {
-    Task SendEscalationEmailAsync(int invoiceId, int escalationRuleId);
+    Task<bool> SendEscalationEmailAsync(int invoiceId, int escalationRuleId);
     Task ProcessEscalationEmailsAsync();
     Task EnsureEscalationTrackingAsync(int invoiceId, int escalationRuleId);
 }
@@ -38,8 +38,9 @@ public class EscalationEmailService : IEscalationEmailService
 
     /// <summary>
     /// Send escalation email immediately for a specific invoice and rule
+    /// Returns true if at least one email was sent successfully
     /// </summary>
-    public async Task SendEscalationEmailAsync(int invoiceId, int escalationRuleId)
+    public async Task<bool> SendEscalationEmailAsync(int invoiceId, int escalationRuleId)
     {
         try
         {
@@ -51,37 +52,44 @@ public class EscalationEmailService : IEscalationEmailService
             if (invoice == null)
             {
                 _logger.LogWarning("Invoice {InvoiceId} not found for escalation email", invoiceId);
-                return;
+                return false;
             }
 
             var rule = await _context.EscalationRules
-                .Include(r => r.NotifyUser)
+                .Include(r => r.NotifyUsers)
+                .Include(r => r.NotifyRoles)
                 .FirstOrDefaultAsync(r => r.Id == escalationRuleId);
 
             if (rule == null)
             {
                 _logger.LogWarning("Escalation rule {RuleId} not found", escalationRuleId);
-                return;
+                return false;
             }
 
             if (!rule.IsActive)
             {
                 _logger.LogInformation("Escalation rule {RuleId} is inactive", escalationRuleId);
-                return;
+                return false;
             }
 
             // Get recipients
             var recipients = await GetRecipientEmailsAsync(rule);
             if (!recipients.Any())
             {
-                _logger.LogWarning("No recipients found for escalation rule {RuleId}", escalationRuleId);
-                return;
+                _logger.LogWarning("No recipients found for escalation rule {RuleId} - NotifyUsers: {UserCount}, NotifyRoles: {RoleCount}", 
+                    escalationRuleId, 
+                    rule.NotifyUsers?.Count ?? 0,
+                    rule.NotifyRoles?.Count ?? 0);
+                return false;
             }
+
+            _logger.LogInformation("Found {RecipientCount} recipients for escalation rule {RuleId}", recipients.Count, escalationRuleId);
 
             // Generate email content
             var emailContent = GenerateEmailContent(invoice, rule);
             var subject = $"ESCALATION: Invoice {invoice.InvoiceNumber} requires attention";
 
+            int emailsSent = 0;
             // Send email to each recipient
             foreach (var recipient in recipients)
             {
@@ -94,6 +102,7 @@ public class EscalationEmailService : IEscalationEmailService
                         isHtml: true
                     );
 
+                    emailsSent++;
                     _logger.LogInformation(
                         "Escalation email sent to {Email} for invoice {InvoiceId} (Rule: {RuleId})",
                         recipient.Email,
@@ -114,6 +123,8 @@ public class EscalationEmailService : IEscalationEmailService
                     );
                 }
             }
+            
+            return emailsSent > 0;
         }
         catch (Exception ex)
         {
@@ -123,6 +134,7 @@ public class EscalationEmailService : IEscalationEmailService
                 invoiceId,
                 escalationRuleId
             );
+            return false;
         }
     }
 
@@ -135,8 +147,10 @@ public class EscalationEmailService : IEscalationEmailService
         try
         {
             var activeRules = await _context.EscalationRules
+                .Include(r => r.TriggerStatuses)
+                .Include(r => r.NotifyUsers)
+                .Include(r => r.NotifyRoles)
                 .Where(r => r.IsActive)
-                .Include(r => r.NotifyUser)
                 .ToListAsync();
 
             if (!activeRules.Any())
@@ -144,6 +158,8 @@ public class EscalationEmailService : IEscalationEmailService
                 _logger.LogInformation("No active escalation rules found");
                 return;
             }
+
+            _logger.LogInformation("Found {RuleCount} active escalation rules", activeRules.Count);
 
             // Get all invoices with status matching escalation triggers
             var inPruefung = await _context.Statuses
@@ -164,17 +180,41 @@ public class EscalationEmailService : IEscalationEmailService
                 .Where(i => statusIds.Contains(i.StatusId ?? -1))
                 .ToListAsync();
 
+            _logger.LogInformation("Checking {InvoiceCount} invoices for escalation", invoicesToCheck.Count);
+
+            int escalationsFound = 0;
+            int escalationsSent = 0;
+
             foreach (var invoice in invoicesToCheck)
             {
                 foreach (var rule in activeRules)
                 {
-                    var currentStatus = invoice.Status?.ToString() ?? string.Empty;
-                    if (!rule.TriggerStatus.Equals(currentStatus, StringComparison.OrdinalIgnoreCase))
+                    // Check if invoice status matches any of the trigger statuses
+                    var triggerStatusIds = rule.TriggerStatuses?.Select(ts => ts.StatusId).ToList() ?? new List<int>();
+                    
+                    _logger.LogDebug("Invoice {InvoiceId}: StatusId={StatusId}, TriggerStatusIds={TriggerStatusIds}, Rule={RuleId}", 
+                        invoice.Id, invoice.StatusId, string.Join(",", triggerStatusIds), rule.Id);
+                    
+                    if (!triggerStatusIds.Contains(invoice.StatusId ?? -1))
+                    {
+                        _logger.LogDebug("Invoice {InvoiceId} status {StatusId} does not match rule {RuleId} trigger statuses", 
+                            invoice.Id, invoice.StatusId, rule.Id);
                         continue;
+                    }
 
                     // Check if this escalation should trigger
+                    var timeInStatus = DateTime.UtcNow - invoice.UpdatedAt;
+                    var triggerTimespan = TimeSpan.FromMinutes(rule.TriggerAfterMinutes);
+                    
+                    _logger.LogDebug("Invoice {InvoiceId}: Time in status={TimeInStatus}, Trigger threshold={TriggerTimespan}", 
+                        invoice.Id, timeInStatus, triggerTimespan);
+                    
                     if (ShouldEscalate(invoice, rule))
                     {
+                        escalationsFound++;
+                        _logger.LogInformation("Escalation triggered for invoice {InvoiceId} with rule {RuleId} - time in status: {TimeInStatus}", 
+                            invoice.Id, rule.Id, timeInStatus);
+                        
                         // Check if already escalated with this rule
                         var alreadyEscalated = await _context.EscalationLogs
                             .AnyAsync(el =>
@@ -185,11 +225,27 @@ public class EscalationEmailService : IEscalationEmailService
 
                         if (!alreadyEscalated)
                         {
-                            await SendEscalationEmailAsync(invoice.Id, rule.Id);
+                            var emailSent = await SendEscalationEmailAsync(invoice.Id, rule.Id);
+                            if (emailSent)
+                            {
+                                escalationsSent++;
+                            }
+                        }
+                        else
+                        {
+                            // Log what would be sent for debugging
+                            var wouldBeRecipients = await GetRecipientEmailsAsync(rule);
+                            var wouldBeContent = GenerateEmailContent(invoice, rule);
+                            _logger.LogInformation("Escalation for invoice {InvoiceId} already sent within repeat interval - Would send to {RecipientCount} recipients, Content length: {ContentLength}", 
+                                invoice.Id, 
+                                wouldBeRecipients.Count,
+                                wouldBeContent?.Length ?? 0);
                         }
                     }
                 }
             }
+
+            _logger.LogInformation("Escalation check complete - found: {FoundCount}, sent: {SentCount}", escalationsFound, escalationsSent);
         }
         catch (Exception ex)
         {
@@ -244,68 +300,101 @@ public class EscalationEmailService : IEscalationEmailService
     private bool ShouldEscalate(Invoice invoice, EscalationRule rule)
     {
         var timeInCurrentStatus = DateTime.UtcNow - invoice.UpdatedAt;
-        return timeInCurrentStatus.TotalHours >= rule.TriggerAfterHours;
+        
+        // Handle edge case where UpdatedAt is in the future (shouldn't happen but be defensive)
+        if (timeInCurrentStatus < TimeSpan.Zero)
+        {
+            _logger.LogWarning("Invoice {InvoiceId} has UpdatedAt in the future: {UpdatedAt}", invoice.Id, invoice.UpdatedAt);
+            return false;
+        }
+        
+        var triggerTimespan = TimeSpan.FromMinutes(rule.TriggerAfterMinutes);
+        return timeInCurrentStatus >= triggerTimespan;
     }
 
     private async Task<List<User>> GetRecipientEmailsAsync(EscalationRule rule)
     {
         var recipients = new List<User>();
 
-        // Add specific user if configured
-        if (rule.NotifyUserId.HasValue)
+        // Add specific users if configured via NotifyUsers collection
+        if (rule.NotifyUsers?.Any() == true)
         {
-            var user = await _context.Users.FindAsync(rule.NotifyUserId.Value);
-            if (user != null && user.IsActive && !string.IsNullOrWhiteSpace(user.Email))
-            {
-                recipients.Add(user);
-            }
+            var notifyUserIds = rule.NotifyUsers.Select(nu => nu.UserId).ToList();
+            _logger.LogDebug("Rule {RuleId}: Looking up {Count} notify users: {UserIds}", rule.Id, notifyUserIds.Count, string.Join(",", notifyUserIds));
+            
+            var users = await _context.Users
+                .Where(u => notifyUserIds.Contains(u.Id) && u.IsActive && !string.IsNullOrWhiteSpace(u.Email))
+                .ToListAsync();
+            
+            _logger.LogDebug("Rule {RuleId}: Found {Count} active users with emails", rule.Id, users.Count);
+            recipients.AddRange(users);
         }
 
-        // Add users by role if configured (prefer role id, fall back to role name)
-        if (rule.NotifyRoleId.HasValue || !string.IsNullOrWhiteSpace(rule.NotifyRole))
+        // Add users by roles if configured via NotifyRoles collection
+        if (rule.NotifyRoles?.Any() == true)
         {
-            var roleUsersQuery = _context.Users
+            var notifyRoleIds = rule.NotifyRoles.Select(nr => nr.RoleId).ToList();
+            _logger.LogDebug("Rule {RuleId}: Looking up users in {Count} notify roles: {RoleIds}", rule.Id, notifyRoleIds.Count, string.Join(",", notifyRoleIds));
+            
+            var roleUsers = await _context.Users
                 .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                .Where(u => u.IsActive && !string.IsNullOrWhiteSpace(u.Email));
-
-            if (rule.NotifyRoleId.HasValue)
-            {
-                roleUsersQuery = roleUsersQuery.Where(u => u.UserRoles.Any(ur => ur.RoleId == rule.NotifyRoleId));
-            }
-            else if (!string.IsNullOrWhiteSpace(rule.NotifyRole))
-            {
-                roleUsersQuery = roleUsersQuery.Where(u => u.UserRoles.Any(ur => ur.Role.Name == rule.NotifyRole));
-            }
-
-            var roleUsers = await roleUsersQuery.ToListAsync();
+                .Where(u => u.IsActive && 
+                           !string.IsNullOrWhiteSpace(u.Email) &&
+                           u.UserRoles.Any(ur => notifyRoleIds.Contains(ur.RoleId)))
+                .ToListAsync();
+            
+            _logger.LogDebug("Rule {RuleId}: Found {Count} users from roles", rule.Id, roleUsers.Count);
             recipients.AddRange(roleUsers);
         }
 
         // Remove duplicates
-        return recipients.DistinctBy(r => r.Id).ToList();
+        var uniqueRecipients = recipients.DistinctBy(r => r.Id).ToList();
+        _logger.LogDebug("Rule {RuleId}: Total unique recipients: {Count}", rule.Id, uniqueRecipients.Count);
+        return uniqueRecipients;
     }
 
     private string GenerateEmailContent(Invoice invoice, EscalationRule rule)
     {
+        var hasCustomTemplate = !string.IsNullOrWhiteSpace(rule.MessageTemplate);
         var templateContent = rule.MessageTemplate ?? GetDefaultTemplate();
+        
+        if (string.IsNullOrWhiteSpace(templateContent))
+        {
+            _logger.LogWarning("Rule {RuleId}: No template available, using default", rule.Id);
+            templateContent = GetDefaultTemplate();
+        }
+        
+        _logger.LogInformation("Rule {RuleId}: Using {TemplateType} template - Length: {Length}", 
+            rule.Id, hasCustomTemplate ? "CUSTOM" : "DEFAULT", templateContent?.Length ?? 0);
 
         // Replace template placeholders
         var appUrl = _configuration["AppSettings:ApplicationUrl"] ?? "#";
 
-        var content = templateContent
-            .Replace("{{InvoiceNumber}}", invoice.InvoiceNumber)
+        var escalationHours = Math.Round(rule.TriggerAfterMinutes / 60.0, 1);
+        var content = templateContent!
+            .Replace("{{InvoiceNumber}}", invoice.InvoiceNumber ?? "")
             .Replace("{{SupplierName}}", invoice.Supplier?.Name ?? "Unknown")
             .Replace("{{Amount}}", invoice.TotalAmount.ToString("C"))
             .Replace("{{Status}}", invoice.Status?.ToString() ?? "Unknown")
             .Replace("{{CreatedDate}}", invoice.CreatedAt.ToString("yyyy-MM-dd HH:mm"))
-            .Replace("{{RuleName}}", rule.Name)
-            .Replace("{{EscalationLevel}}", rule.TriggerAfterHours.ToString())
+            .Replace("{{RuleName}}", rule.Name ?? "Escalation Rule")
+            .Replace("{{EscalationLevel}}", escalationHours.ToString())
             .Replace("{{CurrentTime}}", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"))
             .Replace("{{CompanyName}}", "Rechnungsfreigabe System")
             .Replace("{{ApplicationUrl}}", appUrl);
 
-        return content;
+        // Log different parts of the email for debugging
+        if (!string.IsNullOrWhiteSpace(content))
+        {
+            var preview = content.Substring(0, Math.Min(300, content.Length));
+            _logger.LogInformation("Rule {RuleId}: Generated email - Length: {Length}, Preview: {Preview}...", 
+                rule.Id, content.Length, preview);
+        }
+        else
+        {
+            _logger.LogWarning("Rule {RuleId}: Generated content is empty!", rule.Id);
+        }
+        return content ?? "";
     }
 
     private string GetDefaultTemplate()
@@ -322,7 +411,7 @@ public class EscalationEmailService : IEscalationEmailService
         .content { padding: 20px; background-color: #f5f5f5; margin-top: 10px; border-radius: 5px; }
         .details { margin: 15px 0; }
         .detail-row { margin: 8px 0; }
-        .label { font-weight: bold; display: inline-block; width: 120px; }
+        .label { font-weight: bold; display: inline-block; width: 150px; }
         .value { display: inline-block; }
         .footer { margin-top: 20px; font-size: 12px; color: #999; }
         .action-button { 
@@ -334,23 +423,29 @@ public class EscalationEmailService : IEscalationEmailService
             border-radius: 5px; 
             margin-top: 15px;
         }
+        .workflow-info {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 15px 0;
+        }
     </style>
 </head>
 <body>
     <div class='container'>
         <div class='header'>
-            <h2 style='margin: 0; font-size: 18px;'>INVOICE ESCALATION ALERT</h2>
+            <h2 style='margin: 0; font-size: 18px;'>⚠️ INVOICE ESCALATION ALERT</h2>
         </div>
 
         <div class='content'>
-            <p>Dear User,</p>
+            <p>Dear Approver,</p>
 
             <p>An invoice has been escalated and requires your immediate attention:</p>
 
             <div class='details'>
                 <div class='detail-row'>
                     <span class='label'>Invoice Number:</span>
-                    <span class='value'>{{InvoiceNumber}}</span>
+                    <span class='value'><strong>{{InvoiceNumber}}</strong></span>
                 </div>
                 <div class='detail-row'>
                     <span class='label'>Supplier:</span>
@@ -358,32 +453,37 @@ public class EscalationEmailService : IEscalationEmailService
                 </div>
                 <div class='detail-row'>
                     <span class='label'>Amount:</span>
-                    <span class='value'>{{Amount}}</span>
+                    <span class='value'><strong>{{Amount}}</strong></span>
                 </div>
                 <div class='detail-row'>
                     <span class='label'>Current Status:</span>
                     <span class='value'>{{Status}}</span>
                 </div>
                 <div class='detail-row'>
-                    <span class='label'>Created:</span>
+                    <span class='label'>Created Date:</span>
                     <span class='value'>{{CreatedDate}}</span>
                 </div>
                 <div class='detail-row'>
-                    <span class='label'>Days Pending:</span>
+                    <span class='label'>Time in Status:</span>
                     <span class='value'>{{EscalationLevel}} hours</span>
                 </div>
             </div>
 
-            <p><strong>Escalation Reason:</strong> {{RuleName}}</p>
+            <div class='workflow-info'>
+                <p style='margin: 5px 0;'><strong>📋 Workflow Information:</strong></p>
+                <p style='margin: 5px 0;'>This invoice ({{InvoiceNumber}}) is currently in the approval workflow and has exceeded the expected processing time.</p>
+                <p style='margin: 5px 0;'><strong>Escalation Reason:</strong> {{RuleName}}</p>
+            </div>
 
-            <p>Please take action on this invoice as soon as possible. Click the button below to access the invoice:</p>
+            <p><strong>Action Required:</strong> Please review and approve or reject this invoice as soon as possible to keep the workflow moving.</p>
 
-            <a href='{{ApplicationUrl}}/invoices/{{InvoiceNumber}}' class='action-button'>View Invoice</a>
+            <a href='{{ApplicationUrl}}/invoices/{{InvoiceNumber}}' class='action-button'>View Invoice Details</a>
         </div>
 
         <div class='footer'>
-            <p>This is an automated message from {{CompanyName}}.</p>
+            <p>This is an automated escalation notification from {{CompanyName}}.</p>
             <p>Sent: {{CurrentTime}}</p>
+            <p>If you believe you received this message in error, please contact your administrator.</p>
         </div>
     </div>
 </body>

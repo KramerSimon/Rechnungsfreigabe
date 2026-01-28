@@ -17,28 +17,37 @@ public interface IEscalationRuleService
 public class EscalationRuleService : IEscalationRuleService
 {
     private readonly ApplicationDbContext _context;
+    
     public EscalationRuleService(ApplicationDbContext context)
     {
         _context = context;
-        }
+    }
 
     public async Task<IEnumerable<EscalationRuleDto>> GetAllAsync()
     {
         var rules = await _context.EscalationRules
-            .Include(r => r.NotifyUser)
-            .Include(r => r.NotifyRoleRef)
-            .OrderBy(r => r.TriggerAfterHours)
+            .Include(r => r.TriggerStatuses)
+            .ThenInclude(ts => ts.Status)
+            .Include(r => r.NotifyRoles)
+            .ThenInclude(nr => nr.Role)
+            .Include(r => r.NotifyUsers)
+            .ThenInclude(nu => nu.User)
+            .OrderBy(r => r.TriggerAfterMinutes)
             .ThenBy(r => r.Name)
             .ToListAsync();
 
-        return rules.Select(MapToDto);
+        return rules.Select(r => MapToDto(r));
     }
 
     public async Task<EscalationRuleDto?> GetByIdAsync(int id)
     {
         var rule = await _context.EscalationRules
-            .Include(r => r.NotifyUser)
-            .Include(r => r.NotifyRoleRef)
+            .Include(r => r.TriggerStatuses)
+            .ThenInclude(ts => ts.Status)
+            .Include(r => r.NotifyRoles)
+            .ThenInclude(nr => nr.Role)
+            .Include(r => r.NotifyUsers)
+            .ThenInclude(nu => nu.User)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         return rule == null ? null : MapToDto(rule);
@@ -50,80 +59,177 @@ public class EscalationRuleService : IEscalationRuleService
         {
             Name = dto.Name,
             Description = dto.Description,
-            TriggerStatus = dto.TriggerStatus,
-            TriggerAfterHours = dto.TriggerAfterHours,
+            TriggerAfterMinutes = dto.TriggerAfterMinutes,
             RepeatIntervalHours = dto.RepeatIntervalHours,
             MaxEscalations = dto.MaxEscalations,
-            NotifyRole = dto.NotifyRole,
-            NotifyRoleId = dto.NotifyRoleId,
-            NotifyUserId = dto.NotifyUserId,
             MessageTemplate = dto.MessageTemplate,
             IsActive = dto.IsActive,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        if (dto.NotifyRoleId.HasValue)
+        // Add trigger status relationships
+        if (dto.TriggerStatusIds.Any())
         {
-            var roleName = await _context.Roles
-                .Where(r => r.Id == dto.NotifyRoleId.Value)
-                .Select(r => r.Name)
-                .FirstOrDefaultAsync();
-            if (!string.IsNullOrWhiteSpace(roleName))
+            var statuses = await _context.Statuses
+                .Where(s => dto.TriggerStatusIds.Contains(s.Id))
+                .ToListAsync();
+
+            foreach (var status in statuses)
             {
-                rule.NotifyRole = roleName;
+                rule.TriggerStatuses.Add(new EscalationRuleTriggerStatus
+                {
+                    EscalationRule = rule,
+                    Status = status,
+                    AddedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        // Add role notification relationships
+        if (dto.NotifyRoleIds.Any())
+        {
+            var roles = await _context.Roles
+                .Where(r => dto.NotifyRoleIds.Contains(r.Id))
+                .ToListAsync();
+
+            foreach (var role in roles)
+            {
+                rule.NotifyRoles.Add(new EscalationRuleNotifyRole
+                {
+                    EscalationRule = rule,
+                    Role = role,
+                    AddedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        // Add user notification relationships
+        if (dto.NotifyUserIds.Any())
+        {
+            var users = await _context.Users
+                .Where(u => dto.NotifyUserIds.Contains(u.Id))
+                .ToListAsync();
+
+            foreach (var user in users)
+            {
+                rule.NotifyUsers.Add(new EscalationRuleNotifyUser
+                {
+                    EscalationRule = rule,
+                    User = user,
+                    AddedAt = DateTime.UtcNow
+                });
             }
         }
 
         _context.EscalationRules.Add(rule);
         await _context.SaveChangesAsync();
 
-        // reload with navigation property
-        var created = await _context.EscalationRules
-            .Include(r => r.NotifyUser)
-            .Include(r => r.NotifyRoleRef)
-            .FirstAsync(r => r.Id == rule.Id);
-
-        return MapToDto(created);
+        // Reload with relationships
+        return await GetByIdAsync(rule.Id) ?? throw new InvalidOperationException("Failed to retrieve created rule");
     }
 
     public async Task<EscalationRuleDto?> UpdateAsync(int id, UpdateEscalationRuleDto dto)
     {
-        var rule = await _context.EscalationRules.FindAsync(id);
+        var rule = await _context.EscalationRules
+            .Include(r => r.TriggerStatuses)
+            .Include(r => r.NotifyRoles)
+            .Include(r => r.NotifyUsers)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
         if (rule == null) return null;
 
-        if (!string.IsNullOrWhiteSpace(dto.Name)) rule.Name = dto.Name;
-        if (dto.Description != null) rule.Description = dto.Description;
-        if (!string.IsNullOrWhiteSpace(dto.TriggerStatus)) rule.TriggerStatus = dto.TriggerStatus;
-        if (dto.TriggerAfterHours.HasValue) rule.TriggerAfterHours = dto.TriggerAfterHours.Value;
-        if (dto.RepeatIntervalHours.HasValue) rule.RepeatIntervalHours = dto.RepeatIntervalHours.Value;
-        if (dto.MaxEscalations.HasValue) rule.MaxEscalations = dto.MaxEscalations.Value;
-        if (dto.NotifyRole != null) rule.NotifyRole = dto.NotifyRole;
-        if (dto.NotifyRoleId.HasValue)
+        if (!string.IsNullOrWhiteSpace(dto.Name)) 
+            rule.Name = dto.Name;
+        
+        if (dto.Description != null) 
+            rule.Description = dto.Description;
+        
+        if (dto.TriggerAfterMinutes.HasValue) 
+            rule.TriggerAfterMinutes = dto.TriggerAfterMinutes.Value;
+        
+        if (dto.RepeatIntervalHours.HasValue) 
+            rule.RepeatIntervalHours = dto.RepeatIntervalHours.Value;
+        
+        if (dto.MaxEscalations.HasValue) 
+            rule.MaxEscalations = dto.MaxEscalations.Value;
+        
+        if (dto.MessageTemplate != null) 
+            rule.MessageTemplate = dto.MessageTemplate;
+        
+        if (dto.IsActive.HasValue) 
+            rule.IsActive = dto.IsActive.Value;
+
+        // Update trigger statuses if provided
+        if (dto.TriggerStatusIds != null)
         {
-            rule.NotifyRoleId = dto.NotifyRoleId.Value;
-            var roleNameUpdated = await _context.Roles
-                .Where(r => r.Id == dto.NotifyRoleId.Value)
-                .Select(r => r.Name)
-                .FirstOrDefaultAsync();
-            if (!string.IsNullOrWhiteSpace(roleNameUpdated))
+            // Remove old associations
+            _context.RemoveRange(rule.TriggerStatuses);
+            
+            // Add new associations
+            var statuses = await _context.Statuses
+                .Where(s => dto.TriggerStatusIds.Contains(s.Id))
+                .ToListAsync();
+
+            foreach (var status in statuses)
             {
-                rule.NotifyRole = roleNameUpdated;
+                rule.TriggerStatuses.Add(new EscalationRuleTriggerStatus
+                {
+                    EscalationRule = rule,
+                    Status = status,
+                    AddedAt = DateTime.UtcNow
+                });
             }
         }
-        if (dto.NotifyUserId.HasValue) rule.NotifyUserId = dto.NotifyUserId.Value;
-        if (dto.MessageTemplate != null) rule.MessageTemplate = dto.MessageTemplate;
-        if (dto.IsActive.HasValue) rule.IsActive = dto.IsActive.Value;
+
+        // Update notify roles if provided
+        if (dto.NotifyRoleIds != null)
+        {
+            // Remove old associations
+            _context.RemoveRange(rule.NotifyRoles);
+            
+            // Add new associations
+            var roles = await _context.Roles
+                .Where(r => dto.NotifyRoleIds.Contains(r.Id))
+                .ToListAsync();
+
+            foreach (var role in roles)
+            {
+                rule.NotifyRoles.Add(new EscalationRuleNotifyRole
+                {
+                    EscalationRule = rule,
+                    Role = role,
+                    AddedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        // Update notify users if provided
+        if (dto.NotifyUserIds != null)
+        {
+            // Remove old associations
+            _context.RemoveRange(rule.NotifyUsers);
+            
+            // Add new associations
+            var users = await _context.Users
+                .Where(u => dto.NotifyUserIds.Contains(u.Id))
+                .ToListAsync();
+
+            foreach (var user in users)
+            {
+                rule.NotifyUsers.Add(new EscalationRuleNotifyUser
+                {
+                    EscalationRule = rule,
+                    User = user,
+                    AddedAt = DateTime.UtcNow
+                });
+            }
+        }
 
         rule.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        var updated = await _context.EscalationRules
-            .Include(r => r.NotifyUser)
-            .Include(r => r.NotifyRoleRef)
-            .FirstAsync(r => r.Id == id);
-
-        return MapToDto(updated);
+        return await GetByIdAsync(id);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -137,22 +243,39 @@ public class EscalationRuleService : IEscalationRuleService
         return true;
     }
 
-    private static EscalationRuleDto MapToDto(EscalationRule rule)
+    private EscalationRuleDto MapToDto(EscalationRule rule)
     {
         return new EscalationRuleDto
         {
             Id = rule.Id,
             Name = rule.Name,
             Description = rule.Description,
-            TriggerStatus = rule.TriggerStatus,
-            TriggerAfterHours = rule.TriggerAfterHours,
+            TriggerStatusIds = rule.TriggerStatuses.Select(ts => ts.StatusId).ToList(),
+            TriggerStatuses = rule.TriggerStatuses.Select(ts => new StatusDto
+            {
+                Id = ts.Status.Id,
+                Code = ts.Status.Code,
+                DisplayName = ts.Status.DisplayName,
+                EntityType = ts.Status.EntityType
+            }).ToList(),
+            TriggerAfterMinutes = rule.TriggerAfterMinutes,
             RepeatIntervalHours = rule.RepeatIntervalHours,
             MaxEscalations = rule.MaxEscalations,
-            NotifyRole = rule.NotifyRole,
-            NotifyRoleId = rule.NotifyRoleId,
-            NotifyRoleName = rule.NotifyRoleRef?.Name ?? rule.NotifyRole,
-            NotifyUserId = rule.NotifyUserId,
-            NotifyUserName = rule.NotifyUser != null ? $"{rule.NotifyUser.FirstName} {rule.NotifyUser.LastName}" : null,
+            NotifyRoleIds = rule.NotifyRoles.Select(nr => nr.RoleId).ToList(),
+            NotifyRoles = rule.NotifyRoles.Select(nr => new RoleDto
+            {
+                Id = nr.Role.Id,
+                Name = nr.Role.Name,
+                Description = nr.Role.Description
+            }).ToList(),
+            NotifyUserIds = rule.NotifyUsers.Select(nu => nu.UserId).ToList(),
+            NotifyUsers = rule.NotifyUsers.Select(nu => new UserDto
+            {
+                Id = nu.User.Id,
+                FirstName = nu.User.FirstName,
+                LastName = nu.User.LastName,
+                Email = nu.User.Email
+            }).ToList(),
             MessageTemplate = rule.MessageTemplate,
             IsActive = rule.IsActive,
             CreatedAt = rule.CreatedAt,

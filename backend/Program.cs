@@ -10,7 +10,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Restrict logging to startup and database events only
+// Restrict logging to startup, database, and escalation events only
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
 {
@@ -18,7 +18,10 @@ builder.Logging.AddSimpleConsole(options =>
     options.TimestampFormat = "HH:mm:ss ";
 });
 builder.Logging.AddFilter((category, level) =>
-    category == "Startup" || category == "Database");
+    category == "Startup" || 
+    category == "Database" || 
+    category?.Contains("Escalation") == true ||
+    category?.Contains("EmailService") == true);
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -50,6 +53,9 @@ builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IEscalationEmailService, EscalationEmailService>();
+
+// Register background services
+builder.Services.AddHostedService<EscalationBackgroundService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -180,6 +186,21 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         dbLogger.LogError(ex, "An error occurred while connecting to the database.");
+    }
+
+    // Check SMTP configuration
+    var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+    var emailSettings = app.Configuration.GetSection("Email");
+    var smtpHost = emailSettings["Host"];
+    var smtpFrom = emailSettings["From"];
+    
+    if (emailService.IsConfigured())
+    {
+        startupLogger.LogInformation("SMTP configured: Host={SmtpHost}, From={SmtpFrom}", smtpHost, smtpFrom);
+    }
+    else
+    {
+        startupLogger.LogWarning("SMTP not configured - email notifications will be disabled");
     }
 }
 

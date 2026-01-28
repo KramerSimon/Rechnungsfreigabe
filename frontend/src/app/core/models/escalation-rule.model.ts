@@ -1,32 +1,47 @@
+import { RoleDto } from './user.models';
+
 export interface EscalationRule {
   id: number;
   name: string;
   description?: string;
-  triggerStatus: string;
-  triggerAfterHours: number;
+  triggerStatusIds: number[];
+  triggerStatuses: StatusDto[];
+  triggerAfterMinutes: number;
   repeatIntervalHours?: number | null;
   maxEscalations?: number | null;
-  notifyRole?: string | null;
-  notifyRoleId?: number | null;
-  notifyRoleName?: string | null;
-  notifyUserId?: number | null;
-  notifyUserName?: string | null;
+  notifyRoleIds: number[];
+  notifyRoles: RoleDto[];
+  notifyUserIds: number[];
+  notifyUsers: UserDto[];
   messageTemplate?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface StatusDto {
+  id: number;
+  code: string;
+  displayName: string;
+  entityType: string;
+}
+
+export interface UserDto {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 export interface CreateEscalationRuleDto {
   name: string;
   description?: string;
-  triggerStatus: string;
-  triggerAfterHours: number;
+  triggerStatusIds: number[];
+  triggerAfterMinutes: number;
   repeatIntervalHours?: number | null;
   maxEscalations?: number | null;
-  notifyRole?: string | null;
-  notifyRoleId?: number | null;
-  notifyUserId?: number | null;
+  notifyRoleIds: number[];
+  notifyUserIds: number[];
   messageTemplate?: string | null;
   isActive?: boolean;
 }
