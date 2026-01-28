@@ -105,4 +105,20 @@ export class AuthService {
   hasAnyPermission(permissions: string[]): boolean {
     return permissions.some(permission => this.hasPermission(permission));
   }
+
+  refreshUserData(): void {
+    this.getCurrentUser().subscribe({
+      next: (user) => {
+        const currentState = this.authStateSubject.value;
+        localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+        this.authStateSubject.next({
+          ...currentState,
+          user: user
+        });
+      },
+      error: (error) => {
+        console.error('Error refreshing user data:', error);
+      }
+    });
+  }
 }

@@ -79,7 +79,7 @@ interface RoleDialogData {
   `,
   styles: [
     `
-      .dialog-container { width: 520px; max-width: 95vw; }
+      .dialog-container { width: 520px; max-width: 95vw; overflow-x: hidden; }
       .full-width { width: 100%; }
       .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 0; }
       .color-row { display: flex; align-items: center; gap: 12px; }

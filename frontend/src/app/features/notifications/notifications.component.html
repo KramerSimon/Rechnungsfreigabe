@@ -13,26 +13,29 @@
     </div>
   </div>
 
-  <mat-nav-list>
+  <div class="notifications-list">
     <ng-container *ngIf="notifications.length > 0; else empty">
-      <a mat-list-item *ngFor="let n of notifications" (click)="navigateTo(n)">
-        <mat-icon matListIcon [class.read]="n.isRead">
-          {{ n.isRead ? 'notifications' : 'notifications_active' }}
-        </mat-icon>
-        <div mat-line class="title">
-          {{ n.title }}
-          <span class="priority" [ngClass]="n.priority.toLowerCase()">{{ n.priority }}</span>
+      <div class="notification-card" *ngFor="let n of notifications; let last = last" [class.unread]="!n.isRead">
+        <div class="notification-content" (click)="navigateTo(n)">
+          <div class="text-content">
+            <div class="title">
+              {{ n.title }}
+              <span class="priority" [ngClass]="n.priority.toLowerCase()">{{ n.priority }}</span>
+            </div>
+            <div class="message">{{ n.message }}</div>
+            <div class="meta">
+              <span class="timestamp">{{ n.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+            </div>
+          </div>
         </div>
-        <div mat-line class="message">{{ n.message }}</div>
-        <div mat-line class="meta">
-          <span>{{ n.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span>
-          <button mat-icon-button (click)="markAsRead(n); $event.stopPropagation()" [disabled]="n.isRead" matTooltip="Als gelesen markieren">
+        <div class="notification-actions">
+          <button mat-icon-button (click)="markAsRead(n); $event.stopPropagation()" [disabled]="n.isRead" matTooltip="Als gelesen markieren" class="mark-read-btn">
             <mat-icon>done</mat-icon>
           </button>
         </div>
-      </a>
+      </div>
     </ng-container>
-  </mat-nav-list>
+  </div>
 
   <ng-template #empty>
     <div class="empty">

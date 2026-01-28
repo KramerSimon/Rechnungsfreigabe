@@ -118,7 +118,8 @@ interface CreatePurchaseOrderDialogData {
   styles: [`
     .dialog-container {
       width: 640px;
-      max-width: 92vw;
+      max-width: 95vw;
+      overflow-x: hidden;
     }
 
     .form-row {

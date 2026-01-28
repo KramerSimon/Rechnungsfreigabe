@@ -83,7 +83,8 @@ import { CostCenter } from '../../../core/models/cost-center.model';
   styles: [`
     .dialog-container {
       width: 500px;
-      max-width: 90vw;
+      max-width: 95vw;
+      overflow-x: hidden;
     }
 
     .form-row {

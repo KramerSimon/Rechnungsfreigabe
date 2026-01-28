@@ -26,9 +26,11 @@ public interface IUserService
 public class UserService : IUserService
 {
     private readonly ApplicationDbContext _context;
-    public UserService(ApplicationDbContext context)
+    private readonly IPasswordService _passwordService;
+    public UserService(ApplicationDbContext context, IPasswordService passwordService)
     {
         _context = context;
+        _passwordService = passwordService;
         }
 
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
@@ -76,6 +78,9 @@ public class UserService : IUserService
     {
         try
         {
+            // Hash the password
+            var passwordHash = _passwordService.HashPassword(createUserDto.Password);
+
             var user = new User
             {
                 Username = createUserDto.Username,
@@ -83,6 +88,7 @@ public class UserService : IUserService
                 FirstName = createUserDto.FirstName,
                 LastName = createUserDto.LastName,
                 ActiveDirectorySid = createUserDto.ActiveDirectorySid,
+                PasswordHash = passwordHash,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow

@@ -155,7 +155,9 @@ export class RoleService {
   }
 
   /**
-   * Gibt die verfügbaren Dashboard-Routen basierend auf Permissions zurück
+   * Gibt die verfügbaren Dashboard-Routen zurück
+   * Alle Benutzer sehen alle Navigation-Buttons
+   * Der Zugriff wird durch Route Guards kontrolliert
    */
   getAvailableNavigationRoutes(): Observable<DashboardRoute[]> {
     return this.authService.authState$.pipe(
@@ -164,35 +166,13 @@ export class RoleService {
           return [];
         }
 
-        // Check if user is admin - admins see all dashboards
-        const userRole = this.determineHighestRole(authState.user.roles.map(role => role.name));
-        if (userRole === UserRole.ADMIN) {
-          return Object.values(this.dashboardConfig).map(dashboard => ({
-            path: dashboard.path,
-            component: dashboard.component,
-            role: this.getDefaultRoleForPath(dashboard.path),
-            title: dashboard.title
-          }));
-        }
-
-        // For non-admin users, check permissions
-        const userPermissions = authState.user.roles
-          .flatMap(role => role.permissions || [])
-          .map(p => typeof p === 'string' ? p : p.toString());
-
-        // Filter dashboards based on permissions
-        return Object.values(this.dashboardConfig)
-          .filter(dashboard =>
-            dashboard.requiredPermissions.some(permission =>
-              userPermissions.includes(permission)
-            )
-          )
-          .map(dashboard => ({
-            path: dashboard.path,
-            component: dashboard.component,
-            role: this.getDefaultRoleForPath(dashboard.path),
-            title: dashboard.title
-          }));
+        // Alle Benutzer sehen alle verfügbaren Dashboard-Routen
+        return Object.values(this.dashboardConfig).map(dashboard => ({
+          path: dashboard.path,
+          component: dashboard.component,
+          role: this.getDefaultRoleForPath(dashboard.path),
+          title: dashboard.title
+        }));
       })
     );
   }

@@ -124,6 +124,8 @@ import { Project } from '../../../core/models/project.model';
     .dialog-container {
       padding: 20px;
       min-width: 400px;
+      max-width: 95vw;
+      overflow-x: hidden;
     }
 
     .form-row {

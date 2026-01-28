@@ -100,7 +100,7 @@ export interface ApprovalWorkflowDialogData {
     </div>
   `,
   styles: [`
-    .dialog-container { padding: 20px; min-width: 480px; }
+    .dialog-container { padding: 20px; min-width: 480px; max-width: 95vw; overflow-x: hidden; }
     .form-row { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; }
     .full-width { width: 100%; }
     mat-form-field { flex: 1; }

@@ -5,7 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RoleDto, User } from '../../../core/models/user.models';
 
 interface CreateUserDialogData {
@@ -91,6 +91,33 @@ interface CreateUserDialogData {
             <mat-hint>Wählen Sie eine oder mehrere Rollen aus</mat-hint>
           </mat-form-field>
         </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Passwort *</mat-label>
+            <input matInput type="password" formControlName="password" placeholder="••••••••">
+            <mat-error *ngIf="userForm.get('password')?.hasError('required')">
+              Passwort ist erforderlich
+            </mat-error>
+            <mat-error *ngIf="userForm.get('password')?.hasError('minlength')">
+              Passwort muss mindestens 8 Zeichen lang sein
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Passwort wiederholen *</mat-label>
+            <input matInput type="password" formControlName="passwordConfirm" placeholder="••••••••">
+            <mat-error *ngIf="userForm.get('passwordConfirm')?.hasError('required')">
+              Passwortbestätigung ist erforderlich
+            </mat-error>
+            <mat-error *ngIf="userForm.get('passwordConfirm')?.hasError('minlength')">
+              Passwort muss mindestens 8 Zeichen lang sein
+            </mat-error>
+            <mat-error *ngIf="userForm.get('passwordConfirm')?.touched && userForm.hasError('passwordMismatch')">
+              Passwörter stimmen nicht überein
+            </mat-error>
+          </mat-form-field>
+        </div>
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
@@ -106,7 +133,8 @@ interface CreateUserDialogData {
   styles: [`
     .dialog-container {
       width: 500px;
-      max-width: 90vw;
+      max-width: 95vw;
+      overflow-x: hidden;
     }
 
     .form-row {
@@ -147,8 +175,34 @@ export class CreateUserDialogComponent {
       email: [user.email || '', [Validators.required, Validators.email, Validators.maxLength(255)]],
       firstName: [user.firstName || '', [Validators.required, Validators.maxLength(100)]],
       lastName: [user.lastName || '', [Validators.required, Validators.maxLength(100)]],
-      roleIds: [(user as any).roleIds || []]
+      roleIds: [(user as any).roleIds || []],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      passwordConfirm: ['', [Validators.required, Validators.minLength(8)]]
+    }, { validators: this.passwordMatchValidator });
+
+    // Trigger validation when password fields change
+    this.userForm.get('password')?.valueChanges.subscribe(() => {
+      this.userForm.get('passwordConfirm')?.updateValueAndValidity({ emitEvent: false });
     });
+
+    this.userForm.get('passwordConfirm')?.valueChanges.subscribe(() => {
+      this.userForm.updateValueAndValidity({ emitEvent: false });
+    });
+  }
+
+  passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password');
+    const passwordConfirm = control.get('passwordConfirm');
+
+    if (!password || !passwordConfirm) {
+      return null;
+    }
+
+    if (password.value !== passwordConfirm.value) {
+      return { passwordMismatch: true };
+    }
+
+    return null;
   }
 
   onCancel(): void {
@@ -157,7 +211,9 @@ export class CreateUserDialogComponent {
 
   onSave(): void {
     if (this.userForm.valid) {
-      this.dialogRef.close(this.userForm.value);
+      const formValue = { ...this.userForm.value };
+      delete formValue.passwordConfirm; // Bestätigung nicht speichern
+      this.dialogRef.close(formValue);
     }
   }
 }

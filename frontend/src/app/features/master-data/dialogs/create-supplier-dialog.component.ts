@@ -141,7 +141,8 @@ import { Supplier } from '../../../core/models/supplier.model';
   styles: [`
     .dialog-container {
       width: 600px;
-      max-width: 90vw;
+      max-width: 95vw;
+      overflow-x: hidden;
     }
 
     .form-row {

@@ -112,7 +112,8 @@ interface EditUserDialogData {
     `
       .dialog-container {
         width: 500px;
-        max-width: 90vw;
+        max-width: 95vw;
+        overflow-x: hidden;
       }
 
       .form-row {

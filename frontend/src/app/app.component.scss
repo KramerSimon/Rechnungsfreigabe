@@ -98,10 +98,29 @@ img {
         color: #757575;
       }
 
-      .user-role {
-        font-size: 13px;
-        color: #616161;
-        margin-top: 4px;
+      .user-roles {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+
+        .role-badge {
+          display: inline-block;
+          padding: 4px 12px;
+          border-radius: 12px;
+          background-color: #ff9800;
+          color: white;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+
+          &.empty {
+            background-color: #9e9e9e;
+            font-style: italic;
+            text-transform: none;
+          }
+        }
       }
     }
   }

@@ -37,57 +37,25 @@
         <div class="user-info">
           <div class="user-name">{{ authState.user?.fullName || authState.user?.username }}</div>
           <div class="user-email">{{ authState.user?.email }}</div>
-          <div class="user-role" *ngIf="currentRoleTitle$ | async as roleTitle">
-            Dashboard: <strong>{{ roleTitle }}</strong>
+          <div class="user-roles">
+            <span *ngFor="let role of authState.user?.roles"
+                  class="role-badge"
+                  [style.backgroundColor]="role.color || '#ff9800'">
+              {{ role.name }}
+            </span>
+            <span *ngIf="(authState.user?.roles?.length ?? 0) === 0"
+                  class="role-badge empty">
+              Keine Rolle
+            </span>
           </div>
         </div>
       </div>
 
       <mat-divider></mat-divider>
 
-      <!-- Dashboard-Wechsel für Admins -->
-      <div *ngIf="(currentRole$ | async) === 'admin'" class="dashboard-switcher">
-        <div class="menu-section-title">Dashboard wechseln:</div>
-        <button mat-menu-item routerLink="/dashboard/admin" routerLinkActive="active">
-          <mat-icon>admin_panel_settings</mat-icon>
-          <span>Konfiguration</span>
-        </button>
-        <button mat-menu-item routerLink="/dashboard/accounting" routerLinkActive="active">
-          <mat-icon>account_balance</mat-icon>
-          <span>Cockpit</span>
-        </button>
-        <button mat-menu-item routerLink="/dashboard/user" routerLinkActive="active">
-          <mat-icon>task</mat-icon>
-          <span>Meine Aufgaben</span>
-        </button>
-        <mat-divider></mat-divider>
-      </div>
-
-      <!-- Dashboard-Wechsel für Buchhaltung -->
-      <div *ngIf="(currentRole$ | async) === 'accounting'" class="dashboard-switcher">
-        <div class="menu-section-title">Dashboard wechseln:</div>
-        <button mat-menu-item routerLink="/dashboard/accounting" routerLinkActive="active">
-          <mat-icon>account_balance</mat-icon>
-          <span>Cockpit</span>
-        </button>
-        <button mat-menu-item routerLink="/dashboard/user" routerLinkActive="active">
-          <mat-icon>task</mat-icon>
-          <span>Meine Aufgaben</span>
-        </button>
-        <mat-divider></mat-divider>
-      </div>
-
-      <button mat-menu-item routerLink="/account">
-        <mat-icon>settings</mat-icon>
-        <span>Einstellungen</span>
-      </button>
-      <button mat-menu-item routerLink="/notifications" [matBadge]="(unreadCount$ | async) || 0" matBadgeColor="warn" matBadgeOverlap="false">
-        <mat-icon>notifications</mat-icon>
-        <span>Benachrichtigungen</span>
-      </button>
-      <button mat-menu-item routerLink="/help">
-        <mat-icon>help_outline</mat-icon>
-        <span>Hilfe & Support</span>
+      <button mat-menu-item (click)="editCurrentUser()">
+        <mat-icon>edit</mat-icon>
+        <span>Benutzer bearbeiten</span>
       </button>
 
       <mat-divider></mat-divider>

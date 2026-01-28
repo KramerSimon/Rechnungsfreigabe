@@ -511,6 +511,7 @@ export class MasterDataComponent implements OnInit {
   createRole(): void {
     const dialogRef = this.dialog.open(RoleDialogComponent, {
       width: '520px',
+      maxWidth: '95vw',
       data: { mode: 'create' },
     });
 
@@ -538,6 +539,7 @@ export class MasterDataComponent implements OnInit {
     }
     const dialogRef = this.dialog.open(RoleDialogComponent, {
       width: '520px',
+      maxWidth: '95vw',
       data: { mode: 'edit', role },
     });
 
@@ -594,6 +596,7 @@ export class MasterDataComponent implements OnInit {
 
     const dialogRef = this.dialog.open(CreateSupplierDialogComponent, {
       width: '600px',
+      maxWidth: '95vw',
       data: dialogData,
     });
 
@@ -628,6 +631,7 @@ export class MasterDataComponent implements OnInit {
 
     const dialogRef = this.dialog.open(CreateCostCenterDialogComponent, {
       width: '500px',
+      maxWidth: '95vw',
       data: dialogData,
     });
 
@@ -666,6 +670,7 @@ export class MasterDataComponent implements OnInit {
 
     const dialogRef = this.dialog.open(CreateProjectDialogComponent, {
       width: '600px',
+      maxWidth: '95vw',
       data: {
         project: dialogData,
         costCenters: this.costCenters,
@@ -697,6 +702,7 @@ export class MasterDataComponent implements OnInit {
   editPurchaseOrder(order: PurchaseOrder): void {
     const dialogRef = this.dialog.open(CreatePurchaseOrderDialogComponent, {
       width: '650px',
+      maxWidth: '95vw',
       data: {
         costCenters: this.costCenters,
         projects: this.projects,
@@ -750,6 +756,7 @@ export class MasterDataComponent implements OnInit {
 
     const dialogRef = this.dialog.open(CreateUserDialogComponent, {
       width: '500px',
+      maxWidth: '95vw',
       data: { user: dialogData, availableRoles: this.roles },
     });
 
@@ -778,7 +785,7 @@ export class MasterDataComponent implements OnInit {
   createEscalationRule(): void {
     const dialogRef = this.dialog.open(EscalationRuleDialogComponent, {
       width: '80vw',
-      maxWidth: '900px',
+      maxWidth: '95vw',
       panelClass: 'escalation-rule-dialog',
       data: {
         mode: 'create',
@@ -819,7 +826,7 @@ export class MasterDataComponent implements OnInit {
   editEscalationRule(rule: EscalationRule): void {
     const dialogRef = this.dialog.open(EscalationRuleDialogComponent, {
       width: '80vw',
-      maxWidth: '900px',
+      maxWidth: '95vw',
       panelClass: 'escalation-rule-dialog',
       data: {
         mode: 'edit',
@@ -879,6 +886,7 @@ export class MasterDataComponent implements OnInit {
   editSupplier(supplier: Supplier): void {
     const dialogRef = this.dialog.open(EditSupplierDialogComponent, {
       width: '600px',
+      maxWidth: '95vw',
       data: supplier,
     });
 
@@ -909,6 +917,7 @@ export class MasterDataComponent implements OnInit {
   editCostCenter(costCenter: CostCenter): void {
     const dialogRef = this.dialog.open(EditCostCenterDialogComponent, {
       width: '500px',
+      maxWidth: '95vw',
       data: costCenter,
     });
 
@@ -941,6 +950,7 @@ export class MasterDataComponent implements OnInit {
   editProject(project: Project): void {
     const dialogRef = this.dialog.open(EditProjectDialogComponent, {
       width: '600px',
+      maxWidth: '95vw',
       data: {
         project: project,
         costCenters: this.costCenters,
@@ -974,6 +984,7 @@ export class MasterDataComponent implements OnInit {
   editUser(user: User): void {
     const dialogRef = this.dialog.open(EditUserDialogComponent, {
       width: '500px',
+      maxWidth: '95vw',
       data: { user, availableRoles: this.roles },
     });
 
@@ -1057,7 +1068,8 @@ export class MasterDataComponent implements OnInit {
 
   createApprovalRule(): void {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
-      width: '800px',
+      width: '1100px',
+      maxWidth: '95vw',
       data: { mode: 'create' } as RuleDialogData,
     });
 
@@ -1084,7 +1096,8 @@ export class MasterDataComponent implements OnInit {
 
   editApprovalRule(rule: ApprovalRule): void {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
-      width: '800px',
+      width: '1100px',
+      maxWidth: '95vw',
       data: { mode: 'edit', rule: this.mapToDialogRule(rule) } as RuleDialogData,
     });
 
@@ -1200,6 +1213,7 @@ export class MasterDataComponent implements OnInit {
   createApprovalWorkflow(): void {
     const dialogRef = this.dialog.open(ApprovalWorkflowDialogComponent, {
       width: '650px',
+      maxWidth: '95vw',
       data: { mode: 'create' } as ApprovalWorkflowDialogData,
     });
 
@@ -1222,6 +1236,7 @@ export class MasterDataComponent implements OnInit {
   editApprovalWorkflow(workflow: ApprovalWorkflow): void {
     const dialogRef = this.dialog.open(ApprovalWorkflowDialogComponent, {
       width: '650px',
+      maxWidth: '95vw',
       data: { mode: 'edit', workflow } as ApprovalWorkflowDialogData,
     });
 

@@ -73,6 +73,11 @@ public class CreateUserDto
     [StringLength(100)]
     public string LastName { get; set; } = string.Empty;
 
+    [Required]
+    [StringLength(255)]
+    [MinLength(8)]
+    public string Password { get; set; } = string.Empty;
+
     [StringLength(255)]
     public string? ActiveDirectorySid { get; set; }
 
