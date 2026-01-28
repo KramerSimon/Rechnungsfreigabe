@@ -789,7 +789,7 @@ export class MasterDataComponent implements OnInit {
       panelClass: 'escalation-rule-dialog',
       data: {
         mode: 'create',
-        statuses: this.invoiceStatuses.map(s => s.code),
+        statuses: this.invoiceStatuses,
         roles: this.roles,
         users: this.users,
       } as EscalationRuleDialogData,
@@ -799,13 +799,14 @@ export class MasterDataComponent implements OnInit {
       if (result) {
         const payload: CreateEscalationRuleDto = {
           ...result,
-          triggerAfterHours: Number(result.triggerAfterHours),
+          triggerAfterMinutes: Number(result.triggerAfterMinutes),
           repeatIntervalHours: result.repeatIntervalHours ? Number(result.repeatIntervalHours) : null,
           maxEscalations: result.maxEscalations !== undefined && result.maxEscalations !== null
             ? Number(result.maxEscalations)
             : null,
-          notifyUserId: result.notifyUserId ? Number(result.notifyUserId) : null,
-          notifyRoleId: result.notifyRoleId ? Number(result.notifyRoleId) : null,
+          notifyUserIds: result.notifyUserIds || [],
+          notifyRoleIds: result.notifyRoleIds || [],
+          triggerStatusIds: result.triggerStatusIds || [],
           isActive: result.isActive ?? true,
         };
 
@@ -830,7 +831,7 @@ export class MasterDataComponent implements OnInit {
       panelClass: 'escalation-rule-dialog',
       data: {
         mode: 'edit',
-        statuses: this.invoiceStatuses.map(s => s.code),
+        statuses: this.invoiceStatuses,
         roles: this.roles,
         users: this.users,
         rule,
@@ -841,13 +842,14 @@ export class MasterDataComponent implements OnInit {
       if (result) {
         const payload: CreateEscalationRuleDto = {
           ...result,
-          triggerAfterHours: Number(result.triggerAfterHours),
+          triggerAfterMinutes: Number(result.triggerAfterMinutes),
           repeatIntervalHours: result.repeatIntervalHours ? Number(result.repeatIntervalHours) : null,
           maxEscalations: result.maxEscalations !== undefined && result.maxEscalations !== null
             ? Number(result.maxEscalations)
             : null,
-          notifyUserId: result.notifyUserId ? Number(result.notifyUserId) : null,
-          notifyRoleId: result.notifyRoleId ? Number(result.notifyRoleId) : null,
+          notifyUserIds: result.notifyUserIds || [],
+          notifyRoleIds: result.notifyRoleIds || [],
+          triggerStatusIds: result.triggerStatusIds || [],
           isActive: result.isActive ?? rule.isActive,
         };
 

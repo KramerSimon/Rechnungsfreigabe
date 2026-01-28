@@ -297,6 +297,7 @@ public class ApprovalService : IApprovalService
                 if (newStatus != null)
                 {
                     invoice.StatusId = newStatus.Id;
+                    invoice.UpdatedAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                 }
                 break;
@@ -400,6 +401,7 @@ public class ApprovalService : IApprovalService
                 if (freigegeben != null)
                 {
                     invoice.StatusId = freigegeben.Id;
+                    invoice.UpdatedAt = DateTime.UtcNow;
                 }
                 invoice.AutoApproved = true;
                 await _context.SaveChangesAsync();
@@ -485,6 +487,7 @@ public class ApprovalService : IApprovalService
         if (freigabeErforderlich != null)
         {
             invoice.StatusId = freigabeErforderlich.Id;
+            invoice.UpdatedAt = DateTime.UtcNow;
         }
         await _context.SaveChangesAsync();
     }
@@ -569,6 +572,7 @@ public class ApprovalService : IApprovalService
             if (freigegeben2 != null)
             {
                 invoice.StatusId = freigegeben2.Id;
+                invoice.UpdatedAt = DateTime.UtcNow;
             }
             invoice.AutoApproved = true;
             await _historyService.CreateSystemActionAsync(
@@ -756,6 +760,7 @@ public class ApprovalService : IApprovalService
             approval.ApprovedAt = DateTime.UtcNow;
             approval.Comments = comments;
             var invoice = approval.Invoice;
+            invoice.UpdatedAt = DateTime.UtcNow;
 
             // Activate the next waiting step (sequential progression)
             var waitingStatus = await _context.Statuses
@@ -772,6 +777,7 @@ public class ApprovalService : IApprovalService
                     .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
                                                 s.EntityType == EntityTypes.ApprovalWorkflow);
                 nextStep.StatusId = pendingStatus2?.Id;
+                invoice.UpdatedAt = DateTime.UtcNow;
                 // Notify next approver if notification service is available
                 if (_notificationService != null)
                 {

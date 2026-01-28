@@ -1,5 +1,3 @@
-CREATE DATABASE  IF NOT EXISTS `rechnungsfreigabe` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `rechnungsfreigabe`;
 -- MySQL dump 10.13  Distrib 8.0.40, for Win64 (x86_64)
 --
 -- Host: localhost    Database: rechnungsfreigabe
@@ -9,13 +7,23 @@ USE `rechnungsfreigabe`;
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
+/*!50503 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Current Database: `rechnungsfreigabe`
+--
+
+/*!40000 DROP DATABASE IF EXISTS `rechnungsfreigabe`*/;
+
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `rechnungsfreigabe` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+
+USE `rechnungsfreigabe`;
 
 --
 -- Table structure for table `approval_rules`
@@ -48,7 +56,7 @@ CREATE TABLE `approval_rules` (
 
 LOCK TABLES `approval_rules` WRITE;
 /*!40000 ALTER TABLE `approval_rules` DISABLE KEYS */;
-INSERT INTO `approval_rules` VALUES (6,'Auto-Freigabe','','automatic',10,1,'[{\"field\": \"amount\", \"value\": \"100\", \"operator\": \"<=\"}]','[{\"type\": \"auto_approve\", \"value\": \"approved\", \"description\": \"Automatisch freigeben\"}]',1,'2025-12-18 14:27:26','2026-01-22 13:17:56'),(7,'Standard-Freigabe','','manual',999,1,'[{\"field\": \"amount\", \"value\": \"500\", \"operator\": \">\"}]','[{\"type\": \"assign_to\", \"value\": \"1\", \"description\": \"Zuweisen an Systemadministrator\"}]',1,'2025-12-20 11:48:34','2025-12-20 11:48:34'),(8,'Mehrstufige Freigabe','','manual',10,1,'[{\"field\": \"amount\", \"value\": \"1000\", \"operator\": \">\"}]','[{\"type\": \"require_approval\", \"value\": \"\", \"stages\": [{\"userId\": 5, \"stepNumber\": 1, \"approvalLevel\": 1}, {\"userId\": 1, \"stepNumber\": 2, \"approvalLevel\": 2}], \"description\": \"Mehrstufige Freigabe\"}]',1,'2025-12-21 12:45:11','2025-12-21 12:45:11'),(9,'Test','','automatic',10,1,'[{\"field\": \"costCenter\", \"value\": \"OFFICE\", \"operator\": \"=\"}]','[{\"type\": \"auto_approve\", \"value\": \"\", \"description\": \"Automatisch freigeben\"}]',1,'2026-01-07 09:48:50','2026-01-07 09:48:50');
+INSERT INTO `approval_rules` VALUES (6,'Auto-Freigabe','','automatic',10,1,'[{\"field\": \"amount\", \"value\": \"500\", \"operator\": \"<=\"}]','[{\"type\": \"auto_approve\", \"value\": \"approved\", \"description\": \"Automatisch freigeben\"}]',1,'2025-12-18 14:27:26','2026-01-28 08:20:12'),(7,'Standard-Freigabe','','manual',999,1,'[{\"field\": \"amount\", \"value\": \"500\", \"operator\": \">\"}]','[{\"type\": \"assign_to\", \"value\": \"1\", \"description\": \"Zuweisen an Systemadministrator\"}]',1,'2025-12-20 11:48:34','2025-12-20 11:48:34'),(8,'Mehrstufige Freigabe','','manual',10,1,'[{\"field\": \"amount\", \"value\": \"1000\", \"operator\": \">\"}]','[{\"type\": \"require_approval\", \"value\": \"\", \"stages\": [{\"userId\": 5, \"stepNumber\": 1, \"approvalLevel\": 1}, {\"userId\": 1, \"stepNumber\": 2, \"approvalLevel\": 2}], \"description\": \"Mehrstufige Freigabe\"}]',1,'2025-12-21 12:45:11','2025-12-21 12:45:11'),(9,'Test','','automatic',10,1,'[{\"field\": \"costCenter\", \"value\": \"OFFICE\", \"operator\": \"=\"}]','[{\"type\": \"auto_approve\", \"value\": \"\", \"description\": \"Automatisch freigeben\"}]',1,'2026-01-07 09:48:50','2026-01-07 09:48:50');
 /*!40000 ALTER TABLE `approval_rules` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -80,7 +88,7 @@ CREATE TABLE `approval_workflows` (
   CONSTRAINT `approval_workflows_ibfk_2` FOREIGN KEY (`rule_id`) REFERENCES `approval_rules` (`id`),
   CONSTRAINT `approval_workflows_ibfk_3` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`),
   CONSTRAINT `FK_approval_workflows_status` FOREIGN KEY (`status_id`) REFERENCES `statuses` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -89,7 +97,6 @@ CREATE TABLE `approval_workflows` (
 
 LOCK TABLES `approval_workflows` WRITE;
 /*!40000 ALTER TABLE `approval_workflows` DISABLE KEYS */;
-INSERT INTO `approval_workflows` VALUES (63,116,NULL,1,2,1,'Pending',18,NULL,NULL,'2026-01-22 13:33:29'),(64,117,8,1,5,1,'Pending',18,NULL,NULL,'2026-01-22 13:33:54'),(65,117,8,2,1,2,'Waiting',22,NULL,NULL,'2026-01-22 13:33:54');
 /*!40000 ALTER TABLE `approval_workflows` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -160,6 +167,89 @@ LOCK TABLES `escalation_logs` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `escalation_rule_notify_roles`
+--
+
+DROP TABLE IF EXISTS `escalation_rule_notify_roles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `escalation_rule_notify_roles` (
+  `escalation_rule_id` int NOT NULL,
+  `role_id` int NOT NULL,
+  `added_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`escalation_rule_id`,`role_id`),
+  KEY `fk_role_id` (`role_id`),
+  CONSTRAINT `fk_rul_role_id` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_rul_rule_id` FOREIGN KEY (`escalation_rule_id`) REFERENCES `escalation_rules` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `escalation_rule_notify_roles`
+--
+
+LOCK TABLES `escalation_rule_notify_roles` WRITE;
+/*!40000 ALTER TABLE `escalation_rule_notify_roles` DISABLE KEYS */;
+/*!40000 ALTER TABLE `escalation_rule_notify_roles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `escalation_rule_notify_users`
+--
+
+DROP TABLE IF EXISTS `escalation_rule_notify_users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `escalation_rule_notify_users` (
+  `escalation_rule_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `added_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`escalation_rule_id`,`user_id`),
+  KEY `fk_user_id` (`user_id`),
+  CONSTRAINT `fk_ruu_rule_id` FOREIGN KEY (`escalation_rule_id`) REFERENCES `escalation_rules` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ruu_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `escalation_rule_notify_users`
+--
+
+LOCK TABLES `escalation_rule_notify_users` WRITE;
+/*!40000 ALTER TABLE `escalation_rule_notify_users` DISABLE KEYS */;
+INSERT INTO `escalation_rule_notify_users` VALUES (3,1,'2026-01-28 09:32:21');
+/*!40000 ALTER TABLE `escalation_rule_notify_users` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `escalation_rule_trigger_statuses`
+--
+
+DROP TABLE IF EXISTS `escalation_rule_trigger_statuses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `escalation_rule_trigger_statuses` (
+  `escalation_rule_id` int NOT NULL,
+  `status_id` int NOT NULL,
+  `added_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`escalation_rule_id`,`status_id`),
+  KEY `fk_status_id` (`status_id`),
+  CONSTRAINT `fk_rule_id` FOREIGN KEY (`escalation_rule_id`) REFERENCES `escalation_rules` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_status_id` FOREIGN KEY (`status_id`) REFERENCES `statuses` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `escalation_rule_trigger_statuses`
+--
+
+LOCK TABLES `escalation_rule_trigger_statuses` WRITE;
+/*!40000 ALTER TABLE `escalation_rule_trigger_statuses` DISABLE KEYS */;
+INSERT INTO `escalation_rule_trigger_statuses` VALUES (3,1,'2026-01-28 09:32:21'),(3,2,'2026-01-28 09:32:21'),(3,3,'2026-01-28 09:32:21'),(3,4,'2026-01-28 09:32:21'),(3,5,'2026-01-28 09:32:21'),(3,6,'2026-01-28 09:32:21'),(3,7,'2026-01-28 09:32:21'),(3,8,'2026-01-28 09:32:21');
+/*!40000 ALTER TABLE `escalation_rule_trigger_statuses` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `escalation_rules`
 --
 
@@ -170,23 +260,16 @@ CREATE TABLE `escalation_rules` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `trigger_status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `trigger_after_hours` int NOT NULL DEFAULT '48',
+  `trigger_after_minutes` int NOT NULL DEFAULT '2880' COMMENT 'Trigger time in minutes (default 48 hours = 2880 minutes)',
   `repeat_interval_hours` int DEFAULT NULL,
   `max_escalations` int DEFAULT '3',
-  `notify_role` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `notify_user_id` int DEFAULT NULL,
-  `message_template` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `message_template` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `notify_role_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `notify_user_id` (`notify_user_id`),
-  KEY `ix_escalation_rules_role` (`notify_role_id`),
-  CONSTRAINT `escalation_rules_ibfk_1` FOREIGN KEY (`notify_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_escalation_rules_roles` FOREIGN KEY (`notify_role_id`) REFERENCES `roles` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  KEY `ix_escalation_rules_active` (`is_active`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -195,6 +278,7 @@ CREATE TABLE `escalation_rules` (
 
 LOCK TABLES `escalation_rules` WRITE;
 /*!40000 ALTER TABLE `escalation_rules` DISABLE KEYS */;
+INSERT INTO `escalation_rules` VALUES (3,'Test','',1,NULL,3,'',1,'2026-01-28 09:32:21','2026-01-28 09:32:21');
 /*!40000 ALTER TABLE `escalation_rules` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -228,7 +312,7 @@ CREATE TABLE `invoice_history` (
   KEY `idx_action_source` (`action_source`),
   CONSTRAINT `invoice_history_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `invoice_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=149 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=151 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -237,7 +321,6 @@ CREATE TABLE `invoice_history` (
 
 LOCK TABLES `invoice_history` WRITE;
 /*!40000 ALTER TABLE `invoice_history` DISABLE KEYS */;
-INSERT INTO `invoice_history` VALUES (147,116,'Rechnung importiert','Created','Import',NULL,'Freigabe_Erforderlic',NULL,NULL,NULL,NULL,'E-Mail',1,'2026-01-22 13:33:29'),(148,117,'Rechnung importiert','Created','Import',NULL,'Freigabe_Erforderlic',NULL,NULL,NULL,NULL,'E-Mail',1,'2026-01-22 13:33:54');
 /*!40000 ALTER TABLE `invoice_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -298,7 +381,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `invoices_ibfk_5` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `invoices_ibfk_6` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=118 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=120 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -307,9 +390,36 @@ CREATE TABLE `invoices` (
 
 LOCK TABLES `invoices` WRITE;
 /*!40000 ALTER TABLE `invoices` DISABLE KEYS */;
-INSERT INTO `invoices` VALUES (116,'FAT-001-2026',61,NULL,NULL,NULL,245.90,54.10,300.00,'EUR','2025-12-15','2026-02-21','2026-01-22 13:33:29','Freigabe_Erforderlich',3,1,1,0,NULL,_binary '%PDF-1.4\r\n%ìåãû ReportLab Generated PDF document http://www.reportlab.com\r\n1 0 obj\r\n<<\r\n/F1 2 0 R /F2 3 0 R\r\n>>\r\nendobj\r\n2 0 obj\r\n<<\r\n/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font\r\n>>\r\nendobj\r\n3 0 obj\r\n<<\r\n/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font\r\n>>\r\nendobj\r\n4 0 obj\r\n<<\r\n/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<\r\n/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]\r\n>> /Rotate 0 /Trans <<\r\n\r\n>> \r\n  /Type /Page\r\n>>\r\nendobj\r\n5 0 obj\r\n<<\r\n/PageMode /UseNone /Pages 7 0 R /Type /Catalog\r\n>>\r\nendobj\r\n6 0 obj\r\n<<\r\n/Author (\\(anonymous\\)) /CreationDate (D:20251217135140+00\'00\') /Creator (\\(unspecified\\)) /Keywords () /ModDate (D:20251217135140+00\'00\') /Producer (ReportLab PDF Library - www.reportlab.com) \r\n  /Subject (\\(unspecified\\)) /Title (\\(anonymous\\)) /Trapped /False\r\n>>\r\nendobj\r\n7 0 obj\r\n<<\r\n/Count 1 /Kids [ 4 0 R ] /Type /Pages\r\n>>\r\nendobj\r\n8 0 obj\r\n<<\r\n/Filter [ /ASCII85Decode /FlateDecode ] /Length 699\r\n>>\r\nstream\r\nGat=)gMY_1&:N^lk+r]I<&8m+^#Y0=VFm+C!F24@Z!`DH_R=4G<oWF,?5m\"9>?b8*1?ZlQ3BO!i!ResRI@1(_MI>qpJ8pCr^n`>$HA4(Mmq7\\=bYUSRRA\\P2;$I&7Jc)W?\\a6O?,pou5#H\"Mt33O*,@H]GF\']IFHqN%C\"qCs#H61bZ74a_(`UcP3MXj\"aYAR6mN$+)%\\ErVt0FIp<0/rDEF*ro.H3-\'L%ITDHap3Bt]*#GEequPjXUsaeqh^tLtlXM5GbLpa@o(s>>DmMP`7@%^>I4VV&U-I?LSZZE=lQh,9o\\\"791,gp]ZQo`uN$0sp3kFNN^G##8d&RCIo?dY&7EE!#ILrM&?8Ln.l9[VGA<t@\'Aj:4T:N=tNF(sJ>b]UWT=6jnF?-!Pi5S3>oh+i3PLXKh^IF<)1PU6Hn$>H(Hj;QVDXjQCY$<?,2%=jAZCO`FpbM;GXQ>3=8LWT)%SWn+tQsq3a?JqgcpGLR7>t0fYE5\\W=-[]pp7p-FBoF66L^*V*Iri<%:<X+jm\\h,j%h8L1F$BuoLPK5B++b_:h_\\%\\G?8*e2\'!$2)UYgFIM!8\";pq:TG@[fe>)jo:q2Bcm**(g[3jAEPT(qnERg+l=&Sd-HXZFQGVR\\2VE-`9o.:14qGLOXYOnb-,9FSKf1/o7rO4Zohm#ljL8U_AC[%mGM8Q^`\"7G=8+u#;;onWW~>endstream\r\nendobj\r\nxref\r\n0 9\r\n0000000000 65535 f \r\n0000000073 00000 n \r\n0000000114 00000 n \r\n0000000221 00000 n \r\n0000000333 00000 n \r\n0000000536 00000 n \r\n0000000604 00000 n \r\n0000000887 00000 n \r\n0000000946 00000 n \r\ntrailer\r\n<<\r\n/ID \r\n[<82de21b91b86403725a14956d4a41851><82de21b91b86403725a14956d4a41851>]\r\n% ReportLab generated PDF document -- digest (http://www.reportlab.com)\r\n\r\n/Info 6 0 R\r\n/Root 5 0 R\r\n/Size 9\r\n>>\r\nstartxref\r\n1735\r\n%%EOF\r\n',2214,'fattura_003.pdf','FATTURA | Numero fattura: 003/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2026-01-22 13:33:29','2026-01-27 10:00:03'),(117,'FAT-002-2026',61,NULL,NULL,NULL,1024.59,225.41,1250.00,'EUR','2025-12-15','2026-02-21','2026-01-22 13:33:54','Freigabe_Erforderlich',3,1,1,0,NULL,_binary '%PDF-1.6\r%\‚\„\œ\”\r\n7 0 obj\r<</Linearized 1/L 6183/O 9/E 1707/N 1/T 5894/H [ 447 132]>>\rendobj\r                       \r\n12 0 obj\r<</DecodeParms<</Columns 4/Predictor 12>>/Filter/FlateDecode/ID[<8B49BF133DB554C872F8842FFF1159FF><C30457C9E1DCAA4483AE873FF001ED09>]/Index[7 10]/Info 6 0 R/Length 48/Prev 5895/Root 8 0 R/Size 17/Type/XRef/W[1 2 1]>>stream\r\nh\ﬁbbd``b`2æ@ÇÒ<à∏	$˛\ÿ0012LI00Bàˇå[ˇ\0võ\÷\r\nendstream\rendobj\rstartxref\r\n0\r\n%%EOF\r\n        \r\n16 0 obj\r<</Filter/FlateDecode/I 67/Length 53/S 38>>stream\r\nh\ﬁb```f``\‚a\0iT¿d\‡h@cÜbÜÛúL[\Z†Ç¢\Ô!\Z%\0\0\\\⁄Û\r\nendstream\rendobj\r8 0 obj\r<</Metadata 1 0 R/PageMode/UseNone/Pages 5 0 R/Type/Catalog>>\rendobj\r9 0 obj\r<</Contents 11 0 R/CropBox[0 0 595.2756 841.8898]/MediaBox[0 0 595.2756 841.8898]/Parent 5 0 R/Resources<</Font 13 0 R/ProcSet[/PDF/Text/ImageB/ImageC/ImageI]>>/Rotate 0/Trans<<>>/Type/Page>>\rendobj\r10 0 obj\r<</Filter/FlateDecode/First 18/Length 122/N 3/Type/ObjStm>>stream\r\nh\ﬁ24V0P04Q02Q04U040Q∞±\—w3	(\ÈªÅÑÅ,;;†∏Sbq™[~^âæGjNYjIfr¢æk^r~Jf^∫~xfûc^q&úÔóòõ\n4H?∏4©§≤ U?HÇI}ê8\Ã\”u\ \œI!d®nC\0Ω\·Bj\r\nendstream\rendobj\r11 0 obj\r<</Filter/FlateDecode/Length 557>>stream\r\nxúùUMè\⁄0ΩÛ+\ÊRâ]©a\Ï8â\Ÿ[∫\’V\€jwO\\,0mV$QCh%~}\'NN K[E\‰c\ﬁøyûëaÄt1{_%\0˜\nFµ&<\Í	>™¡\œ´ôëÑH0O ±§\–˘˜\Â≤f9JLh)LñKq^.ƒ¢\»cBJ\¬\’\ZÜ•æ\Õ\'7†^A\›\¬˚6L™3∫\⁄\ ‹ø™\Ã+e2Å÷ÑU~\›\'&\œ`£ãbü\Î;@\‰#é<8ä_Tc\◊}^Võ\ÍÇ4X0bˇ¶“Å\¬¿-†•`)\\\…\Ÿm∂Ú\«\Zio≥<çã,7V˙T`Y\≈pràM∫\÷05Iã˘ì\ÂX\‰%\÷0\œ\r\ÏCdàUt9úYﬁú†g_&w®êq_a$\«¯ñY\◊Q\‚QüY&\ﬁ6˚aK~äãV\ÔcùÆ~ƒçÀæ∫q\n\"/Ù	\∆n\'<\…#0\Ë>i8RJÛCiû%\‰6∑≠\—\È\Œ\nU\„x\rÅ˚•\◊\·\‘\ÏVy|à≥\‘8u;Lé\rw∂\◊iK_`W6\‹\Á\‹5r\…\ÎVûÒ˝_eÖﬁö+¸K^ò¸WY3¨cXe\Ènø5\ÈA˜\‘JOà:ëı\‘\·SWéã3†á=\≈\€Ã≤°ü\È˜Z∑b˛â>~õï\ÿv\—\À6Üu[áRÅgy\‘*F/Uå6\Õ\ÀgC\‰u6w≥˝:ËüÇ≥Û9u\Á∞E\„ø=≠x˚¥™{‹úçe´\·|œã	£ˇ<\È–†øÑwß´\Ì~ß;\"0¯lr	\r\nendstream\rendobj\r1 0 obj\r<</Length 3691/Subtype/XML/Type/Metadata>>stream\r\n<?xpacket begin=\"Ôªø\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"Adobe XMP Core 5.4-c006 80.159825, 2016/09/16-03:31:08        \">\n   <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n      <rdf:Description rdf:about=\"\"\n            xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n            xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n            xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n            xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\">\n         <dc:format>application/pdf</dc:format>\n         <dc:creator>\n            <rdf:Seq>\n               <rdf:li>(anonymous)</rdf:li>\n            </rdf:Seq>\n         </dc:creator>\n         <dc:description>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">(unspecified)</rdf:li>\n            </rdf:Alt>\n         </dc:description>\n         <dc:title>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">(anonymous)</rdf:li>\n            </rdf:Alt>\n         </dc:title>\n         <xmp:CreateDate>2025-12-17T13:51:40Z</xmp:CreateDate>\n         <xmp:CreatorTool>(unspecified)</xmp:CreatorTool>\n         <xmp:ModifyDate>2026-01-21T15:31:23+01:00</xmp:ModifyDate>\n         <xmp:MetadataDate>2026-01-21T15:31:23+01:00</xmp:MetadataDate>\n         <pdf:Keywords/>\n         <pdf:Producer>ReportLab PDF Library - www.reportlab.com</pdf:Producer>\n         <pdf:Trapped>False</pdf:Trapped>\n         <xmpMM:DocumentID>uuid:51159c19-db28-4aba-b679-aeb9d688ab17</xmpMM:DocumentID>\n         <xmpMM:InstanceID>uuid:102b4301-c501-4e5e-81da-abbb2108831e</xmpMM:InstanceID>\n      </rdf:Description>\n   </rdf:RDF>\n</x:xmpmeta>\n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                           \n<?xpacket end=\"w\"?>\r\nendstream\rendobj\r2 0 obj\r<</Filter/FlateDecode/First 4/Length 48/N 1/Type/ObjStm>>stream\r\nh\ﬁ2U0P∞±\—w\Œ/\Õ+Q0\‘˜\ŒL)é∂ä\≈\ÍáT§\Í$¶ß\€\Ÿ\0\÷wÄ\r\nendstream\rendobj\r3 0 obj\r<</Filter/FlateDecode/First 4/Length 187/N 1/Type/ObjStm>>stream\r\nh\ﬁd\œ\À\n\¬0Ö\·W\…\Œ\—$≠U\ƒ“ç\n¢Æ\ƒM⁄åi;eöP˙ˆ^]ˇ|Œî)∂X\»U7$~\·¶∆∫Ø0¥!\‰ö¿xáuj<t©(—ëû\È8\—u˛Ù7u\€@\·Æ\Ïn†\ÔêlÀÖ‹°˝Ú©zzù\ƒ:äáJî\Zπ\'¥°\0\‚hê¸\÷\‰lüfl\Îr2‘≥\Î∫nL\ÔVö|\\`%\‰1\‰w(¸ˇ\…˘~oú\»4\rXôô≤Ö\ÂÚ!¿\0ENã\r\nendstream\rendobj\r4 0 obj\r<</DecodeParms<</Columns 3/Predictor 12>>/Filter/FlateDecode/ID[<8B49BF133DB554C872F8842FFF1159FF><C30457C9E1DCAA4483AE873FF001ED09>]/Info 6 0 R/Length 37/Root 8 0 R/Size 7/Type/XRef/W[1 2 0]>>stream\r\nh\ﬁbb```bd[\Õ\ƒ¿øÉâÅ°áâÅIÇâÒ\Âo õ ¿\0/Q\r\nendstream\rendobj\rstartxref\r\n116\r\n%%EOF\r\n',6183,'fattura_002.pdf','FATTURA | Numero fattura: 002/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2026-01-22 13:33:54','2026-01-27 10:00:03');
 /*!40000 ALTER TABLE `invoices` ENABLE KEYS */;
 UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `tr_update_overdue_status` BEFORE UPDATE ON `invoices` FOR EACH ROW BEGIN
+    DECLARE overdue_status_id INT;
+    DECLARE paid_status_id INT;
+    DECLARE cancelled_status_id INT;
+    
+    SELECT id INTO overdue_status_id FROM statuses WHERE code = 'Ueberfaellig' AND entity_type = 'Invoice' LIMIT 1;
+    SELECT id INTO paid_status_id FROM statuses WHERE code = 'Bezahlt' AND entity_type = 'Invoice' LIMIT 1;
+    SELECT id INTO cancelled_status_id FROM statuses WHERE code = 'Storniert' AND entity_type = 'Invoice' LIMIT 1;
+    
+    IF NEW.due_date < CURDATE() AND NEW.status_id NOT IN (paid_status_id, cancelled_status_id, overdue_status_id) THEN
+        SET NEW.status_id = overdue_status_id;
+        SET NEW.status_backup = 'Ueberfaellig';
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
 -- Table structure for table `notifications`
@@ -336,7 +446,7 @@ CREATE TABLE `notifications` (
   KEY `idx_is_read` (`is_read`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=221 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=224 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -345,7 +455,6 @@ CREATE TABLE `notifications` (
 
 LOCK TABLES `notifications` WRITE;
 /*!40000 ALTER TABLE `notifications` DISABLE KEYS */;
-INSERT INTO `notifications` VALUES (214,2,116,'invoice_approval_required','Neue Rechnung zur Freigabe','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR wartet auf Ihre Freigabe.',0,'normal','/invoices/116','2026-01-22 13:33:29',NULL),(215,3,116,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR ist eingegangen.',0,'low','/invoices/116','2026-01-22 13:33:29',NULL),(216,1,116,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-001-2026 von Azienda Demo SRL √ºber 300,00 ‚Ç¨ EUR ist eingegangen.',1,'normal','/invoices/116','2026-01-22 13:33:29','2026-01-27 08:14:22'),(217,5,117,'invoice_approval_required','Neue Rechnung zur Freigabe','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR wartet auf Ihre Freigabe.',0,'normal','/invoices/117','2026-01-22 13:33:55',NULL),(218,3,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',0,'low','/invoices/117','2026-01-22 13:33:55',NULL),(219,1,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',1,'normal','/invoices/117','2026-01-22 13:33:55','2026-01-27 08:14:22'),(220,2,117,'invoice_received','Neue Rechnung eingegangen','Rechnung FAT-002-2026 von Azienda Demo SRL √ºber 1.250,00 ‚Ç¨ EUR ist eingegangen.',0,'normal','/invoices/117','2026-01-22 13:33:55',NULL);
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -698,9 +807,70 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','simon.kramer05@gmail.com','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-27 13:26:25','2026-01-27 13:26:25'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-27 07:57:16',NULL),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','M√ºller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-21 13:36:17',NULL);
+INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','simon.kramer05@gmail.com','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-28 09:31:02','2026-01-28 09:31:02'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-27 07:57:16',NULL),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','M√ºller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-21 13:36:17',NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Dumping events for database 'rechnungsfreigabe'
+--
+
+--
+-- Dumping routines for database 'rechnungsfreigabe'
+--
+/*!50003 DROP PROCEDURE IF EXISTS `sp_evaluate_approval_rules` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_evaluate_approval_rules`(IN p_invoice_id INT)
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE v_rule_id INT;
+    DECLARE v_rule_type VARCHAR(20);
+    DECLARE v_conditions JSON;
+    DECLARE v_actions JSON;
+    DECLARE v_match_found BOOLEAN DEFAULT FALSE;
+    
+    -- Cursor f√ºr aktive Regeln (nach Priorit√§t sortiert)
+    DECLARE rule_cursor CURSOR FOR
+        SELECT id, rule_type, conditions, actions
+        FROM approval_rules 
+        WHERE is_active = TRUE
+        ORDER BY priority ASC;
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+    
+    OPEN rule_cursor;
+    read_loop: LOOP
+        FETCH rule_cursor INTO v_rule_id, v_rule_type, v_conditions, v_actions;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        
+        -- Hier w√ºrde die Regel-Engine die JSON-Bedingungen evaluieren
+        -- F√ºr dieses Beispiel vereinfacht dargestellt
+        
+        -- Bei Match: Workflow-Eintr√§ge erstellen
+        -- (Die eigentliche Implementierung w√ºrde die JSON-Bedingungen parsen und evaluieren)
+        
+        IF v_match_found THEN
+            LEAVE read_loop;
+        END IF;
+    END LOOP;
+    
+    CLOSE rule_cursor;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -711,4 +881,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-27 15:36:31
+-- Dump completed on 2026-01-28 11:32:50

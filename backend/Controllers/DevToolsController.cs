@@ -161,4 +161,39 @@ public class DevToolsController : ControllerBase
             verificationSuccessful = verify
         });
     }
+
+    /// <summary>
+    /// Test escalation email - bypasses repeat interval check
+    /// </summary>
+    [HttpPost("test-escalation-email")]
+    public async Task<IActionResult> TestEscalationEmail([FromBody] TestEscalationRequest request)
+    {
+        try
+        {
+            var escalationService = HttpContext.RequestServices.GetService(typeof(IEscalationEmailService)) as IEscalationEmailService;
+            
+            if (escalationService == null)
+                return StatusCode(500, new { message = "Escalation service not available" });
+
+            var result = await escalationService.SendEscalationEmailAsync(request.InvoiceId, request.RuleId);
+            
+            return Ok(new 
+            { 
+                message = "Escalation email test executed",
+                invoiceId = request.InvoiceId,
+                ruleId = request.RuleId,
+                emailSent = result
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error sending test escalation email", error = ex.Message });
+        }
+    }
+}
+
+public class TestEscalationRequest
+{
+    public int InvoiceId { get; set; }
+    public int RuleId { get; set; }
 }

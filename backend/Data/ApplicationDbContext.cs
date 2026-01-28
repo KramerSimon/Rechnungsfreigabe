@@ -28,6 +28,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<SystemConfig> SystemConfigs { get; set; }
     public DbSet<EscalationRule> EscalationRules { get; set; }
     public DbSet<EscalationLog> EscalationLogs { get; set; }
+    public DbSet<EscalationRuleTriggerStatus> EscalationRuleTriggerStatuses { get; set; }
+    public DbSet<EscalationRuleNotifyRole> EscalationRuleNotifyRoles { get; set; }
+    public DbSet<EscalationRuleNotifyUser> EscalationRuleNotifyUsers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +55,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SystemConfig>().ToTable("system_config");
         modelBuilder.Entity<EscalationRule>().ToTable("escalation_rules");
         modelBuilder.Entity<EscalationLog>().ToTable("escalation_logs");
+        modelBuilder.Entity<EscalationRuleTriggerStatus>().ToTable("escalation_rule_trigger_statuses");
+        modelBuilder.Entity<EscalationRuleNotifyRole>().ToTable("escalation_rule_notify_roles");
+        modelBuilder.Entity<EscalationRuleNotifyUser>().ToTable("escalation_rule_notify_users");
 
         // Configure primary keys
 
@@ -266,17 +272,8 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(n => n.InvoiceId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<EscalationRule>()
-            .HasOne(er => er.NotifyUser)
-            .WithMany()
-            .HasForeignKey(er => er.NotifyUserId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        modelBuilder.Entity<EscalationRule>()
-            .HasOne(er => er.NotifyRoleRef)
-            .WithMany()
-            .HasForeignKey(er => er.NotifyRoleId)
-            .OnDelete(DeleteBehavior.SetNull);
+        // EscalationRule now uses comma-separated IDs instead of navigation properties
+        // No foreign key relationships needed for NotifyUserIds and NotifyRoleIds
 
         modelBuilder.Entity<EscalationLog>()
             .HasOne(el => el.Invoice)
@@ -295,6 +292,52 @@ public class ApplicationDbContext : DbContext
             .WithMany()
             .HasForeignKey(el => el.RecipientUserId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Escalation Rule junction tables
+        modelBuilder.Entity<EscalationRuleTriggerStatus>()
+            .HasKey(erts => new { erts.EscalationRuleId, erts.StatusId });
+
+        modelBuilder.Entity<EscalationRuleTriggerStatus>()
+            .HasOne(erts => erts.EscalationRule)
+            .WithMany(er => er.TriggerStatuses)
+            .HasForeignKey(erts => erts.EscalationRuleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EscalationRuleTriggerStatus>()
+            .HasOne(erts => erts.Status)
+            .WithMany()
+            .HasForeignKey(erts => erts.StatusId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EscalationRuleNotifyRole>()
+            .HasKey(ernr => new { ernr.EscalationRuleId, ernr.RoleId });
+
+        modelBuilder.Entity<EscalationRuleNotifyRole>()
+            .HasOne(ernr => ernr.EscalationRule)
+            .WithMany(er => er.NotifyRoles)
+            .HasForeignKey(ernr => ernr.EscalationRuleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EscalationRuleNotifyRole>()
+            .HasOne(ernr => ernr.Role)
+            .WithMany()
+            .HasForeignKey(ernr => ernr.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EscalationRuleNotifyUser>()
+            .HasKey(ernu => new { ernu.EscalationRuleId, ernu.UserId });
+
+        modelBuilder.Entity<EscalationRuleNotifyUser>()
+            .HasOne(ernu => ernu.EscalationRule)
+            .WithMany(er => er.NotifyUsers)
+            .HasForeignKey(ernu => ernu.EscalationRuleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EscalationRuleNotifyUser>()
+            .HasOne(ernu => ernu.User)
+            .WithMany()
+            .HasForeignKey(ernu => ernu.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<SystemConfig>()
             .HasOne(sc => sc.UpdatedByUser)
