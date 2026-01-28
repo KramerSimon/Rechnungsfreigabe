@@ -45,7 +45,7 @@ import { ApprovalWorkflowDialogComponent, ApprovalWorkflowDialogData } from './d
 import { EscalationRule, CreateEscalationRuleDto } from '../../core/models/escalation-rule.model';
 import { EscalationRuleService } from '../../core/services/escalation-rule.service';
 import { EscalationRuleDialogComponent, EscalationRuleDialogData } from './dialogs/escalation-rule-dialog.component';
-import { RolesApiService } from '../../core/services/roles-api.service';
+import { RoleService } from '../../core/services/role.service';
 import { StatusService } from '../../core/services/status.service';
 import { Status } from '../../core/models/status.model';
 import { StatusDisplayPipe } from '../../core/pipes/status-display.pipe';
@@ -212,7 +212,7 @@ export class MasterDataComponent implements OnInit {
     private userService: UserService,
     private approvalService: ApprovalService,
     private escalationRuleService: EscalationRuleService,
-    private rolesApi: RolesApiService,
+    private roleService: RoleService,
     private statusService: StatusService
   ) {}
 
@@ -493,12 +493,12 @@ export class MasterDataComponent implements OnInit {
   // Roles
   loadRoles(): void {
     this.loadingRoles = true;
-    this.rolesApi.getRoles().subscribe({
-      next: (roles) => {
+    this.roleService.getRoles().subscribe({
+      next: (roles: RoleDto[]) => {
         this.roles = roles;
         this.loadingRoles = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading roles:', error);
         this.loadingRoles = false;
         this.snackBar.open('Fehler beim Laden der Rollen', 'Schließen', {
@@ -514,14 +514,14 @@ export class MasterDataComponent implements OnInit {
       data: { mode: 'create' },
     });
 
-    dialogRef.afterClosed().subscribe((payload) => {
+    dialogRef.afterClosed().subscribe((payload: any) => {
       if (payload) {
-        this.rolesApi.createRole(payload).subscribe({
+        this.roleService.createRole(payload).subscribe({
           next: () => {
             this.snackBar.open('Rolle erstellt', 'Schließen', { duration: 3000 });
             this.loadRoles();
           },
-          error: (error) => {
+          error: (error: any) => {
             console.error('Error creating role:', error);
             this.snackBar.open('Fehler beim Erstellen der Rolle', 'Schließen', {
               duration: 3000,
@@ -541,14 +541,14 @@ export class MasterDataComponent implements OnInit {
       data: { mode: 'edit', role },
     });
 
-    dialogRef.afterClosed().subscribe((payload) => {
+    dialogRef.afterClosed().subscribe((payload: any) => {
       if (payload) {
-        this.rolesApi.updateRole(role.id, payload).subscribe({
+        this.roleService.updateRole(role.id, payload).subscribe({
           next: () => {
             this.snackBar.open('Rolle aktualisiert', 'Schließen', { duration: 3000 });
             this.loadRoles();
           },
-          error: (error) => {
+          error: (error: any) => {
             console.error('Error updating role:', error);
             this.snackBar.open('Fehler beim Aktualisieren der Rolle', 'Schließen', {
               duration: 3000,
@@ -571,12 +571,12 @@ export class MasterDataComponent implements OnInit {
       return;
     }
 
-    this.rolesApi.deleteRole(role.id).subscribe({
+    this.roleService.deleteRole(role.id).subscribe({
       next: () => {
         this.snackBar.open('Rolle gelöscht', 'Schließen', { duration: 3000 });
         this.loadRoles();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error deleting role:', error);
         this.snackBar.open('Fehler beim Löschen der Rolle', 'Schließen', {
           duration: 3000,

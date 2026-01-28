@@ -56,7 +56,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     // Redirect zum rollenbasierten Dashboard
-    this.roleService.getCurrentUserDashboardRoute().subscribe(route => {
+    this.roleService.getCurrentUserDashboardRoute().subscribe((route: string) => {
       this.router.navigate([route]);
     });
   }
