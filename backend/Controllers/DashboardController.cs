@@ -1,7 +1,8 @@
-ï»¿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -9,10 +10,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 // [Authorize] // Temporarily disabled for testing
 public class DashboardController : ControllerBase
 {
-    private readonly IInvoiceService _invoiceService;
+    private readonly IInvoiceService invoiceService;
     public DashboardController(IInvoiceService invoiceService)
     {
-        _invoiceService = invoiceService;
+        this.invoiceService = invoiceService;
         }
 
     /// <summary>
@@ -24,13 +25,13 @@ public class DashboardController : ControllerBase
         try
         {
             // Berechne die echte Auto-Approval-Rate aus der Datenbank
-            var autoApprovalRate = await _invoiceService.GetAutoApprovalRateAsync();
-            var totalInvoicesThisMonth = await _invoiceService.GetInvoiceCountThisMonthAsync();
-            var averageProcessingTime = await _invoiceService.GetAverageProcessingTimeAsync();
+            var autoApprovalRate = await invoiceService.GetAutoApprovalRateAsync();
+            var totalInvoicesThisMonth = await invoiceService.GetInvoiceCountThisMonthAsync();
+            var averageProcessingTime = await invoiceService.GetAverageProcessingTimeAsync();
 
             var systemStatus = new SystemStatusDto
             {
-                ServicesActive = true, // KÃ¶nnte spÃ¤ter durch echte GesundheitsprÃ¼fungen ersetzt werden
+                ServicesActive = true, // Könnte später durch echte Gesundheitsprüfungen ersetzt werden
                 AutoApprovalRate = Math.Round(autoApprovalRate, 1),
                 LastUpdate = DateTime.UtcNow,
                 TotalInvoicesThisMonth = totalInvoicesThisMonth,
@@ -80,10 +81,10 @@ public class DashboardController : ControllerBase
     {
         try
         {
-            var autoApprovalRate = await _invoiceService.GetAutoApprovalRateAsync();
-            var rejectedStats = await _invoiceService.GetRejectedInvoiceStatsAsync();
-            var readyForPaymentStats = await _invoiceService.GetReadyForPaymentStatsAsync();
-            var openVolumeAmount = await _invoiceService.GetOpenVolumeAmountAsync();
+            var autoApprovalRate = await invoiceService.GetAutoApprovalRateAsync();
+            var rejectedStats = await invoiceService.GetRejectedInvoiceStatsAsync();
+            var readyForPaymentStats = await invoiceService.GetReadyForPaymentStatsAsync();
+            var openVolumeAmount = await invoiceService.GetOpenVolumeAmountAsync();
 
             var overview = new AccountingOverviewDto
             {
@@ -105,7 +106,7 @@ public class DashboardController : ControllerBase
     }
 }
 
-// DTOs fÃ¼r Dashboard
+// DTOs für Dashboard
 public class SystemStatusDto
 {
     public bool ServicesActive { get; set; }

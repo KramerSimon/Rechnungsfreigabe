@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 using System.Security.Claims;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -11,12 +12,12 @@ namespace RechnungsfreigabeAPI.Controllers;
 [Authorize]
 public class InvoicesController : ControllerBase
 {
-    private readonly IInvoiceService _invoiceService;
-    private readonly IUserService _userService;
+    private readonly IInvoiceService invoiceService;
+    private readonly IUserService userService;
     public InvoicesController(IInvoiceService invoiceService, IUserService userService)
     {
-        _invoiceService = invoiceService;
-        _userService = userService;
+        this.invoiceService = invoiceService;
+        this.userService = userService;
         }
 
     /// <summary>
@@ -28,8 +29,8 @@ public class InvoicesController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var userPermissions = await _userService.GetUserPermissionsAsync(userId);
-            var result = await _invoiceService.GetInvoicesPagedAsync(pageRequest, userId, userPermissions);
+            var userPermissions = await userService.GetUserPermissionsAsync(userId);
+            var result = await invoiceService.GetInvoicesPagedAsync(pageRequest, userId, userPermissions);
             return Ok(result);
         }
         catch (Exception)
@@ -47,7 +48,7 @@ public class InvoicesController : ControllerBase
     {
         try
         {
-            var result = await _invoiceService.GetAllInvoicesPagedAsync(pageRequest);
+            var result = await invoiceService.GetAllInvoicesPagedAsync(pageRequest);
             return Ok(result);
         }
         catch (Exception)
@@ -66,8 +67,8 @@ public class InvoicesController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var userPermissions = await _userService.GetUserPermissionsAsync(userId);
-            var invoice = await _invoiceService.GetInvoiceByIdAsync(id, userId, userPermissions);
+            var userPermissions = await userService.GetUserPermissionsAsync(userId);
+            var invoice = await invoiceService.GetInvoiceByIdAsync(id, userId, userPermissions);
             
             if (invoice == null)
             {
@@ -97,7 +98,7 @@ public class InvoicesController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
-            var invoice = await _invoiceService.CreateInvoiceAsync(createInvoiceDto, userId);
+            var invoice = await invoiceService.CreateInvoiceAsync(createInvoiceDto, userId);
             
             return CreatedAtAction(nameof(GetInvoice), new { id = invoice.Id }, invoice);
         }
@@ -122,7 +123,7 @@ public class InvoicesController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
-            var invoice = await _invoiceService.UpdateInvoiceAsync(id, updateInvoiceDto, userId);
+            var invoice = await invoiceService.UpdateInvoiceAsync(id, updateInvoiceDto, userId);
             
             if (invoice == null)
             {
@@ -146,7 +147,7 @@ public class InvoicesController : ControllerBase
     {
         try
         {
-            var success = await _invoiceService.DeleteInvoiceAsync(id);
+            var success = await invoiceService.DeleteInvoiceAsync(id);
             
             if (!success)
             {
@@ -170,7 +171,7 @@ public class InvoicesController : ControllerBase
     {
         try
         {
-            var stats = await _invoiceService.GetDashboardStatsAsync();
+            var stats = await invoiceService.GetDashboardStatsAsync();
             return Ok(stats);
         }
         catch (Exception)
@@ -189,7 +190,7 @@ public class InvoicesController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var invoices = await _invoiceService.GetPendingApprovalsAsync(userId);
+            var invoices = await invoiceService.GetPendingApprovalsAsync(userId);
             return Ok(invoices);
         }
         catch (Exception)
@@ -215,8 +216,8 @@ public class InvoicesController : ControllerBase
             var userId = GetCurrentUserId();
 
             // Pre-check: Block approval when required data is missing
-            var userPermissions = await _userService.GetUserPermissionsAsync(userId);
-            var invoice = await _invoiceService.GetInvoiceByIdAsync(id, userId, userPermissions);
+            var userPermissions = await userService.GetUserPermissionsAsync(userId);
+            var invoice = await invoiceService.GetInvoiceByIdAsync(id, userId, userPermissions);
             if (invoice == null)
             {
                 return NotFound(new { message = $"Invoice with ID {id} not found" });
@@ -226,7 +227,7 @@ public class InvoicesController : ControllerBase
                 return BadRequest(new { message = "Rechnung kann nicht freigegeben werden: fehlende Daten (Kostenstelle und/oder Projekt)." });
             }
 
-            var success = await _invoiceService.ApproveInvoiceAsync(id, userId, approveDto);
+            var success = await invoiceService.ApproveInvoiceAsync(id, userId, approveDto);
             
             if (!success)
             {
@@ -256,7 +257,7 @@ public class InvoicesController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
-            var invoice = await _invoiceService.UpdateInvoiceStatusAsync(id, status, userId);
+            var invoice = await invoiceService.UpdateInvoiceStatusAsync(id, status, userId);
             
             if (invoice == null)
             {

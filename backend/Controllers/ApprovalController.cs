@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.Services;
 using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Data;
@@ -6,6 +6,7 @@ using RechnungsfreigabeAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -13,10 +14,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 [Authorize]
 public class ApprovalController : ControllerBase
 {
-    private readonly IApprovalService _approvalService;
-    private readonly IInvoiceService _invoiceService;
-    private readonly INotificationService _notificationService;
-    private readonly ApplicationDbContext _context;
+    private readonly IApprovalService approvalService;
+    private readonly IInvoiceService invoiceService;
+    private readonly INotificationService notificationService;
+    private readonly ApplicationDbContext context;
 
     public ApprovalController(
         IApprovalService approvalService,
@@ -24,10 +25,10 @@ public class ApprovalController : ControllerBase
         INotificationService notificationService,
         ApplicationDbContext context)
     {
-        _approvalService = approvalService;
-        _invoiceService = invoiceService;
-        _notificationService = notificationService;
-        _context = context;
+        this.approvalService = approvalService;
+        this.invoiceService = invoiceService;
+        this.notificationService = notificationService;
+        this.context = context;
     }
 
     /// <summary>
@@ -39,7 +40,7 @@ public class ApprovalController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var approvals = await _approvalService.GetPendingApprovalsAsync(userId);
+            var approvals = await approvalService.GetPendingApprovalsAsync(userId);
             return Ok(approvals);
         }
         catch (Exception)
@@ -58,7 +59,7 @@ public class ApprovalController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var success = await _approvalService.ApproveAsync(approvalId, userId, request.Comments);
+            var success = await approvalService.ApproveAsync(approvalId, userId, request.Comments);
             
             if (!success)
             {
@@ -66,10 +67,10 @@ public class ApprovalController : ControllerBase
             }
 
             // Get invoice ID for notification
-            var invoiceId = await _approvalService.GetInvoiceIdFromApprovalAsync(approvalId);
+            var invoiceId = await approvalService.GetInvoiceIdFromApprovalAsync(approvalId);
             if (invoiceId > 0)
             {
-                await _notificationService.NotifyApprovalStatusAsync(invoiceId, "approved");
+                await notificationService.NotifyApprovalStatusAsync(invoiceId, "approved");
             }
 
             return Ok(new { message = "Invoice approved successfully" });
@@ -90,7 +91,7 @@ public class ApprovalController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var success = await _approvalService.RejectAsync(approvalId, userId, request.Comments);
+            var success = await approvalService.RejectAsync(approvalId, userId, request.Comments);
             
             if (!success)
             {
@@ -98,10 +99,10 @@ public class ApprovalController : ControllerBase
             }
 
             // Get invoice ID for notification
-            var invoiceId = await _approvalService.GetInvoiceIdFromApprovalAsync(approvalId);
+            var invoiceId = await approvalService.GetInvoiceIdFromApprovalAsync(approvalId);
             if (invoiceId > 0)
             {
-                await _notificationService.NotifyApprovalStatusAsync(invoiceId, "rejected");
+                await notificationService.NotifyApprovalStatusAsync(invoiceId, "rejected");
             }
 
             return Ok(new { message = "Invoice rejected successfully" });
@@ -122,7 +123,7 @@ public class ApprovalController : ControllerBase
     {
         try
         {
-            var rules = await _approvalService.GetActiveRulesAsync();
+            var rules = await approvalService.GetActiveRulesAsync();
             return Ok(rules);
         }
         catch (Exception ex)
@@ -142,7 +143,7 @@ public class ApprovalController : ControllerBase
     {
         try
         {
-            var workflows = await _approvalService.GetAllWorkflowsAsync();
+            var workflows = await approvalService.GetAllWorkflowsAsync();
             return Ok(workflows);
         }
         catch (Exception)
@@ -162,8 +163,8 @@ public class ApprovalController : ControllerBase
         try
         {
             // Basic validation
-            var invoice = await _context.Invoices.FindAsync(dto.InvoiceId);
-            var approver = await _context.Users.FindAsync(dto.ApproverId);
+            var invoice = await context.Invoices.FindAsync(dto.InvoiceId);
+            var approver = await context.Users.FindAsync(dto.ApproverId);
             if (invoice == null || approver == null)
             {
                 return BadRequest(new { message = "Invalid invoice or approver" });
@@ -174,7 +175,7 @@ public class ApprovalController : ControllerBase
             int? statusId = null;
             if (!string.IsNullOrWhiteSpace(dto.Status))
             {
-                statusId = await _context.Statuses
+                statusId = await context.Statuses
                     .Where(s => s.Code == dto.Status && s.EntityType == EntityTypes.ApprovalWorkflow)
                     .Select(s => (int?)s.Id)
                     .FirstOrDefaultAsync();
@@ -186,7 +187,7 @@ public class ApprovalController : ControllerBase
             else
             {
                 // Default to Pending status
-                statusId = await _context.Statuses
+                statusId = await context.Statuses
                     .Where(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && s.EntityType == EntityTypes.ApprovalWorkflow)
                     .Select(s => (int?)s.Id)
                     .FirstOrDefaultAsync();
@@ -204,15 +205,15 @@ public class ApprovalController : ControllerBase
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.ApprovalWorkflows.Add(workflow);
-            await _context.SaveChangesAsync();
+            context.ApprovalWorkflows.Add(workflow);
+            await context.SaveChangesAsync();
 
             // Send notification to approver if workflow is pending (duplicate-safe)
-            var pendingStatus = await _context.Statuses
+            var pendingStatus = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && s.EntityType == EntityTypes.ApprovalWorkflow);
             if (statusId == pendingStatus?.Id)
             {
-                await _notificationService.EnsureApprovalNotificationForApproverAsync(dto.InvoiceId, dto.ApproverId);
+                await notificationService.EnsureApprovalNotificationForApproverAsync(dto.InvoiceId, dto.ApproverId);
             }
 
             var result = new ApprovalWorkflowDto
@@ -248,7 +249,7 @@ public class ApprovalController : ControllerBase
     {
         try
         {
-            var workflow = await _context.ApprovalWorkflows.FindAsync(workflowId);
+            var workflow = await context.ApprovalWorkflows.FindAsync(workflowId);
             if (workflow == null)
             {
                 return NotFound(new { message = "Approval workflow not found" });
@@ -256,7 +257,7 @@ public class ApprovalController : ControllerBase
 
             if (dto.InvoiceId.HasValue)
             {
-                var invoiceExists = await _context.Invoices.FindAsync(dto.InvoiceId.Value) != null;
+                var invoiceExists = await context.Invoices.FindAsync(dto.InvoiceId.Value) != null;
                 if (!invoiceExists) return BadRequest(new { message = "Invalid invoice" });
                 workflow.InvoiceId = dto.InvoiceId.Value;
             }
@@ -273,7 +274,7 @@ public class ApprovalController : ControllerBase
 
             if (dto.ApproverId.HasValue)
             {
-                var approverExists = await _context.Users.FindAsync(dto.ApproverId.Value) != null;
+                var approverExists = await context.Users.FindAsync(dto.ApproverId.Value) != null;
                 if (!approverExists) return BadRequest(new { message = "Invalid approver" });
                 workflow.ApproverId = dto.ApproverId.Value;
             }
@@ -285,7 +286,7 @@ public class ApprovalController : ControllerBase
 
             if (!string.IsNullOrWhiteSpace(dto.Status))
             {
-                var statusId = await _context.Statuses
+                var statusId = await context.Statuses
                     .Where(s => s.Code == dto.Status && s.EntityType == EntityTypes.ApprovalWorkflow)
                     .Select(s => (int?)s.Id)
                     .FirstOrDefaultAsync();
@@ -304,10 +305,10 @@ public class ApprovalController : ControllerBase
                 workflow.Comments = dto.Comments;
             }
 
-            _context.ApprovalWorkflows.Update(workflow);
-            await _context.SaveChangesAsync();
+            context.ApprovalWorkflows.Update(workflow);
+            await context.SaveChangesAsync();
 
-            var approver = await _context.Users.FindAsync(workflow.ApproverId);
+            var approver = await context.Users.FindAsync(workflow.ApproverId);
             var result = new ApprovalWorkflowDto
             {
                 Id = workflow.Id,
@@ -341,7 +342,7 @@ public class ApprovalController : ControllerBase
     {
         try
         {
-            var success = await _approvalService.DeleteWorkflowAsync(workflowId);
+            var success = await approvalService.DeleteWorkflowAsync(workflowId);
             if (!success)
             {
                 return NotFound(new { message = "Approval workflow not found" });
@@ -371,7 +372,7 @@ public class ApprovalController : ControllerBase
                 return Unauthorized(new { message = "Missing or invalid user context" });
             }
 
-            var userExists = await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive);
+            var userExists = await context.Users.AnyAsync(u => u.Id == userId && u.IsActive);
             if (!userExists)
             {
                 return Unauthorized(new { message = "User does not exist or is inactive" });
@@ -410,7 +411,7 @@ public class ApprovalController : ControllerBase
                 CreatedBy = userId
             };
 
-            var createdRule = await _approvalService.CreateRuleAsync(rule);
+            var createdRule = await approvalService.CreateRuleAsync(rule);
             return CreatedAtAction(nameof(GetApprovalRules), new { id = createdRule.Id }, createdRule);
         }
         catch (Exception)
@@ -429,7 +430,7 @@ public class ApprovalController : ControllerBase
     {
         try
         {
-            var rule = await _context.ApprovalRules.FindAsync(ruleId);
+            var rule = await context.ApprovalRules.FindAsync(ruleId);
             if (rule == null)
             {
                 return NotFound(new { message = "Approval rule not found" });
@@ -452,8 +453,8 @@ public class ApprovalController : ControllerBase
             
             rule.UpdatedAt = DateTime.UtcNow;
 
-            _context.ApprovalRules.Update(rule);
-            await _context.SaveChangesAsync();
+            context.ApprovalRules.Update(rule);
+            await context.SaveChangesAsync();
 
             return Ok(rule);
         }
@@ -473,7 +474,7 @@ public class ApprovalController : ControllerBase
     {
         try
         {
-            var success = await _approvalService.DeleteRuleAsync(ruleId);
+            var success = await approvalService.DeleteRuleAsync(ruleId);
             if (!success)
             {
                 return NotFound(new { message = "Approval rule not found" });

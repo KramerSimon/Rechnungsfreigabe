@@ -1,18 +1,19 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IAuthService authService;
     public AuthController(IAuthService authService)
     {
-        _authService = authService;
+        this.authService = authService;
         }
 
     /// <summary>
@@ -28,7 +29,7 @@ public class AuthController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var result = await _authService.LoginAsync(loginRequest);
+            var result = await authService.LoginAsync(loginRequest);
             
             if (result == null)
             {
@@ -60,7 +61,7 @@ public class AuthController : ControllerBase
                 return Unauthorized();
             }
 
-            var user = await _authService.GetCurrentUserAsync(token);
+            var user = await authService.GetCurrentUserAsync(token);
             
             if (user == null)
             {
@@ -84,7 +85,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var isValid = await _authService.ValidateTokenAsync(token);
+            var isValid = await authService.ValidateTokenAsync(token);
             return Ok(new { valid = isValid });
         }
         catch (Exception)
@@ -114,13 +115,13 @@ public class AuthController : ControllerBase
                 return Unauthorized();
             }
 
-            var user = await _authService.GetCurrentUserAsync(token);
+            var user = await authService.GetCurrentUserAsync(token);
             if (user == null)
             {
                 return Unauthorized();
             }
 
-            var success = await _authService.ChangePasswordAsync(user.Id, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
+            var success = await authService.ChangePasswordAsync(user.Id, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
             
             if (success)
             {
@@ -150,7 +151,7 @@ public class AuthController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var success = await _authService.ResetPasswordAsync(resetPasswordDto.Username, resetPasswordDto.NewPassword);
+            var success = await authService.ResetPasswordAsync(resetPasswordDto.Username, resetPasswordDto.NewPassword);
             
             if (success)
             {

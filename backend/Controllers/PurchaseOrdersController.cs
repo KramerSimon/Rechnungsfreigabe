@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 using System.Security.Claims;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -11,11 +12,11 @@ namespace RechnungsfreigabeAPI.Controllers;
 // [Authorize] // Temporarily disabled for testing
 public class PurchaseOrdersController : ControllerBase
 {
-    private readonly IPurchaseOrderService _purchaseOrderService;
+    private readonly IPurchaseOrderService purchaseOrderService;
     public PurchaseOrdersController(
         IPurchaseOrderService purchaseOrderService)
     {
-        _purchaseOrderService = purchaseOrderService;
+        this.purchaseOrderService = purchaseOrderService;
         }
 
     /// <summary>
@@ -26,7 +27,7 @@ public class PurchaseOrdersController : ControllerBase
     {
         try
         {
-            var purchaseOrders = await _purchaseOrderService.GetAllPurchaseOrdersAsync();
+            var purchaseOrders = await purchaseOrderService.GetAllPurchaseOrdersAsync();
             return Ok(purchaseOrders);
         }
         catch (Exception)
@@ -44,7 +45,7 @@ public class PurchaseOrdersController : ControllerBase
     {
         try
         {
-            var purchaseOrder = await _purchaseOrderService.GetPurchaseOrderByIdAsync(id);
+            var purchaseOrder = await purchaseOrderService.GetPurchaseOrderByIdAsync(id);
 
             if (purchaseOrder == null)
             {
@@ -74,7 +75,7 @@ public class PurchaseOrdersController : ControllerBase
             }
 
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
-            var purchaseOrder = await _purchaseOrderService.CreatePurchaseOrderAsync(createDto, userId);
+            var purchaseOrder = await purchaseOrderService.CreatePurchaseOrderAsync(createDto, userId);
 
             return CreatedAtAction(nameof(GetPurchaseOrder), new { id = purchaseOrder.Id }, purchaseOrder);
         }

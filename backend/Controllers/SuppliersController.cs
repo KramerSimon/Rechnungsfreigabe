@@ -1,18 +1,19 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/suppliers")]
 public class SuppliersController : ControllerBase
 {
-    private readonly ISupplierService _supplierService;
+    private readonly ISupplierService supplierService;
     public SuppliersController(ISupplierService supplierService)
     {
-        _supplierService = supplierService;
+        this.supplierService = supplierService;
         }
 
     /// <summary>
@@ -24,7 +25,7 @@ public class SuppliersController : ControllerBase
     {
         try
         {
-            var suppliers = await _supplierService.GetAllSuppliersAsync();
+            var suppliers = await supplierService.GetAllSuppliersAsync();
             return Ok(suppliers);
         }
         catch (Exception)
@@ -43,7 +44,7 @@ public class SuppliersController : ControllerBase
     {
         try
         {
-            var result = await _supplierService.GetSuppliersPagedAsync(pageRequest);
+            var result = await supplierService.GetSuppliersPagedAsync(pageRequest);
             return Ok(result);
         }
         catch (Exception)
@@ -62,7 +63,7 @@ public class SuppliersController : ControllerBase
     {
         try
         {
-            var supplier = await _supplierService.GetSupplierByIdAsync(id);
+            var supplier = await supplierService.GetSupplierByIdAsync(id);
             
             if (supplier == null)
             {
@@ -91,7 +92,7 @@ public class SuppliersController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var supplier = await _supplierService.CreateSupplierAsync(createSupplierDto);
+            var supplier = await supplierService.CreateSupplierAsync(createSupplierDto);
             
             return CreatedAtAction(nameof(GetSupplier), new { id = supplier.Id }, supplier);
         }
@@ -115,7 +116,7 @@ public class SuppliersController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var supplier = await _supplierService.UpdateSupplierAsync(id, updateSupplierDto);
+            var supplier = await supplierService.UpdateSupplierAsync(id, updateSupplierDto);
             
             if (supplier == null)
             {
@@ -139,7 +140,7 @@ public class SuppliersController : ControllerBase
     {
         try
         {
-            var success = await _supplierService.DeleteSupplierAsync(id);
+            var success = await supplierService.DeleteSupplierAsync(id);
             
             if (!success)
             {

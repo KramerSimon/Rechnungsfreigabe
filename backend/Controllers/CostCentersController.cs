@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -10,10 +11,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 // [Authorize] // Temporarily disabled for testing
 public class CostCentersController : ControllerBase
 {
-    private readonly ICostCenterService _costCenterService;
+    private readonly ICostCenterService costCenterService;
     public CostCentersController(ICostCenterService costCenterService)
     {
-        _costCenterService = costCenterService;
+        this.costCenterService = costCenterService;
         }
 
     /// <summary>
@@ -24,7 +25,7 @@ public class CostCentersController : ControllerBase
     {
         try
         {
-            var costCenters = await _costCenterService.GetAllCostCentersAsync();
+            var costCenters = await costCenterService.GetAllCostCentersAsync();
             return Ok(costCenters);
         }
         catch (Exception)
@@ -42,7 +43,7 @@ public class CostCentersController : ControllerBase
     {
         try
         {
-            var costCenter = await _costCenterService.GetCostCenterByIdAsync(id);
+            var costCenter = await costCenterService.GetCostCenterByIdAsync(id);
             
             if (costCenter == null)
             {
@@ -66,7 +67,7 @@ public class CostCentersController : ControllerBase
     {
         try
         {
-            var projects = await _costCenterService.GetCostCenterProjectsAsync(id);
+            var projects = await costCenterService.GetCostCenterProjectsAsync(id);
             return Ok(projects);
         }
         catch (Exception)
@@ -84,7 +85,7 @@ public class CostCentersController : ControllerBase
     {
         try
         {
-            var allProjects = await _costCenterService.GetAllProjectsAsync();
+            var allProjects = await costCenterService.GetAllProjectsAsync();
             return Ok(allProjects);
         }
         catch (Exception)
@@ -110,7 +111,7 @@ public class CostCentersController : ControllerBase
             // Ensure the cost center ID matches
             createProjectDto.CostCenterId = costCenterId;
 
-            var project = await _costCenterService.CreateProjectAsync(createProjectDto);
+            var project = await costCenterService.CreateProjectAsync(createProjectDto);
             
             return Created($"/api/costcenters/{costCenterId}/projects/{project.Id}", project);
         }
@@ -134,7 +135,7 @@ public class CostCentersController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var costCenter = await _costCenterService.CreateCostCenterAsync(createCostCenterDto);
+            var costCenter = await costCenterService.CreateCostCenterAsync(createCostCenterDto);
             
             return CreatedAtAction(nameof(GetCostCenter), new { id = costCenter.Id }, costCenter);
         }
@@ -158,7 +159,7 @@ public class CostCentersController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var costCenter = await _costCenterService.UpdateCostCenterAsync(id, updateCostCenterDto);
+            var costCenter = await costCenterService.UpdateCostCenterAsync(id, updateCostCenterDto);
             
             if (costCenter == null)
             {
@@ -182,7 +183,7 @@ public class CostCentersController : ControllerBase
     {
         try
         {
-            var success = await _costCenterService.DeleteCostCenterAsync(id);
+            var success = await costCenterService.DeleteCostCenterAsync(id);
             
             if (!success)
             {

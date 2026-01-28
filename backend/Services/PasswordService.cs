@@ -1,21 +1,14 @@
-﻿using BC = BCrypt.Net.BCrypt;
+using BC = BCrypt.Net.BCrypt;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface IPasswordService
-{
-    string HashPassword(string password);
-    bool VerifyPassword(string password, string hash);
-    bool IsPasswordValid(string password);
-    string GenerateRandomPassword(int length = 12);
-}
 
 public class PasswordService : IPasswordService
 {
-    private readonly IConfiguration _configuration;
+    private readonly IConfiguration configuration;
     public PasswordService(IConfiguration configuration)
     {
-        _configuration = configuration;
+        this.configuration = configuration;
         }
 
     public string HashPassword(string password)

@@ -3,17 +3,18 @@ using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Models;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/statuses")]
 public class StatusesController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext context;
 
     public StatusesController(ApplicationDbContext context)
     {
-        _context = context;
+        this.context = context;
     }
 
     /// <summary>
@@ -23,7 +24,7 @@ public class StatusesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Status>>> GetStatuses()
     {
-        var statuses = await _context.Statuses
+        var statuses = await context.Statuses
             .Where(s => s.IsActive)
             .OrderBy(s => s.EntityType)
             .ThenBy(s => s.SortOrder)
@@ -40,7 +41,7 @@ public class StatusesController : ControllerBase
     [HttpGet("by-type/{entityType}")]
     public async Task<ActionResult<IEnumerable<Status>>> GetStatusesByType(string entityType)
     {
-        var statuses = await _context.Statuses
+        var statuses = await context.Statuses
             .Where(s => s.EntityType == entityType && s.IsActive)
             .OrderBy(s => s.SortOrder)
             .ToListAsync();
@@ -60,7 +61,7 @@ public class StatusesController : ControllerBase
     [HttpGet("{entityType}/{code}")]
     public async Task<ActionResult<Status>> GetStatusByCode(string entityType, string code)
     {
-        var status = await _context.Statuses
+        var status = await context.Statuses
             .FirstOrDefaultAsync(s => s.EntityType == entityType && s.Code == code && s.IsActive);
 
         if (status == null)

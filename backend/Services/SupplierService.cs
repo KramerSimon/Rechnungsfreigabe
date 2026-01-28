@@ -1,31 +1,22 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface ISupplierService
-{
-    Task<IEnumerable<SupplierDto>> GetAllSuppliersAsync();
-    Task<SupplierDto?> GetSupplierByIdAsync(int id);
-    Task<SupplierDto> CreateSupplierAsync(CreateSupplierDto createSupplierDto);
-    Task<SupplierDto?> UpdateSupplierAsync(int id, CreateSupplierDto updateSupplierDto);
-    Task<bool> DeleteSupplierAsync(int id);
-    Task<PagedResult<SupplierDto>> GetSuppliersPagedAsync(PageRequest pageRequest);
-}
 
 public class SupplierService : ISupplierService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext context;
     public SupplierService(ApplicationDbContext context)
     {
-        _context = context;
+        this.context = context;
         }
 
     public async Task<IEnumerable<SupplierDto>> GetAllSuppliersAsync()
     {
-        var suppliers = await _context.Suppliers
+        var suppliers = await context.Suppliers
             .OrderBy(s => s.Name)
             .ToListAsync();
 
@@ -34,7 +25,7 @@ public class SupplierService : ISupplierService
 
     public async Task<SupplierDto?> GetSupplierByIdAsync(int id)
     {
-        var supplier = await _context.Suppliers.FindAsync(id);
+        var supplier = await context.Suppliers.FindAsync(id);
         return supplier != null ? MapToDto(supplier) : null;
     }
 
@@ -64,8 +55,8 @@ public class SupplierService : ISupplierService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.Suppliers.Add(supplier);
-            await _context.SaveChangesAsync();
+            context.Suppliers.Add(supplier);
+            await context.SaveChangesAsync();
 
             return MapToDto(supplier);
         }
@@ -80,7 +71,7 @@ public class SupplierService : ISupplierService
     {
         try
         {
-            var supplier = await _context.Suppliers.FindAsync(id);
+            var supplier = await context.Suppliers.FindAsync(id);
             if (supplier == null) return null;
 
             supplier.Name = updateSupplierDto.Name;
@@ -100,7 +91,7 @@ public class SupplierService : ISupplierService
             supplier.PaymentTermsDays = updateSupplierDto.PaymentTermsDays;
             supplier.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return MapToDto(supplier);
         }
@@ -115,12 +106,12 @@ public class SupplierService : ISupplierService
     {
         try
         {
-            var supplier = await _context.Suppliers.FindAsync(id);
+            var supplier = await context.Suppliers.FindAsync(id);
             if (supplier == null) return false;
 
             // Hard delete - completely remove the supplier
-            _context.Suppliers.Remove(supplier);
-            await _context.SaveChangesAsync();
+            context.Suppliers.Remove(supplier);
+            await context.SaveChangesAsync();
 
             return true;
         }
@@ -133,7 +124,7 @@ public class SupplierService : ISupplierService
 
     public async Task<PagedResult<SupplierDto>> GetSuppliersPagedAsync(PageRequest pageRequest)
     {
-        var query = _context.Suppliers.AsQueryable();
+        var query = context.Suppliers.AsQueryable();
 
         // Apply search filter
         if (!string.IsNullOrEmpty(pageRequest.SearchTerm))

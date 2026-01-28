@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -10,10 +11,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 // [Authorize] // Temporarily disabled for testing
 public class UsersController : ControllerBase
 {
-    private readonly IUserService _userService;
+    private readonly IUserService userService;
     public UsersController(IUserService userService)
     {
-        _userService = userService;
+        this.userService = userService;
         }
 
     /// <summary>
@@ -24,7 +25,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var users = await _userService.GetAllUsersAsync();
+            var users = await userService.GetAllUsersAsync();
             return Ok(users);
         }
         catch (Exception)
@@ -42,7 +43,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var result = await _userService.GetUsersPagedAsync(pageRequest);
+            var result = await userService.GetUsersPagedAsync(pageRequest);
             return Ok(result);
         }
         catch (Exception)
@@ -60,7 +61,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var user = await _userService.GetUserByIdAsync(id);
+            var user = await userService.GetUserByIdAsync(id);
             
             if (user == null)
             {
@@ -89,7 +90,7 @@ public class UsersController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var user = await _userService.CreateUserAsync(createUserDto);
+            var user = await userService.CreateUserAsync(createUserDto);
             
             return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
         }
@@ -113,7 +114,7 @@ public class UsersController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var user = await _userService.UpdateUserAsync(id, updateUserDto);
+            var user = await userService.UpdateUserAsync(id, updateUserDto);
             
             if (user == null)
             {
@@ -137,7 +138,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var success = await _userService.DeleteUserAsync(id);
+            var success = await userService.DeleteUserAsync(id);
             
             if (!success)
             {

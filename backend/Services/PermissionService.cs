@@ -3,29 +3,21 @@ using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface IPermissionService
-{
-    Task<List<PermissionDto>> GetAllPermissionsAsync();
-    Task<PermissionDto?> GetPermissionByIdAsync(int id);
-    Task<PermissionDto> CreatePermissionAsync(CreatePermissionDto dto);
-    Task<PermissionDto> UpdatePermissionAsync(int id, UpdatePermissionDto dto);
-    Task DeletePermissionAsync(int id);
-}
 
 public class PermissionService : IPermissionService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext context;
 
     public PermissionService(ApplicationDbContext context)
     {
-        _context = context;
+        this.context = context;
     }
 
     public async Task<List<PermissionDto>> GetAllPermissionsAsync()
     {
-        return await _context.Permissions
+        return await context.Permissions
             .OrderBy(p => p.Category)
             .ThenBy(p => p.Name)
             .Select(p => new PermissionDto
@@ -42,7 +34,7 @@ public class PermissionService : IPermissionService
 
     public async Task<PermissionDto?> GetPermissionByIdAsync(int id)
     {
-        var permission = await _context.Permissions.FindAsync(id);
+        var permission = await context.Permissions.FindAsync(id);
         if (permission == null) return null;
 
         return new PermissionDto
@@ -67,8 +59,8 @@ public class PermissionService : IPermissionService
             IsSystemPermission = dto.IsSystemPermission
         };
 
-        _context.Permissions.Add(permission);
-        await _context.SaveChangesAsync();
+        context.Permissions.Add(permission);
+        await context.SaveChangesAsync();
 
         return new PermissionDto
         {
@@ -83,7 +75,7 @@ public class PermissionService : IPermissionService
 
     public async Task<PermissionDto> UpdatePermissionAsync(int id, UpdatePermissionDto dto)
     {
-        var permission = await _context.Permissions.FindAsync(id);
+        var permission = await context.Permissions.FindAsync(id);
         if (permission == null)
             throw new KeyNotFoundException($"Permission with ID {id} not found");
 
@@ -94,7 +86,7 @@ public class PermissionService : IPermissionService
             if (dto.Category != null) permission.Category = dto.Category;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         return new PermissionDto
         {
@@ -109,14 +101,14 @@ public class PermissionService : IPermissionService
 
     public async Task DeletePermissionAsync(int id)
     {
-        var permission = await _context.Permissions.FindAsync(id);
+        var permission = await context.Permissions.FindAsync(id);
         if (permission == null)
             throw new KeyNotFoundException($"Permission with ID {id} not found");
 
         if (permission.IsSystemPermission)
             throw new InvalidOperationException("System permissions cannot be deleted");
 
-        _context.Permissions.Remove(permission);
-        await _context.SaveChangesAsync();
+        context.Permissions.Remove(permission);
+        await context.SaveChangesAsync();
     }
 }

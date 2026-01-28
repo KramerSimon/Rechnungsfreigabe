@@ -2,6 +2,7 @@ using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.IO;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
@@ -11,49 +12,44 @@ using System.Globalization;
 using Tesseract;
 using PDFtoImage;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface IPdfUploadService
-{
-    Task<InvoiceDto> UploadInvoicePdfAsync(IFormFile file, int? supplierId, string? purchaseOrderId, string? costCenterId, string? projectId, int userId);
-    Task<PurchaseOrderDto> UploadPurchaseOrderPdfAsync(IFormFile file, int? supplierId, string? costCenterId, string? projectId, int userId);
-    Task<byte[]> GetInvoicePdfAsync(int invoiceId);
-    Task<bool> DeleteInvoicePdfAsync(int invoiceId);
-    Task<PdfUploadStatusDto> GetUploadStatusAsync();
-}
 
 public class PdfUploadService : IPdfUploadService
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IInvoiceService _invoiceService;
-    private readonly string _uploadDirectory;
-    private readonly string _tessdataPath;
-    private readonly long _maxFileSize = 50 * 1024 * 1024; // 50 MB
-    private readonly string[] _allowedExtensions = { ".pdf" };
+    private readonly ApplicationDbContext context;
+    private readonly IInvoiceService invoiceService;
+    private readonly ILogger<PdfUploadService> logger;
+    private readonly string uploadDirectory;
+    private readonly string tessdataPath;
+    private readonly long maxFileSize = 50 * 1024 * 1024; // 50 MB
+    private readonly string[] allowedExtensions = { ".pdf" };
 
     public PdfUploadService(
         ApplicationDbContext context,
         IInvoiceService invoiceService,
-        IWebHostEnvironment webHostEnvironment)
+        IWebHostEnvironment webHostEnvironment,
+        ILogger<PdfUploadService> logger)
     {
-        _context = context;
-        _invoiceService = invoiceService;
-        _uploadDirectory = Path.Combine(webHostEnvironment.ContentRootPath, "uploads", "invoices");
-        _tessdataPath = Path.Combine(webHostEnvironment.ContentRootPath, "tessdata");
+        this.context = context;
+        this.invoiceService = invoiceService;
+        this.logger = logger;
+        uploadDirectory = Path.Combine(webHostEnvironment.ContentRootPath, "uploads", "invoices");
+        tessdataPath = Path.Combine(webHostEnvironment.ContentRootPath, "tessdata");
         
         // Stelle sicher, dass das Upload-Verzeichnis existiert
-        if (!Directory.Exists(_uploadDirectory))
+        if (!Directory.Exists(uploadDirectory))
         {
-            Directory.CreateDirectory(_uploadDirectory);
+            Directory.CreateDirectory(uploadDirectory);
         }
 
         // Stelle sicher, dass das Tessdata-Verzeichnis existiert
-        if (!Directory.Exists(_tessdataPath))
+        if (!Directory.Exists(tessdataPath))
         {
-            Directory.CreateDirectory(_tessdataPath);
-            // Console.WriteLine($"[OCR] Created tessdata directory at: {_tessdataPath}");
-            // Console.WriteLine($"[OCR] Please download language files from: https://github.com/tesseract-ocr/tessdata");
-            // Console.WriteLine($"[OCR] Required: deu.traineddata (German), ita.traineddata (Italian)");
+            Directory.CreateDirectory(tessdataPath);
+            logger.LogInformation("Created tessdata directory at: {TessdataPath}", tessdataPath);
+            logger.LogInformation("Please download language files from: https://github.com/tesseract-ocr/tessdata");
+            logger.LogInformation("Required: deu.traineddata (German), ita.traineddata (Italian)");
         }
     }
 
@@ -61,19 +57,19 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            // Console.WriteLine($"[PDF Upload] Starting upload for file: {file.FileName}, Size: {file.Length} bytes");
+            logger.LogInformation("[PDF Upload] Starting upload for file: {FileName}, Size: {Length} bytes", file.FileName, file.Length);
 
             // Validiere die Datei
             ValidateFile(file);
-            // Console.WriteLine($"[PDF Upload] File validation passed");
+            logger.LogInformation("[PDF Upload] File validation passed");
 
             // Validiere dass der User existiert
-            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            var userExists = await context.Users.AnyAsync(u => u.Id == userId);
             if (!userExists)
             {
                 throw new InvalidOperationException($"User with ID {userId} not found");
             }
-            // Console.WriteLine($"[PDF Upload] User {userId} validated");
+            logger.LogInformation("[PDF Upload] User {UserId} validated", userId);
 
             // Validiere dass Cost Center, Project und Purchase Order zusammenpassen
             await ValidateProjectPurchaseOrderRelationship(costCenterId, projectId, purchaseOrderId);
@@ -85,62 +81,62 @@ public class PdfUploadService : IPdfUploadService
                 await file.CopyToAsync(memoryStream);
                 pdfContent = memoryStream.ToArray();
             }
-            // Console.WriteLine($"[PDF Upload] PDF content loaded into memory: {pdfContent.Length} bytes");
+            logger.LogInformation("[PDF Upload] PDF content loaded into memory: {Length} bytes", pdfContent.Length);
 
             // Generiere eindeutigen Dateinamen
             var fileName = GenerateUniqueFileName(file.FileName);
-            // Console.WriteLine($"[PDF Upload] Generated unique filename: {fileName}");
+            logger.LogInformation("[PDF Upload] Generated unique filename: {FileName}", fileName);
 
             // Extrahiere Daten aus dem PDF
-            var tempPath = Path.Combine(_uploadDirectory, fileName);
+            var tempPath = Path.Combine(uploadDirectory, fileName);
             await using (var stream = new FileStream(tempPath, FileMode.Create))
             {
                 await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
             }
-            // Console.WriteLine($"[PDF Upload] Temporary file created at: {tempPath}");
+            logger.LogInformation("[PDF Upload] Temporary file created at: {TempPath}", tempPath);
 
             var pdfData = ExtractInvoiceDataFromPdf(tempPath);
-            // Console.WriteLine($"[PDF Upload] Data extracted - InvoiceNum: {pdfData.InvoiceNumber}, Total: {pdfData.TotalAmount}, Supplier: {pdfData.SupplierInfo?.Name}");
+            logger.LogInformation("[PDF Upload] Data extracted - InvoiceNum: {InvoiceNumber}, Total: {TotalAmount}, Supplier: {SupplierName}", pdfData.InvoiceNumber, pdfData.TotalAmount, pdfData.SupplierInfo?.Name);
 
             // Generiere Rechnungsnummer im Format FAT-{Nummer}-{Jahr}
             var invoiceNumber = await GenerateInvoiceNumberAsync();
-            // Console.WriteLine($"[PDF Upload] Generated invoice number: {invoiceNumber}");
+            logger.LogInformation("[PDF Upload] Generated invoice number: {InvoiceNumber}", invoiceNumber);
 
             // Finde oder erstelle Lieferant
             int finalSupplierId;
             if (supplierId.HasValue && supplierId.Value > 0)
             {
-                // Verwende die übergebene SupplierId
-                var supplier = await _context.Suppliers.FindAsync(supplierId.Value);
+                // Verwende die ï¿½bergebene SupplierId
+                var supplier = await context.Suppliers.FindAsync(supplierId.Value);
                 if (supplier == null)
                 {
-                    // Console.WriteLine($"[PDF Upload] ERROR: Supplier with ID {supplierId} not found");
+            logger.LogInformation("[PDF Upload] ERROR: Supplier with ID {SupplierId} not found", supplierId);
                     throw new InvalidOperationException($"Supplier with ID {supplierId} not found");
                 }
                 finalSupplierId = supplierId.Value;
-                // Console.WriteLine($"[PDF Upload] Using provided supplier ID: {finalSupplierId}");
+            logger.LogInformation("[PDF Upload] Using provided supplier ID: {FinalSupplierId}", finalSupplierId);
             }
             else
             {
                 // Extrahiere und erstelle/finde Lieferant aus PDF
                 finalSupplierId = await FindOrCreateSupplierAsync(pdfData.SupplierInfo, tempPath);
-                // Console.WriteLine($"[PDF Upload] Found/created supplier ID: {finalSupplierId}");
+            logger.LogInformation("[PDF Upload] Found/created supplier ID: {FinalSupplierId}", finalSupplierId);
             }
 
             // Validiere Purchase Order ID falls angegeben
             string? validatedPurchaseOrderId = null;
             if (!string.IsNullOrWhiteSpace(purchaseOrderId))
             {
-                var purchaseOrderExists = await _context.PurchaseOrders.AnyAsync(po => po.Id == purchaseOrderId);
+                var purchaseOrderExists = await context.PurchaseOrders.AnyAsync(po => po.Id == purchaseOrderId);
                 if (!purchaseOrderExists)
                 {
                     // Log warnung aber blockiere nicht - setze einfach null
-                    // Console.WriteLine($"[PDF Upload] Warning: Purchase Order '{purchaseOrderId}' not found, setting to null");
+            logger.LogInformation("[PDF Upload] Warning: Purchase Order '{PurchaseOrderId}' not found, setting to null", purchaseOrderId);
                 }
                 else
                 {
                     validatedPurchaseOrderId = purchaseOrderId;
-                    // Console.WriteLine($"[PDF Upload] Validated Purchase Order: {validatedPurchaseOrderId}");
+            logger.LogInformation("[PDF Upload] Validated Purchase Order: {ValidatedPurchaseOrderId}", validatedPurchaseOrderId);
                 }
             }
 
@@ -148,16 +144,16 @@ public class PdfUploadService : IPdfUploadService
             string? validatedCostCenterId = null;
             if (!string.IsNullOrWhiteSpace(costCenterId))
             {
-                var costCenterExists = await _context.CostCenters.AnyAsync(cc => cc.Id == costCenterId);
+                var costCenterExists = await context.CostCenters.AnyAsync(cc => cc.Id == costCenterId);
                 if (!costCenterExists)
                 {
                     // Log warnung aber blockiere nicht - setze einfach null
-                    // Console.WriteLine($"[PDF Upload] Warning: Cost Center '{costCenterId}' not found, setting to null");
+            logger.LogInformation("[PDF Upload] Warning: Cost Center '{CostCenterId}' not found, setting to null", costCenterId);
                 }
                 else
                 {
                     validatedCostCenterId = costCenterId;
-                    // Console.WriteLine($"[PDF Upload] Validated Cost Center: {validatedCostCenterId}");
+            logger.LogInformation("[PDF Upload] Validated Cost Center: {ValidatedCostCenterId}", validatedCostCenterId);
                 }
             }
 
@@ -179,13 +175,13 @@ public class PdfUploadService : IPdfUploadService
                 Description = pdfData.Description ?? $"PDF-Upload: {file.FileName}"
             };
 
-            // Console.WriteLine($"[PDF Upload] Creating invoice with data - Number: {createInvoiceDto.InvoiceNumber}, Total: {createInvoiceDto.TotalAmount}, Net: {createInvoiceDto.NetAmount}, Tax: {createInvoiceDto.TaxAmount}");
+            logger.LogInformation("[PDF Upload] Creating invoice with data - Number: {InvoiceNumber}, Total: {TotalAmount}, Net: {NetAmount}, Tax: {TaxAmount}", createInvoiceDto.InvoiceNumber, createInvoiceDto.TotalAmount, createInvoiceDto.NetAmount, createInvoiceDto.TaxAmount);
 
             InvoiceDto invoice;
             try
             {
-                invoice = await _invoiceService.CreateInvoiceAsync(createInvoiceDto, userId);
-                // Console.WriteLine($"[PDF Upload] Invoice created successfully with ID: {invoice.Id}");
+                invoice = await invoiceService.CreateInvoiceAsync(createInvoiceDto, userId);
+            logger.LogInformation("[PDF Upload] Invoice created successfully with ID: {InvoiceId}", invoice.Id);
             }
             catch (Exception ex)
             {
@@ -200,48 +196,48 @@ public class PdfUploadService : IPdfUploadService
                         fullMessage += $" | InnerInner: {ex.InnerException.InnerException.Message}";
                     }
                 }
-                // Console.WriteLine($"[PDF Upload] ERROR creating invoice: {fullMessage}");
+            logger.LogInformation("[PDF Upload] ERROR creating invoice: {FullMessage}", fullMessage);
                 throw new InvalidOperationException(fullMessage, ex);
             }
 
             // Speichere PDF-Content direkt in der Datenbank (kein dauerhaftes Filesystem mehr)
             try
             {
-                var invoiceDb = await _context.Invoices.FindAsync(invoice.Id);
+                var invoiceDb = await context.Invoices.FindAsync(invoice.Id);
                 if (invoiceDb != null)
                 {
                     invoiceDb.PdfContent = pdfContent;
                     invoiceDb.PdfFileSize = file.Length;
                     invoiceDb.OriginalFilename = file.FileName;
                     invoiceDb.PdfFilePath = null; // keine lokale Ablage mehr
-                    await _context.SaveChangesAsync();
-                    // Console.WriteLine($"[PDF Upload] PDF content saved to database for invoice {invoice.Id}");
+                    await context.SaveChangesAsync();
+            logger.LogInformation("[PDF Upload] PDF content saved to database for invoice {InvoiceId}", invoice.Id);
                 }
             }
             catch (Exception ex)
             {
-                // Console.WriteLine($"[PDF Upload] ERROR saving PDF content: {ex.Message}");
+            logger.LogInformation("[PDF Upload] ERROR saving PDF content: {Message}", ex.Message);
                 throw new InvalidOperationException($"Failed to save PDF content: {ex.Message}", ex);
             }
 
-            // Lösche die temporäre Datei
+            // Lï¿½sche die temporï¿½re Datei
             try
             {
                 System.IO.File.Delete(tempPath);
-                // Console.WriteLine($"[PDF Upload] Temporary file deleted: {tempPath}");
+            logger.LogInformation("[PDF Upload] Temporary file deleted: {TempPath}", tempPath);
             }
             catch (Exception)
             {
                 // Best-effort cleanup; ignore delete failures
             }
 
-            // Console.WriteLine($"[PDF Upload] Upload completed successfully for invoice {invoice.Id}");
+            logger.LogInformation("[PDF Upload] Upload completed successfully for invoice {InvoiceId}", invoice.Id);
             return invoice;
         }
         catch (Exception ex)
         {
-            // Console.WriteLine($"[PDF Upload] FATAL ERROR: {ex.Message}");
-            // Console.WriteLine($"[PDF Upload] Stack trace: {ex.StackTrace}");
+            logger.LogInformation("[PDF Upload] FATAL ERROR: {Message}", ex.Message);
+            logger.LogInformation("[PDF Upload] Stack trace: {StackTrace}", ex.StackTrace);
             throw;
         }
     }
@@ -250,19 +246,19 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            // Console.WriteLine($"[PO PDF Upload] Starting upload for file: {file.FileName}, Size: {file.Length} bytes");
+            logger.LogInformation("[PO PDF Upload] Starting upload for file: {FileName}, Size: {Length} bytes", file.FileName, file.Length);
 
             // Validiere die Datei
             ValidateFile(file);
-            // Console.WriteLine($"[PO PDF Upload] File validation passed");
+            logger.LogInformation("[PO PDF Upload] File validation passed");
 
             // Validiere dass der User existiert
-            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            var userExists = await context.Users.AnyAsync(u => u.Id == userId);
             if (!userExists)
             {
                 throw new InvalidOperationException($"User with ID {userId} not found");
             }
-            // Console.WriteLine($"[PO PDF Upload] User {userId} validated");
+            logger.LogInformation("[PO PDF Upload] User {UserId} validated", userId);
 
             // Lies die PDF-Datei in den Speicher
             byte[] pdfContent;
@@ -271,87 +267,87 @@ public class PdfUploadService : IPdfUploadService
                 await file.CopyToAsync(memoryStream);
                 pdfContent = memoryStream.ToArray();
             }
-            // Console.WriteLine($"[PO PDF Upload] PDF content loaded into memory: {pdfContent.Length} bytes");
+            logger.LogInformation("[PO PDF Upload] PDF content loaded into memory: {Length} bytes", pdfContent.Length);
 
             // Generiere eindeutigen Dateinamen
             var fileName = GenerateUniqueFileName(file.FileName);
-            // Console.WriteLine($"[PO PDF Upload] Generated unique filename: {fileName}");
+            logger.LogInformation("[PO PDF Upload] Generated unique filename: {FileName}", fileName);
 
             // Extrahiere Daten aus dem PDF
-            var tempPath = Path.Combine(_uploadDirectory, fileName);
+            var tempPath = Path.Combine(uploadDirectory, fileName);
             await using (var stream = new FileStream(tempPath, FileMode.Create))
             {
                 await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
             }
-            // Console.WriteLine($"[PO PDF Upload] Temporary file created at: {tempPath}");
+            logger.LogInformation("[PO PDF Upload] Temporary file created at: {TempPath}", tempPath);
 
             var pdfData = ExtractInvoiceDataFromPdf(tempPath);
-            // Console.WriteLine($"[PO PDF Upload] Data extracted - Total: {pdfData.TotalAmount}, Supplier: {pdfData.SupplierInfo?.Name}");
+            logger.LogInformation("[PO PDF Upload] Data extracted - Total: {TotalAmount}, Supplier: {SupplierName}", pdfData.TotalAmount, pdfData.SupplierInfo?.Name);
 
             // Generiere Purchase Order ID im Format PO-{Nummer}-{Jahr}
             var poId = await GeneratePurchaseOrderIdAsync();
-            // Console.WriteLine($"[PO PDF Upload] Generated PO ID: {poId}");
+            logger.LogInformation("[PO PDF Upload] Generated PO ID: {PoId}", poId);
 
             // Finde oder erstelle Lieferant
             int? finalSupplierId = null;
             if (supplierId.HasValue && supplierId.Value > 0)
             {
-                // Verwende die übergebene SupplierId
-                var supplier = await _context.Suppliers.FindAsync(supplierId.Value);
+                // Verwende die ï¿½bergebene SupplierId
+                var supplier = await context.Suppliers.FindAsync(supplierId.Value);
                 if (supplier == null)
                 {
-                    // Console.WriteLine($"[PO PDF Upload] ERROR: Supplier with ID {supplierId} not found");
+            logger.LogInformation("[PO PDF Upload] ERROR: Supplier with ID {SupplierId} not found", supplierId);
                     throw new InvalidOperationException($"Supplier with ID {supplierId} not found");
                 }
                 finalSupplierId = supplierId.Value;
-                // Console.WriteLine($"[PO PDF Upload] Using provided supplier ID: {finalSupplierId}");
+            logger.LogInformation("[PO PDF Upload] Using provided supplier ID: {FinalSupplierId}", finalSupplierId);
             }
             else if (pdfData.SupplierInfo != null)
             {
                 // Extrahiere und erstelle/finde Lieferant aus PDF
                 finalSupplierId = await FindOrCreateSupplierAsync(pdfData.SupplierInfo, tempPath);
-                // Console.WriteLine($"[PO PDF Upload] Found/created supplier ID: {finalSupplierId}");
+            logger.LogInformation("[PO PDF Upload] Found/created supplier ID: {FinalSupplierId}", finalSupplierId);
             }
 
             // Validiere Cost Center ID - REQUIRED
             if (string.IsNullOrWhiteSpace(costCenterId))
             {
-                // Console.WriteLine($"[PO PDF Upload] ERROR: Cost Center is required");
+            logger.LogInformation("[PO PDF Upload] ERROR: Cost Center is required");
                 throw new InvalidOperationException("Cost Center is required for purchase order uploads");
             }
 
-            var costCenterExists = await _context.CostCenters.AnyAsync(cc => cc.Id == costCenterId);
+            var costCenterExists = await context.CostCenters.AnyAsync(cc => cc.Id == costCenterId);
             if (!costCenterExists)
             {
-                // Console.WriteLine($"[PO PDF Upload] ERROR: Cost Center '{costCenterId}' not found");
+            logger.LogInformation("[PO PDF Upload] ERROR: Cost Center '{CostCenterId}' not found", costCenterId);
                 throw new InvalidOperationException($"Cost Center '{costCenterId}' not found");
             }
-            // Console.WriteLine($"[PO PDF Upload] Validated Cost Center: {costCenterId}");
+            logger.LogInformation("[PO PDF Upload] Validated Cost Center: {CostCenterId}", costCenterId);
 
             // Validiere Project ID - REQUIRED
             if (string.IsNullOrWhiteSpace(projectId))
             {
-                // Console.WriteLine($"[PO PDF Upload] ERROR: Project is required");
+            logger.LogInformation("[PO PDF Upload] ERROR: Project is required");
                 throw new InvalidOperationException("Project is required for purchase order uploads");
             }
 
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+            var project = await context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
             if (project == null)
             {
-                // Console.WriteLine($"[PO PDF Upload] ERROR: Project '{projectId}' not found");
+            logger.LogInformation("[PO PDF Upload] ERROR: Project '{ProjectId}' not found", projectId);
                 throw new InvalidOperationException($"Project '{projectId}' not found");
             }
 
             // Validate that project belongs to the selected cost center
             if (project.CostCenterId != costCenterId)
             {
-                // Console.WriteLine($"[PO PDF Upload] ERROR: Project '{projectId}' does not belong to Cost Center '{costCenterId}'. Project belongs to '{project.CostCenterId}'");
+            logger.LogInformation("[PO PDF Upload] ERROR: Project '{ProjectId}' does not belong to Cost Center '{CostCenterId}'. Project belongs to '{ProjectCostCenterId}'", projectId, costCenterId, project.CostCenterId);
                 throw new InvalidOperationException($"Project '{projectId}' does not belong to the selected Cost Center. The project belongs to Cost Center '{project.CostCenterId}'");
             }
-            // Console.WriteLine($"[PO PDF Upload] Validated Project: {projectId}, belongs to Cost Center: {costCenterId}");
+            logger.LogInformation("[PO PDF Upload] Validated Project: {ProjectId}, belongs to Cost Center: {CostCenterId}", projectId, costCenterId);
 
             // Erstelle Purchase Order mit extrahierten Daten
-            var offenStatus = await _context.Statuses
+            var offenStatus = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.PurchaseOrder.Offen && 
                                             s.EntityType == EntityTypes.PurchaseOrder);
             
@@ -373,26 +369,26 @@ public class PdfUploadService : IPdfUploadService
                 OriginalFilename = file.FileName
             };
 
-            // Console.WriteLine($"[PO PDF Upload] Creating purchase order - ID: {purchaseOrder.Id}, Total: {purchaseOrder.TotalAmount}");
+            logger.LogInformation("[PO PDF Upload] Creating purchase order - ID: {Id}, Total: {TotalAmount}", purchaseOrder.Id, purchaseOrder.TotalAmount);
 
-            _context.PurchaseOrders.Add(purchaseOrder);
-            await _context.SaveChangesAsync();
+            context.PurchaseOrders.Add(purchaseOrder);
+            await context.SaveChangesAsync();
 
-            // Console.WriteLine($"[PO PDF Upload] Purchase Order created successfully with ID: {purchaseOrder.Id}");
+            logger.LogInformation("[PO PDF Upload] Purchase Order created successfully with ID: {Id}", purchaseOrder.Id);
 
-            // Lösche die temporäre Datei
+            // Lï¿½sche die temporï¿½re Datei
             try
             {
                 System.IO.File.Delete(tempPath);
-                // Console.WriteLine($"[PO PDF Upload] Temporary file deleted: {tempPath}");
+            logger.LogInformation("[PO PDF Upload] Temporary file deleted: {TempPath}", tempPath);
             }
             catch (Exception)
             {
                 // Best-effort cleanup; ignore delete failures
             }
 
-            // Lade vollständige PO mit Navigations-Properties
-            var po = await _context.PurchaseOrders
+            // Lade vollstï¿½ndige PO mit Navigations-Properties
+            var po = await context.PurchaseOrders
                 .Include(p => p.Status)
                 .Include(p => p.CostCenter)
                 .Include(p => p.Project)
@@ -435,13 +431,13 @@ public class PdfUploadService : IPdfUploadService
                 ApprovedAt = po.ApprovedAt
             };
 
-            // Console.WriteLine($"[PO PDF Upload] Upload completed successfully for PO {poDto.Id}");
+            logger.LogInformation("[PO PDF Upload] Upload completed successfully for PO {PoId}", poDto.Id);
             return poDto;
         }
         catch (Exception ex)
         {
-            // Console.WriteLine($"[PO PDF Upload] FATAL ERROR: {ex.Message}");
-            // Console.WriteLine($"[PO PDF Upload] Stack trace: {ex.StackTrace}");
+            logger.LogInformation("[PO PDF Upload] FATAL ERROR: {Message}", ex.Message);
+            logger.LogInformation("[PO PDF Upload] Stack trace: {StackTrace}", ex.StackTrace);
             throw;
         }
     }
@@ -450,7 +446,7 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            var invoice = await _context.Invoices.FindAsync(invoiceId);
+            var invoice = await context.Invoices.FindAsync(invoiceId);
             if (invoice?.PdfContent == null || invoice.PdfContent.Length == 0)
             {
                 throw new FileNotFoundException($"PDF for invoice {invoiceId} not found in database");
@@ -468,18 +464,18 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            var invoice = await _context.Invoices.FindAsync(invoiceId);
+            var invoice = await context.Invoices.FindAsync(invoiceId);
             if (invoice == null)
             {
                 return false;
             }
 
-            // Entferne ausschließlich die DB-Inhalte
+            // Entferne ausschlieï¿½lich die DB-Inhalte
             invoice.PdfContent = null;
             invoice.PdfFilePath = null;
             invoice.PdfFileSize = null;
             invoice.OriginalFilename = null;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return true;
         }
@@ -493,12 +489,12 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            var totalInvoices = await _context.Invoices.CountAsync();
-            var invoicesWithPdf = await _context.Invoices
+            var totalInvoices = await context.Invoices.CountAsync();
+            var invoicesWithPdf = await context.Invoices
                 .Where(i => i.PdfContent != null && i.PdfContent.Length > 0)
                 .CountAsync();
             
-            var totalPdfSize = await _context.Invoices
+            var totalPdfSize = await context.Invoices
                 .Where(i => i.PdfFileSize.HasValue)
                 .SumAsync(i => i.PdfFileSize!.Value);
 
@@ -509,7 +505,7 @@ public class PdfUploadService : IPdfUploadService
                 TotalPdfSize = totalPdfSize,
                 DiskUsageBytes = 0,
                 UploadDirectory = "database",
-                MaxFileSize = _maxFileSize
+                MaxFileSize = maxFileSize
             };
         }
         catch (Exception)
@@ -522,7 +518,7 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            // Console.WriteLine($"[PDF Extract] Starting extraction from: {filePath}");
+            logger.LogInformation("[PDF Extract] Starting extraction from: {FilePath}", filePath);
             var extractedData = new ExtractedInvoiceData();
             string text = string.Empty;
             
@@ -537,20 +533,20 @@ public class PdfUploadService : IPdfUploadService
                     text += PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(i), strategy);
                 }
 
-                // Console.WriteLine($"[PDF Extract] Extracted text length: {text.Length} characters");
+            logger.LogInformation("[PDF Extract] Extracted text length: {Length} characters", text.Length);
                 
                 // Falls kein Text extrahiert wurde, versuche OCR
                 if (string.IsNullOrWhiteSpace(text))
                 {
-                    // Console.WriteLine($"[PDF Extract] No text found, trying OCR...");
+            logger.LogInformation("[PDF Extract] No text found, trying OCR...");
                     text = ExtractTextWithOcr(filePath);
-                    // Console.WriteLine($"[OCR] Extracted text length: {text.Length} characters");
+            logger.LogInformation("[OCR] Extracted text length: {TextLength} characters", text.Length);
                     
                     // Debug: Print first 500 characters to see what OCR extracted
                     if (text.Length > 0)
                     {
                         var preview = text.Length > 500 ? text.Substring(0, 500) : text;
-                        // Console.WriteLine($"[OCR] Text preview: {preview.Replace("\n", " | ").Replace("\r", "")}");
+            logger.LogInformation("[OCR] Text preview: {PreviewText}", preview.Replace("\n", " | ").Replace("\r", ""));
                     }
                 }
 
@@ -558,27 +554,27 @@ public class PdfUploadService : IPdfUploadService
                 {
                     // Extrahiere Rechnungsnummer
                     extractedData.InvoiceNumber = ExtractInvoiceNumberFromText(text);
-                    // Console.WriteLine($"[PDF Extract] Invoice Number: {extractedData.InvoiceNumber}");
+            logger.LogInformation("[PDF Extract] Invoice Number: {InvoiceNumber}", extractedData.InvoiceNumber);
                     
-                    // Extrahiere Beträge
+                    // Extrahiere Betrï¿½ge
                     var amounts = ExtractAmounts(text);
                     extractedData.NetAmount = amounts.Net;
                     extractedData.TaxAmount = amounts.Tax;
                     extractedData.TotalAmount = amounts.Total;
-                    // Console.WriteLine($"[PDF Extract] Amounts - Net: {amounts.Net}, Tax: {amounts.Tax}, Total: {amounts.Total}");
+            logger.LogInformation("[PDF Extract] Amounts - Net: {Net}, Tax: {Tax}, Total: {Total}", amounts.Net, amounts.Tax, amounts.Total);
                     
                     // Extrahiere Datum
                     extractedData.InvoiceDate = ExtractInvoiceDate(text);
                     extractedData.DueDate = ExtractDueDate(text);
-                    // Console.WriteLine($"[PDF Extract] Dates - Invoice: {extractedData.InvoiceDate}, Due: {extractedData.DueDate}");
+            logger.LogInformation("[PDF Extract] Dates - Invoice: {InvoiceDate}, Due: {DueDate}", extractedData.InvoiceDate, extractedData.DueDate);
                     
-                    // Extrahiere Währung
+                    // Extrahiere Wï¿½hrung
                     extractedData.Currency = ExtractCurrency(text);
-                    // Console.WriteLine($"[PDF Extract] Currency: {extractedData.Currency}");
+            logger.LogInformation("[PDF Extract] Currency: {Currency}", extractedData.Currency);
                     
                     // Extrahiere Lieferanteninformation
                     extractedData.SupplierInfo = ExtractSupplierInfo(text);
-                    // Console.WriteLine($"[PDF Extract] Supplier: {extractedData.SupplierInfo?.Name}, VAT: {extractedData.SupplierInfo?.VatNumber}");
+            logger.LogInformation("[PDF Extract] Supplier: {SupplierName}, VAT: {VatNumber}", extractedData.SupplierInfo?.Name, extractedData.SupplierInfo?.VatNumber);
                     
                     // Erstelle Beschreibung aus ersten Zeilen
                     var lines = text.Split('\n').Take(5).Select(l => l.Trim()).Where(l => !string.IsNullOrEmpty(l));
@@ -587,21 +583,21 @@ public class PdfUploadService : IPdfUploadService
                     {
                         extractedData.Description = extractedData.Description.Substring(0, 497) + "...";
                     }
-                    // Console.WriteLine($"[PDF Extract] Description: {extractedData.Description}");
+            logger.LogInformation("[PDF Extract] Description: {Description}", extractedData.Description);
                 }
                 else
                 {
-                    // Console.WriteLine($"[PDF Extract] WARNING: No text extracted even with OCR");
+            logger.LogInformation("[PDF Extract] WARNING: No text extracted even with OCR");
                 }
             }
             
-            // Console.WriteLine($"[PDF Extract] Extraction completed successfully");
+            logger.LogInformation("[PDF Extract] Extraction completed successfully");
             return extractedData;
         }
         catch (Exception ex)
         {
-            // Console.WriteLine($"[PDF Extract] ERROR during extraction: {ex.Message}");
-            // Console.WriteLine($"[PDF Extract] Stack trace: {ex.StackTrace}");
+            logger.LogInformation("[PDF Extract] ERROR during extraction: {Message}", ex.Message);
+            logger.LogInformation("[PDF Extract] Stack trace: {StackTrace}", ex.StackTrace);
             return new ExtractedInvoiceData();
         }
     }
@@ -610,28 +606,28 @@ public class PdfUploadService : IPdfUploadService
     {
         try
         {
-            // Console.WriteLine($"[OCR] Starting OCR extraction from: {pdfFilePath}");
+            logger.LogInformation("[OCR] Starting OCR extraction from: {PdfFilePath}", pdfFilePath);
             
-            // Prüfe ob Tesseract-Sprachdaten vorhanden sind
-            var germanDataFile = Path.Combine(_tessdataPath, "deu.traineddata");
-            var italianDataFile = Path.Combine(_tessdataPath, "ita.traineddata");
+            // Prï¿½fe ob Tesseract-Sprachdaten vorhanden sind
+            var germanDataFile = Path.Combine(tessdataPath, "deu.traineddata");
+            var italianDataFile = Path.Combine(tessdataPath, "ita.traineddata");
             
             if (!File.Exists(germanDataFile) && !File.Exists(italianDataFile))
             {
-                // Console.WriteLine($"[OCR] ERROR: No language data files found in {_tessdataPath}");
-                // Console.WriteLine($"[OCR] Please download deu.traineddata and ita.traineddata from: https://github.com/tesseract-ocr/tessdata");
+            logger.LogInformation("[OCR] ERROR: No language data files found in {TessdataPath}", tessdataPath);
+            logger.LogInformation("[OCR] Please download deu.traineddata and ita.traineddata from: https://github.com/tesseract-ocr/tessdata");
                 return string.Empty;
             }
 
-            // Bestimme verfügbare Sprachen
+            // Bestimme verfï¿½gbare Sprachen
             var languages = new List<string>();
             if (File.Exists(germanDataFile)) languages.Add("deu");
             if (File.Exists(italianDataFile)) languages.Add("ita");
             var langString = string.Join("+", languages);
             
-            // Console.WriteLine($"[OCR] Using Tesseract with languages: {langString}");
+            logger.LogInformation("[OCR] Using Tesseract with languages: {LangString}", langString);
 
-            // Konvertiere PDF zu Bildern und führe OCR aus
+            // Konvertiere PDF zu Bildern und fï¿½hre OCR aus
             var extractedText = new System.Text.StringBuilder();
 
             // Lade PDF in MemoryStream und konvertiere zu Bildern
@@ -644,43 +640,43 @@ public class PdfUploadService : IPdfUploadService
                 }
                 pdfStream.Position = 0;
                 
-                // Console.WriteLine($"[OCR] Converting PDF to images...");
+            logger.LogInformation("[OCR] Converting PDF to images...");
                 
                 // Konvertiere PDF-Seiten zu SKBitmaps (300 DPI) und lade sofort
 #pragma warning disable CA1416
                 imageList = Conversion.ToImages(pdfStream, options: new(Dpi: 300)).Take(10).ToList();
 #pragma warning restore CA1416
-                // Console.WriteLine($"[OCR] PDF converted to {imageList.Count} image(s)");
+            logger.LogInformation("[OCR] PDF converted to {Count} image(s)", imageList.Count);
             }
 
-            // Verarbeite die Bilder mit Tesseract (außerhalb des using-Blocks)
+            // Verarbeite die Bilder mit Tesseract (auï¿½erhalb des using-Blocks)
             try
             {
-                using (var engine = new TesseractEngine(_tessdataPath, langString, EngineMode.Default))
+                using (var engine = new TesseractEngine(tessdataPath, langString, EngineMode.Default))
                 {
-                    // Console.WriteLine($"[OCR] Tesseract engine initialized");
+            logger.LogInformation("[OCR] Tesseract engine initialized");
                     
                     for (int i = 0; i < imageList.Count; i++)
                     {
                         try
                         {
-                            // Console.WriteLine($"[OCR] Processing page {i + 1}/{imageList.Count}...");
+            logger.LogInformation("[OCR] Processing page {Page}/{Total}...", i + 1, imageList.Count);
                             
                             var skBitmap = imageList[i];
                             
-                            // Konvertiere SKBitmap zu byte array für Tesseract
+                            // Konvertiere SKBitmap zu byte array fï¿½r Tesseract
                             using (var ms = new MemoryStream())
                             {
                                 skBitmap.Encode(ms, SkiaSharp.SKEncodedImageFormat.Png, 100);
                                 byte[] imageBytes = ms.ToArray();
                                 
-                                // OCR auf dem Bild durchführen
+                                // OCR auf dem Bild durchfï¿½hren
                                 using (var pix = Pix.LoadFromMemory(imageBytes))
                                 using (var page = engine.Process(pix))
                                 {
                                     var pageText = page.GetText();
                                     extractedText.AppendLine(pageText);
-                                    // Console.WriteLine($"[OCR] Page {i + 1}: Extracted {pageText.Length} characters (confidence: {page.GetMeanConfidence():P0})");
+            logger.LogInformation("[OCR] Page {Page}: Extracted {Length} characters (confidence: {Confidence:P0})", i + 1, pageText.Length, page.GetMeanConfidence());
                                 }
                             }
                             
@@ -689,7 +685,7 @@ public class PdfUploadService : IPdfUploadService
                         }
                         catch (Exception ex)
                         {
-                            // Console.WriteLine($"[OCR] Error processing page {i + 1}: {ex.Message}");
+            logger.LogInformation("[OCR] Error processing page {Page}: {Message}", i + 1, ex.Message);
                         }
                     }
                 }
@@ -704,7 +700,7 @@ public class PdfUploadService : IPdfUploadService
             }
 
             var result = extractedText.ToString();
-            // Console.WriteLine($"[OCR] OCR completed. Total extracted: {result.Length} characters");
+            logger.LogInformation("[OCR] OCR completed. Total extracted: {Length} characters", result.Length);
             
             // Removed verbose OCR preview logging
             
@@ -712,8 +708,8 @@ public class PdfUploadService : IPdfUploadService
         }
         catch (Exception ex)
         {
-            // Console.WriteLine($"[OCR] ERROR during OCR extraction: {ex.Message}");
-            // Console.WriteLine($"[OCR] Stack trace: {ex.StackTrace}");
+            logger.LogInformation("[OCR] ERROR during OCR extraction: {Message}", ex.Message);
+            logger.LogInformation("[OCR] Stack trace: {StackTrace}", ex.StackTrace);
             return string.Empty;
         }
     }
@@ -728,14 +724,14 @@ public class PdfUploadService : IPdfUploadService
             @"\b([A-Z]{3}\d{10})\b",  // Generic pattern for Alperia invoice numbers
             @"Numero\s+fattura[\s\r\n]+(\d+\-\d+)",  // "Numero fattura 12-139856"
             @"Numero\s+fattura[^\d]{0,30}(\d{2}\-\d{3,})", // erlaubt Trennzeichen (|, -, .) zwischen Label und Nummer
-            @"CONTO\s+LINKEM\s*[—-]\s*(\d{2}\-\d{3,})",   // "CONTO LINKEM — 12-139856"
-            @"(?:Dok\.|Dok\.\s+N|Dok\s+N)[°º\-\.?]?\s*\-?\s*N[°º\-\.?]?\s*([A-Z0-9\-]+)",
-            @"\bDok[°º\-\.?]?\s*\-?\s*N[°º\-\.?]\s*([A-Z0-9\-]+)",
+            @"CONTO\s+LINKEM\s*[ï¿½-]\s*(\d{2}\-\d{3,})",   // "CONTO LINKEM ï¿½ 12-139856"
+            @"(?:Dok\.|Dok\.\s+N|Dok\s+N)[ï¿½ï¿½\-\.?]?\s*\-?\s*N[ï¿½ï¿½\-\.?]?\s*([A-Z0-9\-]+)",
+            @"\bDok[ï¿½ï¿½\-\.?]?\s*\-?\s*N[ï¿½ï¿½\-\.?]\s*([A-Z0-9\-]+)",
             @"\b(S\-\d{3,})\b",  // Wichtig: S-XXX als Ganzes extrahieren
             @"(?:Rechnung(?:snummer)?|Rechnungs-Nr)[:\s]+([A-Z0-9\-\/]+)",
-            @"(?:Rechnung\s+nr\.?|Fattura\s+n[°º]?)\s*(\d{3,})",
+            @"(?:Rechnung\s+nr\.?|Fattura\s+n[ï¿½ï¿½]?)\s*(\d{3,})",
             @"(?:Rechnung(?:snummer)?|Invoice(?:\s+Number)?|R(?:ech)?\.?\s*Nr\.?)[:\s]+([A-Z0-9\-\/]+)",
-            @"(?:Fattura|Factura)\s+N[°º.\s]*([A-Z0-9\-\/]+)",
+            @"(?:Fattura|Factura)\s+N[ï¿½ï¿½.\s]*([A-Z0-9\-\/]+)",
             @"\b(?:INV|RG|RE|FAT)[-\s]*(\d{4,})",
             @"#\s*([A-Z0-9\-\/]{6,})"
         };
@@ -748,7 +744,7 @@ public class PdfUploadService : IPdfUploadService
                 var invoiceNumber = match.Groups[1].Value.Trim();
                 if (invoiceNumber.Length >= 3 && invoiceNumber.Length <= 50)
                 {
-                    // Console.WriteLine($"[PDF Extract] Found invoice number: {invoiceNumber}");
+            logger.LogInformation("[PDF Extract] Found invoice number: {InvoiceNumber}", invoiceNumber);
                     return invoiceNumber;
                 }
             }
@@ -771,14 +767,14 @@ public class PdfUploadService : IPdfUploadService
             @"([\d]{2,}[.,]\d{2})\s*euro",  // Any amount followed by "euro" (Alperia fallback)
             @"TOTALE\s+CONTO\s+LINKEM[\s\r\n]+([\d]+[.,]\d{2})",  // "TOTALE CONTO LINKEM 80,73"
             @"TOTALE\s+(?:CONTO|fattura|Rechnung)[\s\r\n]+([\d]+[.,]\d{2})",
-            @"Euro\s+(\d+[.,]\d{2})", // z.B. "è di Euro 80,73"
-            @"([\d]+[.,]\d{2})\s*€\s*$",  // Betrag mit € am Zeilenende (höchste Priorität)
-            @"Gesamtbetrag\s+Importo\s+totale[\s\S]*?([\d]+[.,]\d{2})\s*€",  // Letzter Betrag nach "Gesamtbetrag Importo totale"
-            @"Rechnungsbetrag[^\d]+([\d\s]+[.,]\d{2})\s*(?:euro|EUR|€)",
+            @"Euro\s+(\d+[.,]\d{2})", // z.B. "ï¿½ di Euro 80,73"
+            @"([\d]+[.,]\d{2})\s*ï¿½\s*$",  // Betrag mit ï¿½ am Zeilenende (hï¿½chste Prioritï¿½t)
+            @"Gesamtbetrag\s+Importo\s+totale[\s\S]*?([\d]+[.,]\d{2})\s*ï¿½",  // Letzter Betrag nach "Gesamtbetrag Importo totale"
+            @"Rechnungsbetrag[^\d]+([\d\s]+[.,]\d{2})\s*(?:euro|EUR|ï¿½)",
             @"Rechnungsbetrag[^\d]+([\d\s]+[.,]\d{2})",
             @"Gesamtbetrag[^\d]+([\d\s]+[.,]\d{2})",
             @"Importo\s+totale[^\d]+([\d\s]+[.,]\d{2})",
-            @"(?:Betrag|Amount)[:\s]+€?\s*([\d\s]+[.,]\d{2})"
+            @"(?:Betrag|Amount)[:\s]+ï¿½?\s*([\d\s]+[.,]\d{2})"
         };
 
         foreach (var pattern in invoiceAmountPatterns)
@@ -791,15 +787,15 @@ public class PdfUploadService : IPdfUploadService
                 {
                     totalAmount = parsed.Value;
                     foundExplicitInvoiceAmount = true;
-                    // Console.WriteLine($"[PDF Extract] Found invoice amount pattern: {parsed.Value}");
+            logger.LogInformation("[PDF Extract] Found invoice amount pattern: {Value}", parsed.Value);
                     break;
                 }
             }
         }
 
-        // Fallback: Finde alle Beträge (mit und ohne € Symbol)
+        // Fallback: Finde alle Betrï¿½ge (mit und ohne ï¿½ Symbol)
         // Robust Betrags-Erkennung: nicht erlauben, dass ein Betrag direkt nach einer Ziffer oder einem Bindestrich kommt (z.B. Teil einer Rechnungsnummer)
-        var allAmountsPattern = @"(?<![\d\-/])(?:€\s*)?(\d+(?:[.,]\d{3})*[.,]\d{2})(?!\d)";
+        var allAmountsPattern = @"(?<![\d\-/])(?:ï¿½\s*)?(\d+(?:[.,]\d{3})*[.,]\d{2})(?!\d)";
         var amountMatches = Regex.Matches(text, allAmountsPattern);
         var foundAmounts = new List<(string text, decimal value, int position)>();
 
@@ -809,7 +805,7 @@ public class PdfUploadService : IPdfUploadService
             {
                 var amountStr = match.Groups[1].Value;
                 var parsedAmount = ParseAmount(amountStr);
-                if (parsedAmount.HasValue && parsedAmount.Value > 10) // Ignoriere sehr kleine Beträge
+                if (parsedAmount.HasValue && parsedAmount.Value > 10) // Ignoriere sehr kleine Betrï¿½ge
                 {
                     foundAmounts.Add((amountStr, parsedAmount.Value, match.Index));
                 }
@@ -824,9 +820,9 @@ public class PdfUploadService : IPdfUploadService
                 @"Totale\s+Dokument\s+\(Totale\s+Documento\)\s+([\d\s]+[.,]\d{2})",
                 @"(?:Totale|Total)\s+Documento[^\d]+([\d\s]+[.,]\d{2})",
                 @"(?:Totale|Total)\s*\(Totale\)\s+([\d\s]+[.,]\d{2})",
-                @"Totale\s+fattura:\s*€?\s*([\d\s]+[.,]\d{2})",
-                @"(?:Gesamt|Total)[:\s]+€?\s*([\d\s]+[.,]\d{2})",
-                @"(?:Summe|Sum|Somma)[:\s]+€?\s*([\d\s]+[.,]\d{2})"
+                @"Totale\s+fattura:\s*ï¿½?\s*([\d\s]+[.,]\d{2})",
+                @"(?:Gesamt|Total)[:\s]+ï¿½?\s*([\d\s]+[.,]\d{2})",
+                @"(?:Summe|Sum|Somma)[:\s]+ï¿½?\s*([\d\s]+[.,]\d{2})"
             };
 
             foreach (var pattern in specificPatterns)
@@ -847,17 +843,17 @@ public class PdfUploadService : IPdfUploadService
         // WICHTIG: Nur wenn KEIN expliziter Rechnungsbetrag gefunden wurde, darf mit foundAmounts verglichen werden
         if (!foundExplicitInvoiceAmount)
         {
-            // Wenn wir einen Betrag gefunden haben, aber es gibt einen deutlich größeren Betrag
+            // Wenn wir einen Betrag gefunden haben, aber es gibt einen deutlich grï¿½ï¿½eren Betrag
             if (totalAmount.HasValue && foundAmounts.Any())
             {
                 var maxAmount = foundAmounts.OrderByDescending(x => x.value).First();
-                if (maxAmount.value > totalAmount.Value * 1.1m) // Mindestens 10% größer
+                if (maxAmount.value > totalAmount.Value * 1.1m) // Mindestens 10% grï¿½ï¿½er
                 {
                     totalAmount = maxAmount.value;
                 }
             }
 
-            // Wenn nichts gefunden, verwende größten Betrag
+            // Wenn nichts gefunden, verwende grï¿½ï¿½ten Betrag
             if (!totalAmount.HasValue && foundAmounts.Any())
             {
                 var maxAmount = foundAmounts.OrderByDescending(x => x.value).First();
@@ -869,8 +865,8 @@ public class PdfUploadService : IPdfUploadService
             // Letzter Fallback: Suche nach "Totale fattura:" Muster
             var totalPatterns = new[]
             {
-                @"Totale\s+fattura:\s*€?\s*(\d+[.,]\d{2})",
-                @"Totale\s+fattura:\s*€?\s*(\d+(?:[.,]\d{3})*[.,]\d{2})"
+                @"Totale\s+fattura:\s*ï¿½?\s*(\d+[.,]\d{2})",
+                @"Totale\s+fattura:\s*ï¿½?\s*(\d+(?:[.,]\d{3})*[.,]\d{2})"
             };
 
             foreach (var pattern in totalPatterns)
@@ -893,8 +889,8 @@ public class PdfUploadService : IPdfUploadService
         // Suche nach Nettobetrag
         var netPatterns = new[]
         {
-            @"(?:Netto|Net|Imponibile|Subtotal)[:\s]+€?\s*(\d+[.,]\d{2})",
-            @"(?:Zwischensumme)[:\s]+€?\s*(\d+[.,]\d{2})"
+            @"(?:Netto|Net|Imponibile|Subtotal)[:\s]+ï¿½?\s*(\d+[.,]\d{2})",
+            @"(?:Zwischensumme)[:\s]+ï¿½?\s*(\d+[.,]\d{2})"
         };
 
         foreach (var pattern in netPatterns)
@@ -912,12 +908,12 @@ public class PdfUploadService : IPdfUploadService
         }
 
         // Suche nach Steuerbetrag oder Steuersatz
-        // Erst versuchen, den tatsächlichen Betrag zu finden
+        // Erst versuchen, den tatsï¿½chlichen Betrag zu finden
         var taxAmountPatterns = new[]
         {
-            @"(?:IVA|MwSt|USt|VAT)[:\s]*€?\s*(\d+[.,]\d{2})",
-            @"€\s*(\d+[.,]\d{2})\s*(?:IVA|MwSt|USt|VAT)",
-            @"Steuer[:\s]+€?\s*(\d+[.,]\d{2})"
+            @"(?:IVA|MwSt|USt|VAT)[:\s]*ï¿½?\s*(\d+[.,]\d{2})",
+            @"ï¿½\s*(\d+[.,]\d{2})\s*(?:IVA|MwSt|USt|VAT)",
+            @"Steuer[:\s]+ï¿½?\s*(\d+[.,]\d{2})"
         };
 
         foreach (var pattern in taxAmountPatterns)
@@ -985,8 +981,8 @@ public class PdfUploadService : IPdfUploadService
             // Entferne Leerzeichen (z.B. "81 9,19" ? "819,19")
             amountStr = Regex.Replace(amountStr, @"\s+", "");
             
-            // Entferne Währungssymbole und führende/nachfolgende Spaces
-            amountStr = Regex.Replace(amountStr, @"[€$£\s]", "").Trim();
+            // Entferne Wï¿½hrungssymbole und fï¿½hrende/nachfolgende Spaces
+            amountStr = Regex.Replace(amountStr, @"[ï¿½$ï¿½\s]", "").Trim();
 
             // Bestimme, ob Punkt oder Komma als Dezimaltrennzeichen verwendet wird
             var lastComma = amountStr.LastIndexOf(',');
@@ -1052,7 +1048,7 @@ public class PdfUploadService : IPdfUploadService
         var datePatterns = new[]
         {
             @"innerhalb[\s\r\n]+(\d{1,2})[\/](\d{1,2})[\/](\d{4})",  // "innerhalb 13/11/2024" (Alperia)
-            @"(?:Fälligkeitsdatum|Due\s+Date|Scadenza)[:\s]+(\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4})",
+            @"(?:Fï¿½lligkeitsdatum|Due\s+Date|Scadenza)[:\s]+(\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4})",
             @"(?:Zahlbar\s+bis|Payment\s+due)[:\s]+(\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4})"
         };
 
@@ -1098,11 +1094,11 @@ public class PdfUploadService : IPdfUploadService
 
     private string ExtractCurrency(string text)
     {
-        if (text.Contains("€") || Regex.IsMatch(text, @"\bEUR\b", RegexOptions.IgnoreCase))
+        if (text.Contains("ï¿½") || Regex.IsMatch(text, @"\bEUR\b", RegexOptions.IgnoreCase))
             return "EUR";
         if (text.Contains("$") || Regex.IsMatch(text, @"\bUSD\b", RegexOptions.IgnoreCase))
             return "USD";
-        if (text.Contains("£") || Regex.IsMatch(text, @"\bGBP\b", RegexOptions.IgnoreCase))
+        if (text.Contains("ï¿½") || Regex.IsMatch(text, @"\bGBP\b", RegexOptions.IgnoreCase))
             return "GBP";
         if (text.Contains("CHF") || Regex.IsMatch(text, @"\bCHF\b", RegexOptions.IgnoreCase))
             return "CHF";
@@ -1115,13 +1111,13 @@ public class PdfUploadService : IPdfUploadService
         // Wenn projectId vorhanden ist, validiere dass es zur Kostenstelle passt
         if (!string.IsNullOrEmpty(projectId))
         {
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+            var project = await context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
             if (project == null)
             {
                 throw new ArgumentException($"Project with ID '{projectId}' not found");
             }
 
-            // Validiere dass das Projekt zur Kostenstelle gehört
+            // Validiere dass das Projekt zur Kostenstelle gehï¿½rt
             if (!string.IsNullOrEmpty(costCenterId) && project.CostCenterId != costCenterId)
             {
                 throw new ArgumentException($"Project '{projectId}' does not belong to Cost Center '{costCenterId}'");
@@ -1137,19 +1133,19 @@ public class PdfUploadService : IPdfUploadService
         // Wenn purchaseOrderId vorhanden ist, validiere dass es zur Kostenstelle und Projekt passt
         if (!string.IsNullOrEmpty(purchaseOrderId))
         {
-            var purchaseOrder = await _context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+            var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
             if (purchaseOrder == null)
             {
                 throw new ArgumentException($"Purchase Order with ID '{purchaseOrderId}' not found");
             }
 
-            // Validiere dass die Bestellung zur Kostenstelle gehört
+            // Validiere dass die Bestellung zur Kostenstelle gehï¿½rt
             if (!string.IsNullOrEmpty(costCenterId) && purchaseOrder.CostCenterId != costCenterId)
             {
                 throw new ArgumentException($"Purchase Order '{purchaseOrderId}' does not belong to Cost Center '{costCenterId}'");
             }
 
-            // Validiere dass die Bestellung zum Projekt gehört (wenn Projekt angegeben ist)
+            // Validiere dass die Bestellung zum Projekt gehï¿½rt (wenn Projekt angegeben ist)
             if (!string.IsNullOrEmpty(projectId) && purchaseOrder.ProjectId != projectId)
             {
                 throw new ArgumentException($"Purchase Order '{purchaseOrderId}' does not belong to Project '{projectId}'");
@@ -1164,18 +1160,18 @@ public class PdfUploadService : IPdfUploadService
             throw new ArgumentException("File is empty");
         }
 
-        if (file.Length > _maxFileSize)
+        if (file.Length > maxFileSize)
         {
-            throw new ArgumentException($"File size exceeds maximum allowed size of {_maxFileSize / (1024 * 1024)} MB");
+            throw new ArgumentException($"File size exceeds maximum allowed size of {maxFileSize / (1024 * 1024)} MB");
         }
 
         var fileExtension = Path.GetExtension(file.FileName).ToLower();
-        if (!_allowedExtensions.Contains(fileExtension))
+        if (!allowedExtensions.Contains(fileExtension))
         {
             throw new ArgumentException($"File type '{fileExtension}' is not allowed. Only PDF files are allowed.");
         }
 
-        // Prüfe Magic Bytes für PDF
+        // Prï¿½fe Magic Bytes fï¿½r PDF
         using (var reader = new BinaryReader(file.OpenReadStream()))
         {
             var bytes = reader.ReadBytes(4);
@@ -1214,8 +1210,8 @@ public class PdfUploadService : IPdfUploadService
     {
         var currentYear = DateTime.UtcNow.Year;
         
-        // Finde die höchste Nummer des aktuellen Jahres
-        var invoicesThisYear = await _context.Invoices
+        // Finde die hï¿½chste Nummer des aktuellen Jahres
+        var invoicesThisYear = await context.Invoices
             .Where(i => i.InvoiceNumber.EndsWith(currentYear.ToString()))
             .Select(i => i.InvoiceNumber)
             .ToListAsync();
@@ -1244,7 +1240,7 @@ public class PdfUploadService : IPdfUploadService
             }
         }
 
-        // Generiere Rechnungsnummer im Format FAT-{Nummer mit führenden Nullen}-{Jahr}
+        // Generiere Rechnungsnummer im Format FAT-{Nummer mit fï¿½hrenden Nullen}-{Jahr}
         return $"FAT-{nextNumber:D3}-{currentYear}";
     }
 
@@ -1252,8 +1248,8 @@ public class PdfUploadService : IPdfUploadService
     {
         var currentYear = DateTime.UtcNow.Year;
         
-        // Finde die höchste Nummer des aktuellen Jahres
-        var posThisYear = await _context.PurchaseOrders
+        // Finde die hï¿½chste Nummer des aktuellen Jahres
+        var posThisYear = await context.PurchaseOrders
             .Where(po => po.Id.EndsWith(currentYear.ToString()))
             .Select(po => po.Id)
             .ToListAsync();
@@ -1282,7 +1278,7 @@ public class PdfUploadService : IPdfUploadService
             }
         }
 
-        // Generiere PO ID im Format PO-{Nummer mit führenden Nullen}-{Jahr}
+        // Generiere PO ID im Format PO-{Nummer mit fï¿½hrenden Nullen}-{Jahr}
         return $"PO-{nextNumber:D3}-{currentYear}";
     }
 
@@ -1292,7 +1288,7 @@ public class PdfUploadService : IPdfUploadService
         {
             
             // Suche oder erstelle einen Standard-Lieferanten
-            var defaultSupplier = await _context.Suppliers.FirstOrDefaultAsync(s => s.Name == "Unbekannter Lieferant");
+            var defaultSupplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Name == "Unbekannter Lieferant");
             if (defaultSupplier == null)
             {
                 defaultSupplier = new Supplier
@@ -1300,15 +1296,15 @@ public class PdfUploadService : IPdfUploadService
                     Name = "Unbekannter Lieferant",
                     Country = "Deutschland"
                 };
-                _context.Suppliers.Add(defaultSupplier);
-                await _context.SaveChangesAsync();
+                context.Suppliers.Add(defaultSupplier);
+                await context.SaveChangesAsync();
                 
             }
             return defaultSupplier.Id;
         }
 
         // Suche nach existierendem Lieferanten
-        var existingSupplier = await _context.Suppliers
+        var existingSupplier = await context.Suppliers
             .FirstOrDefaultAsync(s => 
                 s.Name.ToLower() == supplierInfo.Name.ToLower() ||
                 (supplierInfo.VatNumber != null && s.VatNumber == supplierInfo.VatNumber) ||
@@ -1335,8 +1331,8 @@ public class PdfUploadService : IPdfUploadService
             Country = (supplierInfo.Country ?? "Italien").Length > 50 ? (supplierInfo.Country ?? "Italien").Substring(0, 50) : supplierInfo.Country ?? "Italien"
         };
 
-        _context.Suppliers.Add(newSupplier);
-        await _context.SaveChangesAsync();
+        context.Suppliers.Add(newSupplier);
+        await context.SaveChangesAsync();
 
         return newSupplier.Id;
     }
@@ -1349,7 +1345,7 @@ public class PdfUploadService : IPdfUploadService
         if (Regex.IsMatch(text, @"\bALPERIA\b", RegexOptions.IgnoreCase))
         {
             supplierInfo.Name = "ALPERIA";
-            // Console.WriteLine($"[PDF Extract] Found supplier name: ALPERIA");
+            logger.LogInformation("[PDF Extract] Found supplier name: ALPERIA");
             
             // Alperia hat normalerweise keine explizite P.IVA im Hauptbereich
             supplierInfo.Country = "Italien";
@@ -1364,7 +1360,7 @@ public class PdfUploadService : IPdfUploadService
             if (linkemMatch.Success)
             {
                 supplierInfo.Name = "LINKEM S.P.A.";
-                // Console.WriteLine($"[PDF Extract] Found supplier name: LINKEM S.P.A.");
+            logger.LogInformation("[PDF Extract] Found supplier name: LINKEM S.P.A.");
                 
                 // Suche nach P.IVA
                 var pivaMatch = Regex.Match(text, @"P\.IVA\s+(\d{11})", RegexOptions.IgnoreCase);
@@ -1387,7 +1383,7 @@ public class PdfUploadService : IPdfUploadService
         if (telMatch.Success)
         {
             kundenPosition = telMatch.Index + telMatch.Length;
-            // Console.WriteLine($"[PDF Extract] Found customer section start at position {kundenPosition}");
+            logger.LogInformation("[PDF Extract] Found customer section start at position {KundenPosition}", kundenPosition);
         }
         
         // Alternativ: Suche nach expliziten Kundenlabels
@@ -1397,7 +1393,7 @@ public class PdfUploadService : IPdfUploadService
             if (kundenMatch.Success)
             {
                 kundenPosition = kundenMatch.Index;
-                // Console.WriteLine($"[PDF Extract] Found customer label at position {kundenPosition}");
+            logger.LogInformation("[PDF Extract] Found customer label at position {KundenPosition}", kundenPosition);
             }
         }
 
@@ -1432,7 +1428,7 @@ public class PdfUploadService : IPdfUploadService
         // 2) Firmenname in ersten Zeilen (typisch bei Rechnungen)
         if (string.IsNullOrWhiteSpace(supplierInfo.Name))
         {
-            var firstLinesPattern = @"^\s*([A-Za-zÄÖÜäöü][A-Za-zÄÖÜäöü0-9\s&\-\.®©]+(?:GMBH|GmbH|SMBH|GMBH & CO\.? KG|AG|SRL|SPA|INC|LLC|LTD)?)[\s®©:]*[\r\n]";
+            var firstLinesPattern = @"^\s*([A-Za-zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½][A-Za-zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0-9\s&\-\.ï¿½ï¿½]+(?:GMBH|GmbH|SMBH|GMBH & CO\.? KG|AG|SRL|SPA|INC|LLC|LTD)?)[\sï¿½ï¿½:]*[\r\n]";
             var firstLineMatches = Regex.Matches(text, firstLinesPattern, RegexOptions.Multiline);
             
             foreach (Match match in firstLineMatches)
@@ -1442,26 +1438,26 @@ public class PdfUploadService : IPdfUploadService
                 
                 if (string.IsNullOrWhiteSpace(name))
                 {
-                    // Console.WriteLine($"[PDF Extract] Skipping '{rawName}' - filtered out");
+            logger.LogInformation("[PDF Extract] Skipping '{RawName}' - filtered out", rawName);
                     continue;
                 }
 
-                // Prüfe ob dieser Name VOR der Kundenposition ist
+                // Prï¿½fe ob dieser Name VOR der Kundenposition ist
                 if (kundenPosition > 0 && match.Index >= kundenPosition)
                 {
-                    // Console.WriteLine($"[PDF Extract] Skipping '{name}' - appears after customer section");
-                    continue; // Überspringe Namen die nach "Kunde" kommen
+            logger.LogInformation("[PDF Extract] Skipping '{Name}' - appears after customer section", name);
+                    continue; // ï¿½berspringe Namen die nach "Kunde" kommen
                 }
                 
                 // Ignoriere Personennamen (Vorname Nachname) - das sind Kunden, keine Firmen
                 if (Regex.IsMatch(name, @"^[A-Z][a-z]+\s+[A-Z][a-z]+$"))
                 {
-                    // Console.WriteLine($"[PDF Extract] Skipping '{name}' - looks like a person name");
+            logger.LogInformation("[PDF Extract] Skipping '{Name}' - looks like a person name", name);
                     continue;
                 }
                 
                 supplierInfo.Name = name.Length > 100 ? name.Substring(0, 100) : name;
-                // Console.WriteLine($"[PDF Extract] Found supplier name: {supplierInfo.Name}");
+            logger.LogInformation("[PDF Extract] Found supplier name: {SupplierName}", supplierInfo.Name);
                 break;
             }
         }
@@ -1510,7 +1506,7 @@ public class PdfUploadService : IPdfUploadService
         }
 
         // Suche nach PLZ und Stadt (italienisches Format: 00100 Roma)
-        var cityPattern = @"(\d{5})\s+([A-Za-zàèéìòù]+(?:\s+\([A-Z]{2}\))?)";
+        var cityPattern = @"(\d{5})\s+([A-Za-zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]+(?:\s+\([A-Z]{2}\))?)";
         var cityMatch = Regex.Match(text, cityPattern);
         if (cityMatch.Success)
         {
@@ -1536,7 +1532,7 @@ public class PdfUploadService : IPdfUploadService
     {
         if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
 
-        // Entferne Zeilenumbrüche und doppelte Separatoren
+        // Entferne Zeilenumbrï¿½che und doppelte Separatoren
         var cleaned = raw.Replace("\r", " ").Replace("\n", " ");
         cleaned = string.Join(" ", cleaned.Split('|').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)));
         cleaned = Regex.Replace(cleaned, "\\s{2,}", " ").Trim();
@@ -1547,7 +1543,7 @@ public class PdfUploadService : IPdfUploadService
         // Schneide alles ab, was nach einer PLZ aussieht (vermeidet dass Adresse Teil des Namens wird)
         cleaned = Regex.Replace(cleaned, @"\b\d{4,5}\b.*", "").Trim();
 
-        // Entferne trailing Länder-/Orts-Kürzel in Klammern
+        // Entferne trailing Lï¿½nder-/Orts-Kï¿½rzel in Klammern
         cleaned = Regex.Replace(cleaned, @"\s*\([A-Z]{2}\)\s*$", "").Trim();
 
         return cleaned;

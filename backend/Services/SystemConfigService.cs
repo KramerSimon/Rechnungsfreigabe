@@ -3,27 +3,21 @@ using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface ISystemConfigService
-{
-    Task<IEnumerable<SystemConfigDto>> GetAllAsync();
-    Task<SystemConfigDto?> GetByKeyAsync(string key);
-    Task<SystemConfigDto> UpsertAsync(string key, UpsertSystemConfigDto dto, int? updatedByUserId);
-}
 
 public class SystemConfigService : ISystemConfigService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext context;
 
     public SystemConfigService(ApplicationDbContext context)
     {
-        _context = context;
+        this.context = context;
     }
 
     public async Task<IEnumerable<SystemConfigDto>> GetAllAsync()
     {
-        var configs = await _context.SystemConfigs
+        var configs = await context.SystemConfigs
             .Include(c => c.UpdatedByUser)
             .OrderBy(c => c.ConfigKey)
             .ToListAsync();
@@ -35,7 +29,7 @@ public class SystemConfigService : ISystemConfigService
     {
         if (string.IsNullOrWhiteSpace(key)) return null;
 
-        var config = await _context.SystemConfigs
+        var config = await context.SystemConfigs
             .Include(c => c.UpdatedByUser)
             .FirstOrDefaultAsync(c => c.ConfigKey == key);
 
@@ -50,7 +44,7 @@ public class SystemConfigService : ISystemConfigService
             throw new ArgumentException("Config key is required");
         }
 
-        var config = await _context.SystemConfigs
+        var config = await context.SystemConfigs
             .Include(c => c.UpdatedByUser)
             .FirstOrDefaultAsync(c => c.ConfigKey == normalizedKey);
 
@@ -67,9 +61,9 @@ public class SystemConfigService : ISystemConfigService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.SystemConfigs.Add(config);
-            await _context.SaveChangesAsync();
-            await _context.Entry(config).Reference(c => c.UpdatedByUser).LoadAsync();
+            context.SystemConfigs.Add(config);
+            await context.SaveChangesAsync();
+            await context.Entry(config).Reference(c => c.UpdatedByUser).LoadAsync();
             return MapToDto(config);
         }
 
@@ -89,8 +83,8 @@ public class SystemConfigService : ISystemConfigService
         config.UpdatedBy = updatedByUserId;
         config.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
-        await _context.Entry(config).Reference(c => c.UpdatedByUser).LoadAsync();
+        await context.SaveChangesAsync();
+        await context.Entry(config).Reference(c => c.UpdatedByUser).LoadAsync();
 
         return MapToDto(config);
     }

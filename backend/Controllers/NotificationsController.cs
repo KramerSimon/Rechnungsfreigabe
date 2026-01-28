@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 using System.Security.Claims;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -11,10 +12,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 [Authorize]
 public class NotificationsController : ControllerBase
 {
-    private readonly INotificationService _notificationService;
+    private readonly INotificationService notificationService;
     public NotificationsController(INotificationService notificationService)
     {
-        _notificationService = notificationService;
+        this.notificationService = notificationService;
         }
 
     /// <summary>
@@ -26,7 +27,7 @@ public class NotificationsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var notifications = await _notificationService.GetUserNotificationsAsync(userId, unreadOnly);
+            var notifications = await notificationService.GetUserNotificationsAsync(userId, unreadOnly);
             return Ok(notifications);
         }
         catch (Exception)
@@ -45,7 +46,7 @@ public class NotificationsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var count = await _notificationService.GetUnreadCountAsync(userId);
+            var count = await notificationService.GetUnreadCountAsync(userId);
             return Ok(new { count });
         }
         catch (Exception)
@@ -64,7 +65,7 @@ public class NotificationsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var success = await _notificationService.MarkNotificationAsReadAsync(id, userId);
+            var success = await notificationService.MarkNotificationAsReadAsync(id, userId);
             
             if (!success)
             {
@@ -89,7 +90,7 @@ public class NotificationsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var success = await _notificationService.MarkAllAsReadAsync(userId);
+            var success = await notificationService.MarkAllAsReadAsync(userId);
             
             if (!success)
             {

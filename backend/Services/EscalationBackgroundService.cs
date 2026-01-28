@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
 
 /// <summary>
@@ -9,21 +10,21 @@ namespace RechnungsfreigabeAPI.Services;
 /// </summary>
 public class EscalationBackgroundService : BackgroundService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<EscalationBackgroundService> _logger;
-    private readonly TimeSpan _interval = TimeSpan.FromSeconds(30);
+    private readonly IServiceProvider serviceProvider;
+    private readonly ILogger<EscalationBackgroundService> logger;
+    private readonly TimeSpan interval = TimeSpan.FromSeconds(30);
 
     public EscalationBackgroundService(
         IServiceProvider serviceProvider,
         ILogger<EscalationBackgroundService> logger)
     {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
+        this.serviceProvider = serviceProvider;
+        this.logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Escalation Background Service started - checking every {Seconds} seconds", _interval.TotalSeconds);
+        logger.LogInformation("Escalation Background Service started - checking every {Seconds} seconds", interval.TotalSeconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -33,21 +34,20 @@ public class EscalationBackgroundService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred in Escalation Background Service");
+                logger.LogError(ex, "Error occurred in Escalation Background Service");
             }
 
-            await Task.Delay(_interval, stoppingToken);
+            await Task.Delay(interval, stoppingToken);
         }
 
-        _logger.LogInformation("Escalation Background Service stopped");
+        logger.LogInformation("Escalation Background Service stopped");
     }
 
     private async Task ProcessEscalationsAsync()
     {
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = serviceProvider.CreateScope();
         var escalationService = scope.ServiceProvider.GetRequiredService<IEscalationEmailService>();
         
-        _logger.LogDebug("Checking for escalations...");
         await escalationService.ProcessEscalationEmailsAsync();
     }
 }
