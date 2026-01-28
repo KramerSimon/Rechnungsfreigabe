@@ -85,7 +85,9 @@ public class AuthService : IAuthService
                     Id = ur.Role.Id,
                     Name = ur.Role.Name,
                     Description = ur.Role.Description,
-                    Permissions = ur.Role.RolePermissions?.Select(rp => (object)rp.PermissionId).ToList() ?? new List<object>()
+                    Permissions = ur.Role.RolePermissions?.Select(rp => (object)rp.PermissionId).ToList() ?? new List<object>(),
+                    Color = ur.Role.Color,
+                    IsSystemRole = ur.Role.IsSystemRole
                 }).ToArray()
             };
 
