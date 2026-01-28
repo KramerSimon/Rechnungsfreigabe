@@ -93,7 +93,8 @@ mat-card {
   margin-right: 8px;
   margin-bottom: 4px;
   border-radius: 12px;
-  background-color: #ff9800;
+  // Background color is set via inline style: [style.backgroundColor]
+  // Default fallback: #ff9800
   color: white;
   font-size: 12px;
   font-weight: 500;

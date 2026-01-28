@@ -266,7 +266,9 @@ public class EscalationRuleService : IEscalationRuleService
             {
                 Id = nr.Role.Id,
                 Name = nr.Role.Name,
-                Description = nr.Role.Description
+                Description = nr.Role.Description,
+                Color = nr.Role.Color,
+                IsSystemRole = nr.Role.IsSystemRole
             }).ToList(),
             NotifyUserIds = rule.NotifyUsers.Select(nu => nu.UserId).ToList(),
             NotifyUsers = rule.NotifyUsers.Select(nu => new UserDto
