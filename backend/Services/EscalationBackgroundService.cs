@@ -47,7 +47,6 @@ public class EscalationBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var escalationService = scope.ServiceProvider.GetRequiredService<IEscalationEmailService>();
         
-        _logger.LogDebug("Checking for escalations...");
         await escalationService.ProcessEscalationEmailsAsync();
     }
 }
