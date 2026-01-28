@@ -1,10 +1,11 @@
-ï»¿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.Services;
 using RechnungsfreigabeAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using RechnungsfreigabeAPI.Data;
 using Microsoft.EntityFrameworkCore;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -12,15 +13,15 @@ namespace RechnungsfreigabeAPI.Controllers;
 [Authorize]
 public class PdfUploadController : ControllerBase
 {
-    private readonly IPdfUploadService _pdfUploadService;
-    private readonly ApplicationDbContext _context;
+    private readonly IPdfUploadService pdfUploadService;
+    private readonly ApplicationDbContext context;
 
     public PdfUploadController(
         IPdfUploadService pdfUploadService,
         ApplicationDbContext context)
     {
-        _pdfUploadService = pdfUploadService;
-        _context = context;
+        this.pdfUploadService = pdfUploadService;
+        this.context = context;
     }
 
     /// <summary>
@@ -49,7 +50,7 @@ public class PdfUploadController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
-            var result = await _pdfUploadService.UploadInvoicePdfAsync(
+            var result = await pdfUploadService.UploadInvoicePdfAsync(
                 file,
                 supplierId,
                 purchaseOrderId,
@@ -65,7 +66,7 @@ public class PdfUploadController : ControllerBase
                 return Ok(new
                 {
                     invoice = result,
-                    warning = "PDF hochgeladen, aber keine Daten extrahiert. Das PDF enthÃ¤lt mÃ¶glicherweise nur Bilder (gescanntes Dokument). Bitte Rechnungsdaten manuell vervollstÃ¤ndigen.",
+                    warning = "PDF hochgeladen, aber keine Daten extrahiert. Das PDF enthält möglicherweise nur Bilder (gescanntes Dokument). Bitte Rechnungsdaten manuell vervollständigen.",
                     requiresManualEntry = true
                 });
             }
@@ -110,7 +111,7 @@ public class PdfUploadController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
-            var result = await _pdfUploadService.UploadPurchaseOrderPdfAsync(
+            var result = await pdfUploadService.UploadPurchaseOrderPdfAsync(
                 file,
                 supplierId,
                 costCenterId,
@@ -125,7 +126,7 @@ public class PdfUploadController : ControllerBase
                 return Ok(new
                 {
                     purchaseOrder = result,
-                    warning = "PDF hochgeladen, aber keine Daten extrahiert. Das PDF enthÃ¤lt mÃ¶glicherweise nur Bilder (gescanntes Dokument). Bitte Daten manuell vervollstÃ¤ndigen.",
+                    warning = "PDF hochgeladen, aber keine Daten extrahiert. Das PDF enthält möglicherweise nur Bilder (gescanntes Dokument). Bitte Daten manuell vervollständigen.",
                     requiresManualEntry = true
                 });
             }
@@ -154,7 +155,7 @@ public class PdfUploadController : ControllerBase
     {
         try
         {
-            var invoice = await _context.Invoices.FindAsync(invoiceId);
+            var invoice = await context.Invoices.FindAsync(invoiceId);
             if (invoice == null)
             {
                 return NotFound(new { message = "Invoice not found" });
@@ -187,7 +188,7 @@ public class PdfUploadController : ControllerBase
                 return BadRequest(new { message = "Path is required" });
 
             // Versuche PDF von Datenbank basierend auf Dateiname zu finden
-            var invoice = await _context.Invoices
+            var invoice = await context.Invoices
                 .FirstOrDefaultAsync(i => i.OriginalFilename == path);
 
             if (invoice?.PdfContent == null)
@@ -212,7 +213,7 @@ public class PdfUploadController : ControllerBase
     {
         try
         {
-            var success = await _pdfUploadService.DeleteInvoicePdfAsync(invoiceId);
+            var success = await pdfUploadService.DeleteInvoicePdfAsync(invoiceId);
             
             if (!success)
             {
@@ -236,7 +237,7 @@ public class PdfUploadController : ControllerBase
     {
         try
         {
-            var status = await _pdfUploadService.GetUploadStatusAsync();
+            var status = await pdfUploadService.GetUploadStatusAsync();
             return Ok(status);
         }
         catch (Exception)
@@ -272,7 +273,7 @@ public class PdfUploadController : ControllerBase
             {
                 try
                 {
-                    var invoice = await _pdfUploadService.UploadInvoicePdfAsync(
+                    var invoice = await pdfUploadService.UploadInvoicePdfAsync(
                         file,
                         supplierId,
                         purchaseOrderId,

@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -10,11 +11,11 @@ namespace RechnungsfreigabeAPI.Controllers;
 [Authorize(Roles = "Administrator")]
 public class EscalationRulesController : ControllerBase
 {
-    private readonly IEscalationRuleService _escalationRuleService;
+    private readonly IEscalationRuleService escalationRuleService;
     public EscalationRulesController(
         IEscalationRuleService escalationRuleService)
     {
-        _escalationRuleService = escalationRuleService;
+        this.escalationRuleService = escalationRuleService;
         }
 
     [HttpGet]
@@ -22,7 +23,7 @@ public class EscalationRulesController : ControllerBase
     {
         try
         {
-            var rules = await _escalationRuleService.GetAllAsync();
+            var rules = await escalationRuleService.GetAllAsync();
             return Ok(rules);
         }
         catch (Exception)
@@ -37,7 +38,7 @@ public class EscalationRulesController : ControllerBase
     {
         try
         {
-            var rule = await _escalationRuleService.GetByIdAsync(id);
+            var rule = await escalationRuleService.GetByIdAsync(id);
             if (rule == null) return NotFound(new { message = "Regel nicht gefunden" });
             return Ok(rule);
         }
@@ -58,7 +59,7 @@ public class EscalationRulesController : ControllerBase
 
         try
         {
-            var created = await _escalationRuleService.CreateAsync(dto);
+            var created = await escalationRuleService.CreateAsync(dto);
             return CreatedAtAction(nameof(GetRule), new { id = created.Id }, created);
         }
         catch (Exception)
@@ -78,7 +79,7 @@ public class EscalationRulesController : ControllerBase
 
         try
         {
-            var updated = await _escalationRuleService.UpdateAsync(id, dto);
+            var updated = await escalationRuleService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(new { message = "Regel nicht gefunden" });
             return Ok(updated);
         }
@@ -94,14 +95,14 @@ public class EscalationRulesController : ControllerBase
     {
         try
         {
-            var deleted = await _escalationRuleService.DeleteAsync(id);
+            var deleted = await escalationRuleService.DeleteAsync(id);
             if (!deleted) return NotFound(new { message = "Regel nicht gefunden" });
             return NoContent();
         }
         catch (Exception)
         {
             
-            return StatusCode(500, new { message = "Fehler beim Löschen der Eskalationsregel" });
+            return StatusCode(500, new { message = "Fehler beim L�schen der Eskalationsregel" });
         }
     }
 }

@@ -1,32 +1,26 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Mail;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface IEmailService
-{
-    Task SendEmailAsync(string to, string subject, string body, bool isHtml = false);
-    Task SendEmailAsync(string to, string subject, string body, string[]? ccAddresses = null, string[]? bccAddresses = null, bool isHtml = false);
-    bool IsConfigured();
-}
 
 public class EmailService : IEmailService
 {
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<EmailService> _logger;
+    private readonly IConfiguration configuration;
+    private readonly ILogger<EmailService> logger;
 
     public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
     {
-        _configuration = configuration;
-        _logger = logger;
+        this.configuration = configuration;
+        this.logger = logger;
     }
 
     public bool IsConfigured()
     {
-        var settings = _configuration.GetSection("Email");
+        var settings = configuration.GetSection("Email");
         var host = settings["Host"];
         var from = settings["From"];
         return !string.IsNullOrWhiteSpace(host) && !string.IsNullOrWhiteSpace(from);
@@ -39,7 +33,7 @@ public class EmailService : IEmailService
 
     public async Task SendEmailAsync(string to, string subject, string body, string[]? ccAddresses = null, string[]? bccAddresses = null, bool isHtml = false)
     {
-        var settings = _configuration.GetSection("Email");
+        var settings = configuration.GetSection("Email");
         var host = settings["Host"];
         var from = settings["From"];
         var port = settings.GetValue<int?>("Port") ?? 25;
@@ -50,7 +44,7 @@ public class EmailService : IEmailService
 
         if (!IsConfigured())
         {
-            _logger.LogWarning("Email service not properly configured. Skipping email send to {To}", to);
+            logger.LogWarning("Email service not properly configured. Skipping email send to {To}", to);
             return;
         }
 
@@ -86,11 +80,11 @@ public class EmailService : IEmailService
                 }
             }
             await client.SendMailAsync(mail);
-            _logger.LogInformation("Email sent successfully to {To} with subject: {Subject}", to, subject);
+            logger.LogInformation("Email sent successfully to {To} with subject: {Subject}", to, subject);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {To} with subject: {Subject}", to, subject);
+            logger.LogError(ex, "Failed to send email to {To} with subject: {Subject}", to, subject);
             throw;
         }
     }

@@ -1,31 +1,18 @@
-ï»¿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 using System.Text.Json;
 
-namespace RechnungsfreigabeAPI.Services;
-
-public interface IInvoiceHistoryService
-{
-    Task CreateHistoryEntryAsync(CreateHistoryEntryDto createHistoryDto);
-    Task<List<InvoiceHistoryDto>> GetInvoiceHistoryAsync(int invoiceId);
-    Task<List<InvoiceHistoryTimelineDto>> GetInvoiceHistoryTimelineAsync(int invoiceId);
-    Task CreateSystemActionAsync(int invoiceId, string action, HistoryActionType actionType, string? systemReason = null, string? policyReference = null);
-    Task CreateEscalationAsync(int invoiceId, string reason, int? escalatedTo = null);
-    Task CreateStatusChangeAsync(int invoiceId, string oldStatus, string newStatus, int changedBy, string? comments = null);
-    Task CreateDataCompletionAsync(int invoiceId, List<FieldChangeDto> fieldChanges, int changedBy);
-    Task CreateApprovalActionAsync(int invoiceId, bool approved, int approverId, string? comments = null);
-    Task CreateAssignmentAsync(int invoiceId, int assignedTo, string policyReference, int? assignedBy = null);
-}
+namespace RechnungsfreigabeAPI.Services.Interfaces;
 
 public class InvoiceHistoryService : IInvoiceHistoryService
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IMapper _mapper;
-    private readonly IEmailService _emailService;
-    private readonly INotificationService _notificationService;
+    private readonly ApplicationDbContext context;
+    private readonly IMapper mapper;
+    private readonly IEmailService emailService;
+    private readonly INotificationService notificationService;
 
     public InvoiceHistoryService(
         ApplicationDbContext context,
@@ -33,10 +20,10 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         IEmailService emailService,
         INotificationService notificationService)
     {
-        _context = context;
-        _mapper = mapper;
-        _emailService = emailService;
-        _notificationService = notificationService;
+        this.context = context;
+        this.mapper = mapper;
+        this.emailService = emailService;
+        this.notificationService = notificationService;
     }
 
     public async Task CreateHistoryEntryAsync(CreateHistoryEntryDto createHistoryDto)
@@ -65,20 +52,20 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             ChangedAt = DateTime.UtcNow
         };
 
-        _context.InvoiceHistories.Add(history);
-        await _context.SaveChangesAsync();
+        context.InvoiceHistories.Add(history);
+        await context.SaveChangesAsync();
 
     }
 
     public async Task<List<InvoiceHistoryDto>> GetInvoiceHistoryAsync(int invoiceId)
     {
-        var histories = await _context.InvoiceHistories
+        var histories = await context.InvoiceHistories
             .Include(h => h.ChangedByUser)
             .Where(h => h.InvoiceId == invoiceId)
             .OrderByDescending(h => h.ChangedAt)
             .ToListAsync();
 
-        return _mapper.Map<List<InvoiceHistoryDto>>(histories);
+        return mapper.Map<List<InvoiceHistoryDto>>(histories);
     }
 
     public async Task<List<InvoiceHistoryTimelineDto>> GetInvoiceHistoryTimelineAsync(int invoiceId)
@@ -127,7 +114,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         });
 
         // Determine target user for notification/email
-        var invoice = await _context.Invoices
+        var invoice = await context.Invoices
             .Include(i => i.CostCenter)
                 .ThenInclude(cc => cc!.Manager)
             .Include(i => i.Project)
@@ -136,22 +123,22 @@ public class InvoiceHistoryService : IInvoiceHistoryService
             .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
         var targetUser = escalatedTo.HasValue
-            ? await _context.Users.FirstOrDefaultAsync(u => u.Id == escalatedTo.Value)
+            ? await context.Users.FirstOrDefaultAsync(u => u.Id == escalatedTo.Value)
             : invoice?.CostCenter?.Manager ?? invoice?.Project?.ProjectManager ?? invoice?.Creator;
 
         if (targetUser != null)
         {
-            var subject = $"Eskalation fÃ¼r Rechnung {invoice?.InvoiceNumber ?? invoiceId.ToString()}";
-            var body = reason ?? "Eine Eskalation wurde ausgelÃ¶st.";
+            var subject = $"Eskalation für Rechnung {invoice?.InvoiceNumber ?? invoiceId.ToString()}";
+            var body = reason ?? "Eine Eskalation wurde ausgelöst.";
 
             // Send email if we have an address
             if (!string.IsNullOrWhiteSpace(targetUser.Email))
             {
-                await _emailService.SendEmailAsync(targetUser.Email, subject, body, isHtml: false);
+                await emailService.SendEmailAsync(targetUser.Email, subject, body, isHtml: false);
             }
 
             // Also create an in-app notification
-            await _notificationService.CreateNotificationAsync(
+            await notificationService.CreateNotificationAsync(
                 targetUser.Id,
                 "invoice_escalation",
                 subject,
@@ -166,7 +153,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         await CreateHistoryEntryAsync(new CreateHistoryEntryDto
         {
             InvoiceId = invoiceId,
-            Action = "Status geÃ¤ndert",
+            Action = "Status geändert",
             ActionType = HistoryActionType.StatusChanged.ToString(),
             ActionSource = HistoryActionSource.User.ToString(),
             OldStatus = oldStatus,
@@ -181,7 +168,7 @@ public class InvoiceHistoryService : IInvoiceHistoryService
         await CreateHistoryEntryAsync(new CreateHistoryEntryDto
         {
             InvoiceId = invoiceId,
-            Action = "Daten vervollstÃ¤ndigt",
+            Action = "Daten vervollständigt",
             ActionType = HistoryActionType.DataCompleted.ToString(),
             ActionSource = HistoryActionSource.User.ToString(),
             FieldChanges = fieldChanges,

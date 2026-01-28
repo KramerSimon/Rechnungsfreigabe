@@ -1,1 +1,4 @@
 Rechnungsfreigabe.sln
+backend/bin/
+backend/obj/
+backend/publish/

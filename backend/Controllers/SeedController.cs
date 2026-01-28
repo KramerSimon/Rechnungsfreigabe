@@ -4,19 +4,20 @@ using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/seed")]
 public class SeedController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IPasswordService _passwordService;
+    private readonly ApplicationDbContext context;
+    private readonly IPasswordService passwordService;
     
     public SeedController(ApplicationDbContext context, IPasswordService passwordService)
     {
-        _context = context;
-        _passwordService = passwordService;
+        this.context = context;
+        this.passwordService = passwordService;
     }
 
     [HttpPost("init-database")]
@@ -26,10 +27,10 @@ public class SeedController : ControllerBase
         try
         {
             // Check if database already has users
-            var existingUsers = await _context.Users.AnyAsync();
+            var existingUsers = await context.Users.AnyAsync();
             if (existingUsers)
             {
-                return Ok(new { message = "Database already initialized", userCount = await _context.Users.CountAsync() });
+                return Ok(new { message = "Database already initialized", userCount = await context.Users.CountAsync() });
             }
 
             // Create Roles
@@ -42,11 +43,11 @@ public class SeedController : ControllerBase
                 new Role { Id = 5, Name = "Controller", Description = "Kann Reports einsehen", Color = "#F44336", IsSystemRole = false },
                 new Role { Id = 6, Name = "Manager", Description = "Kann Team-Rechnungen verwalten", Color = "#00BCD4", IsSystemRole = false }
             };
-            await _context.Roles.AddRangeAsync(roles);
-            await _context.SaveChangesAsync();
+            await context.Roles.AddRangeAsync(roles);
+            await context.SaveChangesAsync();
 
             // Create Users (password: Password123!)
-            var passwordHash = _passwordService.HashPassword("Password123!");
+            var passwordHash = passwordService.HashPassword("Password123!");
             var users = new List<User>
             {
                 new User { Id = 1, Username = "admin", PasswordHash = passwordHash, Email = "admin@example.com", FirstName = "System", LastName = "Administrator", IsActive = true },
@@ -55,8 +56,8 @@ public class SeedController : ControllerBase
                 new User { Id = 4, Username = "hans.schmidt", PasswordHash = passwordHash, Email = "hans.schmidt@example.com", FirstName = "Hans", LastName = "Schmidt", IsActive = true },
                 new User { Id = 5, Username = "lisa.klein", PasswordHash = passwordHash, Email = "lisa.klein@example.com", FirstName = "Lisa", LastName = "Klein", IsActive = true }
             };
-            await _context.Users.AddRangeAsync(users);
-            await _context.SaveChangesAsync();
+            await context.Users.AddRangeAsync(users);
+            await context.SaveChangesAsync();
 
             // Assign Roles to Users
             var userRoles = new List<UserRole>
@@ -67,8 +68,8 @@ public class SeedController : ControllerBase
                 new UserRole { UserId = 4, RoleId = 6 },
                 new UserRole { UserId = 5, RoleId = 5 }
             };
-            await _context.UserRoles.AddRangeAsync(userRoles);
-            await _context.SaveChangesAsync();
+            await context.UserRoles.AddRangeAsync(userRoles);
+            await context.SaveChangesAsync();
 
             // Create Cost Centers
             var costCenters = new List<CostCenter>
@@ -80,8 +81,8 @@ public class SeedController : ControllerBase
                 new CostCenter { Id = "SALES", Name = "Sales & Marketing", Description = "Vertrieb und Marketing", Budget = 300000m, IsActive = true, ManagerId = 2 },
                 new CostCenter { Id = "FINANCE", Name = "Finance & Controlling", Description = "Finanzabteilung", Budget = 250000m, IsActive = true, ManagerId = 5 }
             };
-            await _context.CostCenters.AddRangeAsync(costCenters);
-            await _context.SaveChangesAsync();
+            await context.CostCenters.AddRangeAsync(costCenters);
+            await context.SaveChangesAsync();
 
             return Ok(new { 
                 message = "Database initialized successfully!", 
@@ -104,12 +105,12 @@ public class SeedController : ControllerBase
         try
         {
             // Clear existing data to refresh (in correct order for foreign keys)
-            _context.ApprovalWorkflows.RemoveRange(_context.ApprovalWorkflows);
-            _context.Notifications.RemoveRange(_context.Notifications);
-            _context.InvoiceHistories.RemoveRange(_context.InvoiceHistories);
-            _context.Invoices.RemoveRange(_context.Invoices);
-            _context.Suppliers.RemoveRange(_context.Suppliers);
-            await _context.SaveChangesAsync();
+            context.ApprovalWorkflows.RemoveRange(context.ApprovalWorkflows);
+            context.Notifications.RemoveRange(context.Notifications);
+            context.InvoiceHistories.RemoveRange(context.InvoiceHistories);
+            context.Invoices.RemoveRange(context.Invoices);
+            context.Suppliers.RemoveRange(context.Suppliers);
+            await context.SaveChangesAsync();
 
             // Seed Suppliers first
             var suppliers = new List<Supplier>
@@ -121,12 +122,12 @@ public class SeedController : ControllerBase
                 new Supplier { Id = 5, Name = "Office World", LegalName = "Office World Handels-GmbH", Email = "service@officeworld.de", City = "Köln", Country = "Deutschland" }
             };
 
-            await _context.Suppliers.AddRangeAsync(suppliers);
-            await _context.SaveChangesAsync();
+            await context.Suppliers.AddRangeAsync(suppliers);
+            await context.SaveChangesAsync();
 
             // Ensure Cost Centers exist (don't delete them, just add if missing)
             var costCenterIds = new[] { "IT", "OFFICE", "HR", "ADMIN", "SALES", "FINANCE" };
-            var existingCostCenters = await _context.CostCenters
+            var existingCostCenters = await context.CostCenters
                 .Where(cc => costCenterIds.Contains(cc.Id))
                 .Select(cc => cc.Id)
                 .ToListAsync();
@@ -148,8 +149,8 @@ public class SeedController : ControllerBase
                 if (missingCostCenterIds.Contains("FINANCE"))
                     newCostCenters.Add(new CostCenter { Id = "FINANCE", Name = "Finance & Controlling", Budget = 250000, IsActive = true });
                 
-                await _context.CostCenters.AddRangeAsync(newCostCenters);
-                await _context.SaveChangesAsync();
+                await context.CostCenters.AddRangeAsync(newCostCenters);
+                await context.SaveChangesAsync();
             }
 
             // Seed Invoices with current dates (December 15, 2025 onwards)
@@ -346,8 +347,8 @@ public class SeedController : ControllerBase
                 }
             };
 
-            await _context.Invoices.AddRangeAsync(invoices);
-            await _context.SaveChangesAsync();
+            await context.Invoices.AddRangeAsync(invoices);
+            await context.SaveChangesAsync();
 
             // Seed ApprovalWorkflows - All requiring Admin (User ID: 1) approval
             var workflows = new List<ApprovalWorkflow>
@@ -444,8 +445,8 @@ public class SeedController : ControllerBase
                 }
             };
 
-            await _context.ApprovalWorkflows.AddRangeAsync(workflows);
-            await _context.SaveChangesAsync();
+            await context.ApprovalWorkflows.AddRangeAsync(workflows);
+            await context.SaveChangesAsync();
 
             return Ok(new { message = "Sample data seeded successfully", 
                 suppliers = suppliers.Count, 

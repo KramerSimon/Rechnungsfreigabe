@@ -3,29 +3,21 @@ using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface IRoleService
-{
-    Task<IEnumerable<RoleDto>> GetAllAsync();
-    Task<RoleDto?> GetByIdAsync(int id);
-    Task<RoleDto> CreateAsync(CreateRoleDto dto);
-    Task<RoleDto?> UpdateAsync(int id, UpdateRoleDto dto);
-    Task<bool> DeleteAsync(int id);
-}
 
 public class RoleService : IRoleService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext context;
 
     public RoleService(ApplicationDbContext context)
     {
-        _context = context;
+        this.context = context;
     }
 
     public async Task<IEnumerable<RoleDto>> GetAllAsync()
     {
-        var roles = await _context.Roles
+        var roles = await context.Roles
             .Include(r => r.RolePermissions)
             .ThenInclude(rp => rp.Permission)
             .ToListAsync();
@@ -34,7 +26,7 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto?> GetByIdAsync(int id)
     {
-        var role = await _context.Roles
+        var role = await context.Roles
             .Include(r => r.RolePermissions)
             .ThenInclude(rp => rp.Permission)
             .FirstOrDefaultAsync(r => r.Id == id);
@@ -51,8 +43,8 @@ public class RoleService : IRoleService
             IsSystemRole = dto.IsSystemRole ?? false
         };
 
-        _context.Roles.Add(role);
-        await _context.SaveChangesAsync();
+        context.Roles.Add(role);
+        await context.SaveChangesAsync();
 
         // Add permissions
         if (dto.Permissions != null && dto.Permissions.Any())
@@ -72,23 +64,23 @@ public class RoleService : IRoleService
 
             foreach (var permId in permissionIds)
             {
-                _context.RolePermissions.Add(new RolePermission
+                context.RolePermissions.Add(new RolePermission
                 {
                     RoleId = role.Id,
                     PermissionId = permId
                 });
             }
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         // Reload with permissions
-        await _context.Entry(role).Collection(r => r.RolePermissions).LoadAsync();
+        await context.Entry(role).Collection(r => r.RolePermissions).LoadAsync();
         return MapToDto(role);
     }
 
     public async Task<RoleDto?> UpdateAsync(int id, UpdateRoleDto dto)
     {
-        var role = await _context.Roles
+        var role = await context.Roles
             .Include(r => r.RolePermissions)
             .FirstOrDefaultAsync(r => r.Id == id);
         
@@ -107,8 +99,8 @@ public class RoleService : IRoleService
         if (dto.Permissions != null)
         {
             // Remove old permissions
-            var oldPermissions = _context.RolePermissions.Where(rp => rp.RoleId == id).ToList();
-            _context.RolePermissions.RemoveRange(oldPermissions);
+            var oldPermissions = context.RolePermissions.Where(rp => rp.RoleId == id).ToList();
+            context.RolePermissions.RemoveRange(oldPermissions);
 
             // Add new permissions
             var permissionIds = new List<int>();
@@ -126,7 +118,7 @@ public class RoleService : IRoleService
 
             foreach (var permId in permissionIds)
             {
-                _context.RolePermissions.Add(new RolePermission
+                context.RolePermissions.Add(new RolePermission
                 {
                     RoleId = role.Id,
                     PermissionId = permId
@@ -134,23 +126,23 @@ public class RoleService : IRoleService
             }
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         
         // Reload with permissions
-        await _context.Entry(role).Collection(r => r.RolePermissions).LoadAsync();
+        await context.Entry(role).Collection(r => r.RolePermissions).LoadAsync();
         return MapToDto(role);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var role = await _context.Roles.FindAsync(id);
+        var role = await context.Roles.FindAsync(id);
         if (role == null || role.IsSystemRole) return false;
 
-        var isInUse = await _context.UserRoles.AnyAsync(ur => ur.RoleId == id);
+        var isInUse = await context.UserRoles.AnyAsync(ur => ur.RoleId == id);
         if (isInUse) return false;
 
-        _context.Roles.Remove(role);
-        await _context.SaveChangesAsync();
+        context.Roles.Remove(role);
+        await context.SaveChangesAsync();
         return true;
     }
 

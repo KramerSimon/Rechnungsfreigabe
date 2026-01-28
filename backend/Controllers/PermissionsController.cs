@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -10,24 +11,24 @@ namespace RechnungsfreigabeAPI.Controllers;
 [Authorize]
 public class PermissionsController : ControllerBase
 {
-    private readonly IPermissionService _permissionService;
+    private readonly IPermissionService permissionService;
 
     public PermissionsController(IPermissionService permissionService)
     {
-        _permissionService = permissionService;
+        this.permissionService = permissionService;
     }
 
     [HttpGet]
     public async Task<ActionResult<List<PermissionDto>>> GetAllPermissions()
     {
-        var permissions = await _permissionService.GetAllPermissionsAsync();
+        var permissions = await permissionService.GetAllPermissionsAsync();
         return Ok(permissions);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<PermissionDto>> GetPermissionById(int id)
     {
-        var permission = await _permissionService.GetPermissionByIdAsync(id);
+        var permission = await permissionService.GetPermissionByIdAsync(id);
         if (permission == null)
             return NotFound(new { message = $"Permission with ID {id} not found" });
 
@@ -38,7 +39,7 @@ public class PermissionsController : ControllerBase
     [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<PermissionDto>> CreatePermission(CreatePermissionDto dto)
     {
-        var permission = await _permissionService.CreatePermissionAsync(dto);
+        var permission = await permissionService.CreatePermissionAsync(dto);
         return CreatedAtAction(nameof(GetPermissionById), new { id = permission.Id }, permission);
     }
 
@@ -48,7 +49,7 @@ public class PermissionsController : ControllerBase
     {
         try
         {
-            var permission = await _permissionService.UpdatePermissionAsync(id, dto);
+            var permission = await permissionService.UpdatePermissionAsync(id, dto);
             return Ok(permission);
         }
         catch (KeyNotFoundException ex)
@@ -67,7 +68,7 @@ public class PermissionsController : ControllerBase
     {
         try
         {
-            await _permissionService.DeletePermissionAsync(id);
+            await permissionService.DeletePermissionAsync(id);
             return Ok(new { message = "Permission deleted successfully" });
         }
         catch (KeyNotFoundException ex)

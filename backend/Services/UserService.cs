@@ -1,41 +1,24 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface IUserService
-{
-    Task<IEnumerable<UserDto>> GetAllUsersAsync();
-    Task<UserDto?> GetUserByIdAsync(int id);
-    Task<User?> GetUserByUsernameAsync(string username);
-    Task<User?> GetUserEntityByIdAsync(int id);
-    Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
-    Task<UserDto?> UpdateUserAsync(int id, UpdateUserDto updateUserDto);
-    Task<bool> DeleteUserAsync(int id);
-    Task<string[]> GetUserPermissionsAsync(int userId);
-    Task<PagedResult<UserDto>> GetUsersPagedAsync(PageRequest pageRequest);
-    Task IncrementFailedLoginAttemptsAsync(int userId);
-    Task ResetFailedLoginAttemptsAsync(int userId);
-    Task LockUserAccountAsync(int userId, DateTime lockedUntil);
-    Task UpdatePasswordAsync(int userId, string passwordHash);
-    Task UpdateLastLoginAsync(int userId);
-}
 
 public class UserService : IUserService
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IPasswordService _passwordService;
+    private readonly ApplicationDbContext context;
+    private readonly IPasswordService passwordService;
     public UserService(ApplicationDbContext context, IPasswordService passwordService)
     {
-        _context = context;
-        _passwordService = passwordService;
+        this.context = context;
+        this.passwordService = passwordService;
         }
 
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
     {
-        var users = await _context.Users
+        var users = await context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .Where(u => u.IsActive)
@@ -46,7 +29,7 @@ public class UserService : IUserService
 
     public async Task<UserDto?> GetUserByIdAsync(int id)
     {
-        var user = await _context.Users
+        var user = await context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Id == id);
@@ -56,7 +39,7 @@ public class UserService : IUserService
 
     public async Task<User?> GetUserByUsernameAsync(string username)
     {
-        return await _context.Users
+        return await context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .ThenInclude(r => r.RolePermissions)
@@ -66,7 +49,7 @@ public class UserService : IUserService
 
     public async Task<User?> GetUserEntityByIdAsync(int id)
     {
-        return await _context.Users
+        return await context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .ThenInclude(r => r.RolePermissions)
@@ -79,7 +62,7 @@ public class UserService : IUserService
         try
         {
             // Hash the password
-            var passwordHash = _passwordService.HashPassword(createUserDto.Password);
+            var passwordHash = passwordService.HashPassword(createUserDto.Password);
 
             var user = new User
             {
@@ -94,8 +77,8 @@ public class UserService : IUserService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
 
             // Add user roles
             foreach (var roleId in createUserDto.RoleIds)
@@ -106,13 +89,13 @@ public class UserService : IUserService
                     RoleId = roleId,
                     AssignedAt = DateTime.UtcNow
                 };
-                _context.UserRoles.Add(userRole);
+                context.UserRoles.Add(userRole);
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             // Reload user with roles
-            var createdUser = await _context.Users
+            var createdUser = await context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .FirstAsync(u => u.Id == user.Id);
@@ -130,7 +113,7 @@ public class UserService : IUserService
     {
         try
         {
-            var user = await _context.Users
+            var user = await context.Users
                 .Include(u => u.UserRoles)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
@@ -152,7 +135,7 @@ public class UserService : IUserService
             if (updateUserDto.RoleIds != null)
             {
                 // Remove existing roles
-                _context.UserRoles.RemoveRange(user.UserRoles);
+                context.UserRoles.RemoveRange(user.UserRoles);
 
                 // Add new roles
                 foreach (var roleId in updateUserDto.RoleIds)
@@ -163,14 +146,14 @@ public class UserService : IUserService
                         RoleId = roleId,
                         AssignedAt = DateTime.UtcNow
                     };
-                    _context.UserRoles.Add(userRole);
+                    context.UserRoles.Add(userRole);
                 }
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             // Reload user with updated roles
-            var updatedUser = await _context.Users
+            var updatedUser = await context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .FirstAsync(u => u.Id == id);
@@ -188,14 +171,14 @@ public class UserService : IUserService
     {
         try
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await context.Users.FindAsync(id);
             if (user == null) return false;
 
             // Soft delete - just mark as inactive
             user.IsActive = false;
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return true;
         }
@@ -208,7 +191,7 @@ public class UserService : IUserService
 
     public async Task<string[]> GetUserPermissionsAsync(int userId)
     {
-        var rolePermissions = await _context.UserRoles
+        var rolePermissions = await context.UserRoles
             .Where(ur => ur.UserId == userId)
             .Include(ur => ur.Role)
             .ThenInclude(r => r.RolePermissions)
@@ -223,7 +206,7 @@ public class UserService : IUserService
 
     public async Task<PagedResult<UserDto>> GetUsersPagedAsync(PageRequest pageRequest)
     {
-        var query = _context.Users
+        var query = context.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .AsQueryable();
@@ -292,58 +275,58 @@ public class UserService : IUserService
 
     public async Task IncrementFailedLoginAttemptsAsync(int userId)
     {
-        var user = await _context.Users.FindAsync(userId);
+        var user = await context.Users.FindAsync(userId);
         if (user != null)
         {
             user.FailedLoginAttempts++;
             user.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 
     public async Task ResetFailedLoginAttemptsAsync(int userId)
     {
-        var user = await _context.Users.FindAsync(userId);
+        var user = await context.Users.FindAsync(userId);
         if (user != null)
         {
             user.FailedLoginAttempts = 0;
             user.LockedUntil = null;
             user.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 
     public async Task LockUserAccountAsync(int userId, DateTime lockedUntil)
     {
-        var user = await _context.Users.FindAsync(userId);
+        var user = await context.Users.FindAsync(userId);
         if (user != null)
         {
             user.LockedUntil = lockedUntil;
             user.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 
     public async Task UpdatePasswordAsync(int userId, string passwordHash)
     {
-        var user = await _context.Users.FindAsync(userId);
+        var user = await context.Users.FindAsync(userId);
         if (user != null)
         {
             user.PasswordHash = passwordHash;
             user.PasswordChangedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 
     public async Task UpdateLastLoginAsync(int userId)
     {
-        var user = await _context.Users.FindAsync(userId);
+        var user = await context.Users.FindAsync(userId);
         if (user != null)
         {
             user.LastLogin = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 }

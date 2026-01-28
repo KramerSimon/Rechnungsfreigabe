@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -11,11 +12,11 @@ namespace RechnungsfreigabeAPI.Controllers;
 [Authorize(Roles = "Administrator")]
 public class SystemConfigController : ControllerBase
 {
-    private readonly ISystemConfigService _systemConfigService;
+    private readonly ISystemConfigService systemConfigService;
 
     public SystemConfigController(ISystemConfigService systemConfigService)
     {
-        _systemConfigService = systemConfigService;
+        this.systemConfigService = systemConfigService;
     }
 
     [HttpGet]
@@ -23,7 +24,7 @@ public class SystemConfigController : ControllerBase
     {
         try
         {
-            var configs = await _systemConfigService.GetAllAsync();
+            var configs = await systemConfigService.GetAllAsync();
             return Ok(configs);
         }
         catch (Exception)
@@ -37,7 +38,7 @@ public class SystemConfigController : ControllerBase
     {
         try
         {
-            var config = await _systemConfigService.GetByKeyAsync(key);
+            var config = await systemConfigService.GetByKeyAsync(key);
             if (config == null)
             {
                 return NotFound(new { message = "Eintrag nicht gefunden" });
@@ -67,7 +68,7 @@ public class SystemConfigController : ControllerBase
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? userId = int.TryParse(userIdClaim, out var parsedUserId) ? parsedUserId : null;
 
-            var updated = await _systemConfigService.UpsertAsync(key, dto, userId);
+            var updated = await systemConfigService.UpsertAsync(key, dto, userId);
             return Ok(updated);
         }
         catch (ArgumentException ex)

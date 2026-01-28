@@ -1,30 +1,17 @@
-ï»¿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface INotificationService
-{
-    Task<IEnumerable<NotificationDto>> GetUserNotificationsAsync(int userId, bool unreadOnly = false);
-    Task<NotificationDto> CreateNotificationAsync(int userId, string type, string title, string message, int? invoiceId = null, NotificationPriority priority = NotificationPriority.Normal);
-    Task<bool> MarkNotificationAsReadAsync(int notificationId, int userId);
-    Task<bool> MarkAllAsReadAsync(int userId);
-    Task<int> GetUnreadCountAsync(int userId);
-    Task NotifyInvoiceCreatedAsync(int invoiceId);
-    Task NotifyInvoiceApprovalAsync(int invoiceId, bool approved);
-    Task NotifyOverdueInvoicesAsync();
-    Task NotifyApprovalStatusAsync(int invoiceId, string status);
-    Task EnsureApprovalNotificationForApproverAsync(int invoiceId, int approverId);
-}
 
 public class NotificationService : INotificationService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext context;
     public NotificationService(ApplicationDbContext context)
     {
-        _context = context;
+        this.context = context;
         }
 
     /// <summary>
@@ -35,12 +22,12 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var exists = await _context.Notifications.AnyAsync(n =>
+            var exists = await context.Notifications.AnyAsync(n =>
                 n.UserId == approverId && n.InvoiceId == invoiceId && n.Type == "invoice_approval_required");
 
             if (exists) return;
 
-            var invoice = await _context.Invoices
+            var invoice = await context.Invoices
                 .Include(i => i.Supplier)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
@@ -50,7 +37,7 @@ public class NotificationService : INotificationService
                 approverId,
                 "invoice_approval_required",
                 "Neue Rechnung zur Freigabe",
-                $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} Ã¼ber {invoice.TotalAmount:C} EUR wartet auf Ihre Freigabe.",
+                $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} über {invoice.TotalAmount:C} EUR wartet auf Ihre Freigabe.",
                 invoiceId,
                 NotificationPriority.Normal
             );
@@ -63,7 +50,7 @@ public class NotificationService : INotificationService
 
     public async Task<IEnumerable<NotificationDto>> GetUserNotificationsAsync(int userId, bool unreadOnly = false)
     {
-        var query = _context.Notifications
+        var query = context.Notifications
             .Include(n => n.Invoice)
             .ThenInclude(i => i!.Supplier)
             .Where(n => n.UserId == userId);
@@ -103,11 +90,11 @@ public class NotificationService : INotificationService
                 notification.ActionUrl = $"/invoices/{invoiceId}";
             }
 
-            _context.Notifications.Add(notification);
-            await _context.SaveChangesAsync();
+            context.Notifications.Add(notification);
+            await context.SaveChangesAsync();
 
             // Reload with invoice details
-            var createdNotification = await _context.Notifications
+            var createdNotification = await context.Notifications
                 .Include(n => n.Invoice)
                 .ThenInclude(i => i!.Supplier)
                 .FirstAsync(n => n.Id == notification.Id);
@@ -125,7 +112,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var notification = await _context.Notifications
+            var notification = await context.Notifications
                 .FirstOrDefaultAsync(n => n.Id == notificationId && n.UserId == userId);
 
             if (notification == null) return false;
@@ -133,7 +120,7 @@ public class NotificationService : INotificationService
             notification.IsRead = true;
             notification.ReadAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
         catch (Exception)
@@ -147,7 +134,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var unreadNotifications = await _context.Notifications
+            var unreadNotifications = await context.Notifications
                 .Where(n => n.UserId == userId && !n.IsRead)
                 .ToListAsync();
 
@@ -157,7 +144,7 @@ public class NotificationService : INotificationService
                 notification.ReadAt = DateTime.UtcNow;
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             
             return true;
         }
@@ -170,7 +157,7 @@ public class NotificationService : INotificationService
 
     public async Task<int> GetUnreadCountAsync(int userId)
     {
-        return await _context.Notifications
+        return await context.Notifications
             .CountAsync(n => n.UserId == userId && !n.IsRead);
     }
 
@@ -178,7 +165,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var invoice = await _context.Invoices
+            var invoice = await context.Invoices
                 .Include(i => i.Supplier)
                 .Include(i => i.ApprovalWorkflows)
                 .ThenInclude(aw => aw.Approver)
@@ -189,7 +176,7 @@ public class NotificationService : INotificationService
             var notifiedUserIds = new HashSet<int>();
 
             // Notify approvers
-            var pendingStatus = await _context.Statuses
+            var pendingStatus = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
                                             s.EntityType == EntityTypes.ApprovalWorkflow);
             
@@ -206,14 +193,14 @@ public class NotificationService : INotificationService
                     approver.Id,
                     "invoice_approval_required",
                     "Neue Rechnung zur Freigabe",
-                    $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} Ã¼ber {invoice.TotalAmount:C} EUR wartet auf Ihre Freigabe.",
+                    $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} über {invoice.TotalAmount:C} EUR wartet auf Ihre Freigabe.",
                     invoiceId,
                     NotificationPriority.Normal
                 );
             }
 
             // Notify accounting team
-            var accountingUsers = await _context.Users
+            var accountingUsers = await context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Buchhaltung"))
@@ -226,14 +213,14 @@ public class NotificationService : INotificationService
                     accountingUser.Id,
                     "invoice_received",
                     "Neue Rechnung eingegangen",
-                    $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} Ã¼ber {invoice.TotalAmount:C} EUR ist eingegangen.",
+                    $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} über {invoice.TotalAmount:C} EUR ist eingegangen.",
                     invoiceId,
                     NotificationPriority.Low
                 );
             }
 
             // Notify admins (if not already notified)
-            var adminUsers = await _context.Users
+            var adminUsers = await context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Administrator"))
@@ -247,7 +234,7 @@ public class NotificationService : INotificationService
                         adminUser.Id,
                         "invoice_received",
                         "Neue Rechnung eingegangen",
-                        $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} Ã¼ber {invoice.TotalAmount:C} EUR ist eingegangen.",
+                        $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} über {invoice.TotalAmount:C} EUR ist eingegangen.",
                         invoiceId,
                         NotificationPriority.Normal
                     );
@@ -264,7 +251,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var invoice = await _context.Invoices
+            var invoice = await context.Invoices
                 .Include(i => i.Supplier)
                 .Include(i => i.Creator)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
@@ -273,7 +260,7 @@ public class NotificationService : INotificationService
 
             var actionText = approved ? "freigegeben" : "abgelehnt";
             var title = $"Rechnung {actionText}";
-            var message = $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} Ã¼ber {invoice.TotalAmount:C} EUR wurde {actionText}.";
+            var message = $"Rechnung {invoice.InvoiceNumber} von {invoice.Supplier.Name} über {invoice.TotalAmount:C} EUR wurde {actionText}.";
             var priority = approved ? NotificationPriority.Normal : NotificationPriority.High;
 
             // Notify creator if exists
@@ -290,7 +277,7 @@ public class NotificationService : INotificationService
             }
 
             // Notify accounting team
-            var accountingUsers = await _context.Users
+            var accountingUsers = await context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == "Buchhaltung"))
@@ -318,17 +305,17 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var bezahltStatus = await _context.Statuses
+            var bezahltStatus = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Bezahlt && 
                                             s.EntityType == EntityTypes.Invoice);
-            var storniert = await _context.Statuses
+            var storniert = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Storniert && 
                                             s.EntityType == EntityTypes.Invoice);
-            var ueberfaellig = await _context.Statuses
+            var ueberfaellig = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Ueberfaellig && 
                                             s.EntityType == EntityTypes.Invoice);
             
-            var overdueInvoices = await _context.Invoices
+            var overdueInvoices = await context.Invoices
                 .Include(i => i.Supplier)
                 .Where(i => i.DueDate < DateTime.UtcNow && 
                            i.StatusId != bezahltStatus!.Id && 
@@ -346,10 +333,10 @@ public class NotificationService : INotificationService
                 invoice.UpdatedAt = DateTime.UtcNow;
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             // Notify relevant users about overdue invoices
-            var financeUsers = await _context.Users
+            var financeUsers = await context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.UserRoles.Any(ur => 
@@ -363,8 +350,8 @@ public class NotificationService : INotificationService
                     await CreateNotificationAsync(
                         user.Id,
                         "overdue_invoices",
-                        "ÃœberfÃ¤llige Rechnungen",
-                        $"{overdueInvoices.Count} Rechnung(en) sind Ã¼berfÃ¤llig und benÃ¶tigen Ihre Aufmerksamkeit.",
+                        "Überfällige Rechnungen",
+                        $"{overdueInvoices.Count} Rechnung(en) sind überfällig und benötigen Ihre Aufmerksamkeit.",
                         null,
                         NotificationPriority.High
                     );
@@ -411,7 +398,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var invoice = await _context.Invoices
+            var invoice = await context.Invoices
                 .Include(i => i.Creator)
                 .Include(i => i.Supplier)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);

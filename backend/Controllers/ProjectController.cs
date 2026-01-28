@@ -1,17 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
-using backend.Services;
+using RechnungsfreigabeAPI.Services.Interfaces;
 
-namespace backend.Controllers
-{
-    [ApiController]
-    [Route("api/v1/projects")]
-    public class ProjectsController : ControllerBase
+namespace RechnungsfreigabeAPI.Controllers;
+
+[ApiController]
+[Route("api/v1/projects")]
+public class ProjectsController : ControllerBase
     {
-        private readonly IProjectService _projectService;
+        private readonly IProjectService projectService;
         public ProjectsController(IProjectService projectService)
         {
-            _projectService = projectService;
+            this.projectService = projectService;
         }
 
         [HttpGet]
@@ -19,7 +19,7 @@ namespace backend.Controllers
         {
             try
             {
-                var projects = await _projectService.GetAllProjectsAsync();
+                var projects = await projectService.GetAllProjectsAsync();
                 return Ok(projects);
             }
             catch (Exception)
@@ -33,7 +33,7 @@ namespace backend.Controllers
         {
             try
             {
-                var project = await _projectService.GetProjectByIdAsync(id);
+                var project = await projectService.GetProjectByIdAsync(id);
 
                 if (project == null)
                 {
@@ -58,7 +58,7 @@ namespace backend.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var project = await _projectService.CreateProjectAsync(createProjectDto);
+                var project = await projectService.CreateProjectAsync(createProjectDto);
 
                 return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
             }
@@ -82,7 +82,7 @@ namespace backend.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var project = await _projectService.UpdateProjectAsync(id, updateProjectDto);
+                var project = await projectService.UpdateProjectAsync(id, updateProjectDto);
 
                 if (project == null)
                 {
@@ -106,7 +106,7 @@ namespace backend.Controllers
         {
             try
             {
-                var success = await _projectService.DeleteProjectAsync(id);
+                var success = await projectService.DeleteProjectAsync(id);
 
                 if (!success)
                 {
@@ -120,5 +120,4 @@ namespace backend.Controllers
                 return StatusCode(500, new { message = "An error occurred while deleting the project" });
             }
         }
-    }
 }

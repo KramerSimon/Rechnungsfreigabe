@@ -1,42 +1,33 @@
-﻿using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Tokens;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface IAuthService
-{
-    Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginRequest);
-    Task<UserDto?> GetCurrentUserAsync(string token);
-    Task<bool> ValidateTokenAsync(string token);
-    Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword);
-    Task<bool> ResetPasswordAsync(string username, string newPassword);
-    string GenerateToken(User user, string[] permissions);
-}
 
 public class AuthService : IAuthService
 {
-    private readonly IUserService _userService;
-    private readonly IPasswordService _passwordService;
-    private readonly IConfiguration _configuration;
+    private readonly IUserService userService;
+    private readonly IPasswordService passwordService;
+    private readonly IConfiguration configuration;
     private const int MaxFailedAttempts = 5;
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
     public AuthService(IUserService userService, IPasswordService passwordService, IConfiguration configuration)
     {
-        _userService = userService;
-        _passwordService = passwordService;
-        _configuration = configuration;
+        this.userService = userService;
+        this.passwordService = passwordService;
+        this.configuration = configuration;
         }
 
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginRequest)
     {
         try
         {
-            var user = await _userService.GetUserByUsernameAsync(loginRequest.Username);
+            var user = await userService.GetUserByUsernameAsync(loginRequest.Username);
             
             if (user == null || !user.IsActive)
             {
@@ -52,15 +43,15 @@ public class AuthService : IAuthService
             }
 
             // Verify password
-            if (!_passwordService.VerifyPassword(loginRequest.Password, user.PasswordHash))
+            if (!passwordService.VerifyPassword(loginRequest.Password, user.PasswordHash))
             {
                 // Increment failed login attempts
-                await _userService.IncrementFailedLoginAttemptsAsync(user.Id);
+                await userService.IncrementFailedLoginAttemptsAsync(user.Id);
                 
                 // Check if we should lock the account
                 if (user.FailedLoginAttempts + 1 >= MaxFailedAttempts)
                 {
-                    await _userService.LockUserAccountAsync(user.Id, DateTime.UtcNow.Add(LockoutDuration));
+                    await userService.LockUserAccountAsync(user.Id, DateTime.UtcNow.Add(LockoutDuration));
                     
                 }
 
@@ -68,13 +59,13 @@ public class AuthService : IAuthService
             }
 
             // Reset failed login attempts on successful login
-            await _userService.ResetFailedLoginAttemptsAsync(user.Id);
+            await userService.ResetFailedLoginAttemptsAsync(user.Id);
 
             // Update last login timestamp
-            await _userService.UpdateLastLoginAsync(user.Id);
+            await userService.UpdateLastLoginAsync(user.Id);
 
             // Get user permissions from roles
-            var permissions = await _userService.GetUserPermissionsAsync(user.Id);
+            var permissions = await userService.GetUserPermissionsAsync(user.Id);
             
             // Generate JWT token
             var token = GenerateToken(user, permissions);
@@ -122,7 +113,7 @@ public class AuthService : IAuthService
             var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdClaim, out var userId)) return null;
 
-            var user = await _userService.GetUserByIdAsync(userId);
+            var user = await userService.GetUserByIdAsync(userId);
             if (user == null) return null;
 
             return new UserDto
@@ -158,7 +149,7 @@ public class AuthService : IAuthService
 
     public string GenerateToken(User user, string[] permissions)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var jwtSettings = configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"];
         var issuer = jwtSettings["Issuer"];
         var audience = jwtSettings["Audience"];
@@ -209,7 +200,7 @@ public class AuthService : IAuthService
     {
         try
         {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var jwtSettings = configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["SecretKey"];
             var issuer = jwtSettings["Issuer"];
             var audience = jwtSettings["Audience"];
@@ -242,27 +233,27 @@ public class AuthService : IAuthService
     {
         try
         {
-            var user = await _userService.GetUserEntityByIdAsync(userId);
+            var user = await userService.GetUserEntityByIdAsync(userId);
             if (user == null || !user.IsActive)
                 return false;
 
             // Verify current password
-            if (!_passwordService.VerifyPassword(currentPassword, user.PasswordHash))
+            if (!passwordService.VerifyPassword(currentPassword, user.PasswordHash))
             {
                 
                 return false;
             }
 
             // Validate new password
-            if (!_passwordService.IsPasswordValid(newPassword))
+            if (!passwordService.IsPasswordValid(newPassword))
             {
                 
                 return false;
             }
 
             // Hash new password and update user
-            var newPasswordHash = _passwordService.HashPassword(newPassword);
-            await _userService.UpdatePasswordAsync(userId, newPasswordHash);
+            var newPasswordHash = passwordService.HashPassword(newPassword);
+            await userService.UpdatePasswordAsync(userId, newPasswordHash);
 
             return true;
         }
@@ -277,23 +268,23 @@ public class AuthService : IAuthService
     {
         try
         {
-            var user = await _userService.GetUserByUsernameAsync(username);
+            var user = await userService.GetUserByUsernameAsync(username);
             if (user == null || !user.IsActive)
                 return false;
 
             // Validate new password
-            if (!_passwordService.IsPasswordValid(newPassword))
+            if (!passwordService.IsPasswordValid(newPassword))
             {
                 
                 return false;
             }
 
             // Hash new password and update user
-            var newPasswordHash = _passwordService.HashPassword(newPassword);
-            await _userService.UpdatePasswordAsync(user.Id, newPasswordHash);
+            var newPasswordHash = passwordService.HashPassword(newPassword);
+            await userService.UpdatePasswordAsync(user.Id, newPasswordHash);
 
             // Reset failed login attempts and unlock account
-            await _userService.ResetFailedLoginAttemptsAsync(user.Id);
+            await userService.ResetFailedLoginAttemptsAsync(user.Id);
 
             return true;
         }

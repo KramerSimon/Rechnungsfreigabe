@@ -5,24 +5,18 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Linq;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
-
-public interface IEscalationEmailService
-{
-    Task<bool> SendEscalationEmailAsync(int invoiceId, int escalationRuleId);
-    Task ProcessEscalationEmailsAsync();
-    Task EnsureEscalationTrackingAsync(int invoiceId, int escalationRuleId);
-}
 
 /// <summary>
 /// Service to handle sending emails based on escalation rules for invoices
 /// </summary>
 public class EscalationEmailService : IEscalationEmailService
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IEmailService _emailService;
-    private readonly ILogger<EscalationEmailService> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly ApplicationDbContext context;
+    private readonly IEmailService emailService;
+    private readonly ILogger<EscalationEmailService> logger;
+    private readonly IConfiguration configuration;
 
     public EscalationEmailService(
         ApplicationDbContext context,
@@ -30,10 +24,10 @@ public class EscalationEmailService : IEscalationEmailService
         ILogger<EscalationEmailService> logger,
         IConfiguration configuration)
     {
-        _context = context;
-        _emailService = emailService;
-        _logger = logger;
-        _configuration = configuration;
+        this.context = context;
+        this.emailService = emailService;
+        this.logger = logger;
+        this.configuration = configuration;
     }
 
     /// <summary>
@@ -44,7 +38,7 @@ public class EscalationEmailService : IEscalationEmailService
     {
         try
         {
-            var invoice = await _context.Invoices
+            var invoice = await context.Invoices
                 .Include(i => i.Supplier)
                 .Include(i => i.CostCenter)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId);
@@ -52,7 +46,7 @@ public class EscalationEmailService : IEscalationEmailService
             if (invoice == null)
                 return false;
 
-            var rule = await _context.EscalationRules
+            var rule = await context.EscalationRules
                 .Include(r => r.NotifyUsers)
                 .Include(r => r.NotifyRoles)
                 .FirstOrDefaultAsync(r => r.Id == escalationRuleId);
@@ -78,7 +72,7 @@ public class EscalationEmailService : IEscalationEmailService
             {
                 try
                 {
-                    await _emailService.SendEmailAsync(
+                    await emailService.SendEmailAsync(
                         recipient.Email,
                         subject,
                         emailContent,
@@ -111,7 +105,7 @@ public class EscalationEmailService : IEscalationEmailService
     {
         try
         {
-            var activeRules = await _context.EscalationRules
+            var activeRules = await context.EscalationRules
                 .Include(r => r.TriggerStatuses)
                 .Include(r => r.NotifyUsers)
                 .Include(r => r.NotifyRoles)
@@ -122,10 +116,10 @@ public class EscalationEmailService : IEscalationEmailService
                 return;
 
             // Get all invoices with status matching escalation triggers
-            var inPruefung = await _context.Statuses
+            var inPruefung = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung && 
                                             s.EntityType == EntityTypes.Invoice);
-            var freigabeErforderlich2 = await _context.Statuses
+            var freigabeErforderlich2 = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich && 
                                             s.EntityType == EntityTypes.Invoice);
             
@@ -133,7 +127,7 @@ public class EscalationEmailService : IEscalationEmailService
             if (inPruefung?.Id != null) statusIds.Add(inPruefung.Id);
             if (freigabeErforderlich2?.Id != null) statusIds.Add(freigabeErforderlich2.Id);
 
-            var invoicesToCheck = await _context.Invoices
+            var invoicesToCheck = await context.Invoices
                 .Include(i => i.Supplier)
                 .Include(i => i.CostCenter)
                 .Where(i => statusIds.Contains(i.StatusId ?? -1))
@@ -153,7 +147,7 @@ public class EscalationEmailService : IEscalationEmailService
                     {
                         
                         // Check if already escalated with this rule
-                        var alreadyEscalated = await _context.EscalationLogs
+                        var alreadyEscalated = await context.EscalationLogs
                             .AnyAsync(el =>
                                 el.InvoiceId == invoice.Id &&
                                 el.EscalationRuleId == rule.Id &&
@@ -182,15 +176,15 @@ public class EscalationEmailService : IEscalationEmailService
     {
         try
         {
-            var invoice = await _context.Invoices.FindAsync(invoiceId);
-            var rule = await _context.EscalationRules.FindAsync(escalationRuleId);
+            var invoice = await context.Invoices.FindAsync(invoiceId);
+            var rule = await context.EscalationRules.FindAsync(escalationRuleId);
 
             if (invoice == null || rule == null)
                 return;
 
             // Create tracking entry if not already exists for today
             var today = DateTime.UtcNow.Date;
-            var existingLog = await _context.EscalationLogs
+            var existingLog = await context.EscalationLogs
                 .Where(el =>
                     el.InvoiceId == invoiceId &&
                     el.EscalationRuleId == escalationRuleId &&
@@ -209,8 +203,8 @@ public class EscalationEmailService : IEscalationEmailService
                     Status = "Sent"
                 };
 
-                _context.EscalationLogs.Add(log);
-                await _context.SaveChangesAsync();
+                context.EscalationLogs.Add(log);
+                await context.SaveChangesAsync();
             }
         }
         catch (Exception)
@@ -239,7 +233,7 @@ public class EscalationEmailService : IEscalationEmailService
         if (rule.NotifyUsers?.Any() == true)
         {
             var notifyUserIds = rule.NotifyUsers.Select(nu => nu.UserId).ToList();
-            var users = await _context.Users
+            var users = await context.Users
                 .Where(u => notifyUserIds.Contains(u.Id) && u.IsActive && !string.IsNullOrWhiteSpace(u.Email))
                 .ToListAsync();
             recipients.AddRange(users);
@@ -249,7 +243,7 @@ public class EscalationEmailService : IEscalationEmailService
         if (rule.NotifyRoles?.Any() == true)
         {
             var notifyRoleIds = rule.NotifyRoles.Select(nr => nr.RoleId).ToList();
-            var roleUsers = await _context.Users
+            var roleUsers = await context.Users
                 .Include(u => u.UserRoles)
                 .Where(u => u.IsActive && 
                            !string.IsNullOrWhiteSpace(u.Email) &&
@@ -266,7 +260,7 @@ public class EscalationEmailService : IEscalationEmailService
         var templateContent = rule.MessageTemplate ?? GetDefaultTemplate();
 
         // Replace template placeholders
-        var appUrl = _configuration["AppSettings:ApplicationUrl"] ?? "#";
+        var appUrl = configuration["AppSettings:ApplicationUrl"] ?? "#";
 
         var escalationHours = Math.Round(rule.TriggerAfterMinutes / 60.0, 1);
         var content = templateContent!
@@ -390,12 +384,12 @@ public class EscalationEmailService : IEscalationEmailService
                 Status = "Sent"
             };
 
-            _context.EscalationLogs.Add(log);
-            await _context.SaveChangesAsync();
+            context.EscalationLogs.Add(log);
+            await context.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error logging escalation");
+            logger.LogError(ex, "Error logging escalation");
         }
     }
 }

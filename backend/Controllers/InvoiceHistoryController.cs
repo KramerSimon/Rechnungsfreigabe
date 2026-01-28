@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Services;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
@@ -10,10 +11,10 @@ namespace RechnungsfreigabeAPI.Controllers;
 // [Authorize] // Temporarily disabled for testing
 public class HistoryController : ControllerBase
 {
-    private readonly IInvoiceHistoryService _historyService;
+    private readonly IInvoiceHistoryService historyService;
     public HistoryController(IInvoiceHistoryService historyService)
     {
-        _historyService = historyService;
+        this.historyService = historyService;
         }
 
     /// <summary>
@@ -27,7 +28,7 @@ public class HistoryController : ControllerBase
         try
         {
 
-            var timeline = await _historyService.GetInvoiceHistoryTimelineAsync(invoiceId);
+            var timeline = await historyService.GetInvoiceHistoryTimelineAsync(invoiceId);
             return Ok(timeline);
         }
         catch (Exception)
@@ -47,7 +48,7 @@ public class HistoryController : ControllerBase
     {
         try
         {
-            var history = await _historyService.GetInvoiceHistoryAsync(invoiceId);
+            var history = await historyService.GetInvoiceHistoryAsync(invoiceId);
             return Ok(history);
         }
         catch (Exception)
@@ -70,7 +71,7 @@ public class HistoryController : ControllerBase
         try
         {
             createHistoryDto.InvoiceId = invoiceId; // Ensure consistency
-            await _historyService.CreateHistoryEntryAsync(createHistoryDto);
+            await historyService.CreateHistoryEntryAsync(createHistoryDto);
             return Ok(new { message = "Historie-Eintrag erfolgreich erstellt" });
         }
         catch (Exception)

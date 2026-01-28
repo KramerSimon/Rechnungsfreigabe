@@ -1,32 +1,33 @@
-ï»¿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Services;
 using BC = BCrypt.Net.BCrypt;
 
+using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/dev-tools")]
 public class DevToolsController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IPasswordService _passwordService;
-    private readonly INotificationService _notificationService;
+    private readonly ApplicationDbContext context;
+    private readonly IPasswordService passwordService;
+    private readonly INotificationService notificationService;
     public DevToolsController(
         ApplicationDbContext context, 
         IPasswordService passwordService,
         INotificationService notificationService)
     {
-        _context = context;
-        _passwordService = passwordService;
-        _notificationService = notificationService;
+        this.context = context;
+        this.passwordService = passwordService;
+        this.notificationService = notificationService;
         }
 
     /// <summary>
-    /// TemporÃ¤rer Endpoint zum Reparieren der Passwort-Hashes
-    /// NUR FÃœR ENTWICKLUNG - NICHT IN PRODUKTION VERWENDEN!
+    /// Temporärer Endpoint zum Reparieren der Passwort-Hashes
+    /// NUR FÜR ENTWICKLUNG - NICHT IN PRODUKTION VERWENDEN!
     /// </summary>
     [HttpPost("fix-passwords")]
     public async Task<IActionResult> FixPasswords()
@@ -41,12 +42,12 @@ public class DevToolsController : ControllerBase
 
             foreach (var username in usernames)
             {
-                var user = await _context.Users
+                var user = await context.Users
                     .FirstOrDefaultAsync(u => u.Username == username);
 
                 if (user != null)
                 {
-                    var newHash = _passwordService.HashPassword(password);
+                    var newHash = passwordService.HashPassword(password);
                     var oldHash = user.PasswordHash;
                     
                     user.PasswordHash = newHash;
@@ -74,7 +75,7 @@ public class DevToolsController : ControllerBase
                 }
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return Ok(new
             {
@@ -92,18 +93,18 @@ public class DevToolsController : ControllerBase
 
     /// <summary>
     /// Backfill notifications for all pending approval workflows where none exist yet.
-    /// DEVELOPMENT ONLY â€“ helps populate notifications for existing data.
+    /// DEVELOPMENT ONLY – helps populate notifications for existing data.
     /// </summary>
     [HttpPost("backfill-notifications")]
     public async Task<IActionResult> BackfillNotifications()
     {
         try
         {
-            var pendingStatus = await _context.Statuses
+            var pendingStatus = await context.Statuses
                 .FirstOrDefaultAsync(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
                                             s.EntityType == EntityTypes.ApprovalWorkflow);
             
-            var pendingWorkflows = await _context.ApprovalWorkflows
+            var pendingWorkflows = await context.ApprovalWorkflows
                 .Include(w => w.Approver)
                 .Include(w => w.Invoice)
                     .ThenInclude(i => i!.Supplier)
@@ -117,18 +118,18 @@ public class DevToolsController : ControllerBase
                 if (wf.Invoice == null || wf.Approver == null) continue;
 
                 // Check if a notification already exists for this approver & invoice & type
-                var hasExisting = await _context.Notifications.AnyAsync(n =>
+                var hasExisting = await context.Notifications.AnyAsync(n =>
                     n.UserId == wf.ApproverId &&
                     n.InvoiceId == wf.InvoiceId &&
                     n.Type == "invoice_approval_required");
 
                 if (!hasExisting)
                 {
-                    await _notificationService.CreateNotificationAsync(
+                    await notificationService.CreateNotificationAsync(
                         wf.ApproverId,
                         "invoice_approval_required",
                         "Neue Rechnung zur Freigabe",
-                        $"Rechnung {wf.Invoice.InvoiceNumber} von {wf.Invoice.Supplier!.Name} Ã¼ber {wf.Invoice.TotalAmount:C} EUR wartet auf Ihre Freigabe.",
+                        $"Rechnung {wf.Invoice.InvoiceNumber} von {wf.Invoice.Supplier!.Name} über {wf.Invoice.TotalAmount:C} EUR wartet auf Ihre Freigabe.",
                         wf.InvoiceId,
                         Models.NotificationPriority.Normal
                     );
@@ -151,8 +152,8 @@ public class DevToolsController : ControllerBase
     [HttpGet("test-hash/{password}")]
     public IActionResult TestHash(string password)
     {
-        var hash = _passwordService.HashPassword(password);
-        var verify = _passwordService.VerifyPassword(password, hash);
+        var hash = passwordService.HashPassword(password);
+        var verify = passwordService.VerifyPassword(password, hash);
         
         return Ok(new
         {
