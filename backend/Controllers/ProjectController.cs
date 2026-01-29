@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using RechnungsfreigabeAPI.DTOs;
-using RechnungsfreigabeAPI.Services.Interfaces;
+using RechnungsfreigabeAPI.Interfaces.Services;
 
 namespace RechnungsfreigabeAPI.Controllers;
 

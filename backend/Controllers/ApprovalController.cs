@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
-using RechnungsfreigabeAPI.Services;
+using RechnungsfreigabeAPI.Interfaces.Services.Implementations;
 using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
-using RechnungsfreigabeAPI.Services.Interfaces;
+using RechnungsfreigabeAPI.Interfaces.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]

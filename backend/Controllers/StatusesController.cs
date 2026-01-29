@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.Models;
 
-using RechnungsfreigabeAPI.Services.Interfaces;
+using RechnungsfreigabeAPI.Interfaces.Services;
 namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
