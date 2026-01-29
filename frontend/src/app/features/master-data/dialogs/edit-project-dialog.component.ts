@@ -71,11 +71,36 @@ import { Project } from '../../../core/models/project.model';
           <mat-form-field appearance="outline">
             <mat-label>Status</mat-label>
             <mat-select formControlName="status">
-              <mat-option value="Geplant">Geplant</mat-option>
-              <mat-option value="Aktiv">Aktiv</mat-option>
-              <mat-option value="Pausiert">Pausiert</mat-option>
-              <mat-option value="Abgeschlossen">Abgeschlossen</mat-option>
-              <mat-option value="Abgebrochen">Abgebrochen</mat-option>
+              <mat-select-trigger>
+                <span class="status-tag" [style.backgroundColor]="getProjectStatusMeta(projectForm.get('status')?.value).color">
+                  {{getProjectStatusMeta(projectForm.get('status')?.value).label}}
+                </span>
+              </mat-select-trigger>
+              <mat-option value="Geplant">
+                <span class="status-tag" style="background-color: #2196F3;">
+                  Geplant
+                </span>
+              </mat-option>
+              <mat-option value="Aktiv">
+                <span class="status-tag" style="background-color: #4CAF50;">
+                  Aktiv
+                </span>
+              </mat-option>
+              <mat-option value="Pausiert">
+                <span class="status-tag" style="background-color: #FFA500;">
+                  Pausiert
+                </span>
+              </mat-option>
+              <mat-option value="Abgeschlossen">
+                <span class="status-tag" style="background-color: #9E9E9E;">
+                  Abgeschlossen
+                </span>
+              </mat-option>
+              <mat-option value="Abgebrochen">
+                <span class="status-tag" style="background-color: #F44336;">
+                  Abgebrochen
+                </span>
+              </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -147,6 +172,17 @@ import { Project } from '../../../core/models/project.model';
       width: 100%;
     }
 
+    /* Status tags in dropdown */
+    .status-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+    }
+
     .dialog-actions {
       display: flex;
       justify-content: flex-end;
@@ -183,6 +219,23 @@ export class EditProjectDialogComponent {
       endDate: [project.endDate ? new Date(project.endDate) : null],
       projectManagerId: [null] // This would need to be mapped from project manager if needed
     });
+  }
+
+  getProjectStatusMeta(status?: string | null): { label: string; color: string } {
+    switch (status) {
+      case 'Geplant':
+        return { label: 'Geplant', color: '#2196F3' };
+      case 'Aktiv':
+        return { label: 'Aktiv', color: '#4CAF50' };
+      case 'Pausiert':
+        return { label: 'Pausiert', color: '#FFA500' };
+      case 'Abgeschlossen':
+        return { label: 'Abgeschlossen', color: '#9E9E9E' };
+      case 'Abgebrochen':
+        return { label: 'Abgebrochen', color: '#F44336' };
+      default:
+        return { label: '—', color: '#9E9E9E' };
+    }
   }
 
   onCancel(): void {

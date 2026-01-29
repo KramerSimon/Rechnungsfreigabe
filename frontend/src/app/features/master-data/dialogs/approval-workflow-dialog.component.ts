@@ -74,11 +74,36 @@ export interface ApprovalWorkflowDialogData {
           <mat-form-field appearance="outline">
             <mat-label>Status</mat-label>
             <mat-select formControlName="status">
-              <mat-option value="Pending">Ausstehend</mat-option>
-              <mat-option value="Waiting">Wartend</mat-option>
-              <mat-option value="Approved">Genehmigt</mat-option>
-              <mat-option value="Rejected">Abgelehnt</mat-option>
-              <mat-option value="Skipped">Übersprungen</mat-option>
+              <mat-select-trigger>
+                <span class="status-tag" [style.backgroundColor]="getStatusMeta(form.get('status')?.value).color">
+                  {{getStatusMeta(form.get('status')?.value).label}}
+                </span>
+              </mat-select-trigger>
+              <mat-option value="Pending">
+                <span class="status-tag" style="background-color: #FFA500;">
+                  Ausstehend
+                </span>
+              </mat-option>
+              <mat-option value="Waiting">
+                <span class="status-tag" style="background-color: #2196F3;">
+                  Wartend
+                </span>
+              </mat-option>
+              <mat-option value="Approved">
+                <span class="status-tag" style="background-color: #4CAF50;">
+                  Genehmigt
+                </span>
+              </mat-option>
+              <mat-option value="Rejected">
+                <span class="status-tag" style="background-color: #F44336;">
+                  Abgelehnt
+                </span>
+              </mat-option>
+              <mat-option value="Skipped">
+                <span class="status-tag" style="background-color: #9E9E9E;">
+                  Übersprungen
+                </span>
+              </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -104,6 +129,17 @@ export interface ApprovalWorkflowDialogData {
     .form-row { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; }
     .full-width { width: 100%; }
     mat-form-field { flex: 1; }
+
+    /* Status tags in dropdown */
+    .status-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+    }
   `]
 })
 export class ApprovalWorkflowDialogComponent implements OnInit {
@@ -126,6 +162,23 @@ export class ApprovalWorkflowDialogComponent implements OnInit {
       status: [data.workflow?.status ?? 'Pending'],
       comments: [data.workflow?.comments ?? '']
     });
+  }
+
+  getStatusMeta(status?: string | null): { label: string; color: string } {
+    switch (status) {
+      case 'Pending':
+        return { label: 'Ausstehend', color: '#FFA500' };
+      case 'Waiting':
+        return { label: 'Wartend', color: '#2196F3' };
+      case 'Approved':
+        return { label: 'Genehmigt', color: '#4CAF50' };
+      case 'Rejected':
+        return { label: 'Abgelehnt', color: '#F44336' };
+      case 'Skipped':
+        return { label: 'Übersprungen', color: '#9E9E9E' };
+      default:
+        return { label: '—', color: '#9E9E9E' };
+    }
   }
 
   ngOnInit(): void {

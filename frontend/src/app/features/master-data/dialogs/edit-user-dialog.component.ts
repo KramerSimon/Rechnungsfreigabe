@@ -79,8 +79,20 @@ interface EditUserDialogData {
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Rollen</mat-label>
             <mat-select formControlName="roleIds" multiple>
+              <mat-select-trigger>
+                <span class="tag-list">
+                  <span
+                    *ngFor="let roleId of userForm.get('roleIds')?.value"
+                    class="role-tag"
+                    [style.backgroundColor]="getRoleById(roleId)?.color || '#ff9800'">
+                    {{getRoleById(roleId)?.name || roleId}}
+                  </span>
+                </span>
+              </mat-select-trigger>
               <mat-option *ngFor="let role of availableRoles" [value]="role.id">
-                {{role.name}}
+                <span class="role-tag" [style.backgroundColor]="role.color || '#ff9800'">
+                  {{role.name}}
+                </span>
               </mat-option>
             </mat-select>
             <mat-hint>Wählen Sie eine oder mehrere Rollen aus</mat-hint>
@@ -91,8 +103,23 @@ interface EditUserDialogData {
           <mat-form-field appearance="outline">
             <mat-label>Status</mat-label>
             <mat-select formControlName="isActive">
-              <mat-option [value]="true">Aktiv</mat-option>
-              <mat-option [value]="false">Inaktiv</mat-option>
+              <mat-select-trigger>
+                <span
+                  class="status-tag"
+                  [style.backgroundColor]="userForm.get('isActive')?.value ? '#4CAF50' : '#F44336'">
+                  {{userForm.get('isActive')?.value ? 'Aktiv' : 'Inaktiv'}}
+                </span>
+              </mat-select-trigger>
+              <mat-option [value]="true">
+                <span class="status-tag" style="background-color: #4CAF50;">
+                  Aktiv
+                </span>
+              </mat-option>
+              <mat-option [value]="false">
+                <span class="status-tag" style="background-color: #F44336;">
+                  Inaktiv
+                </span>
+              </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -128,6 +155,25 @@ interface EditUserDialogData {
 
       .full-width {
         width: 100%;
+      }
+
+      /* Role and Status tags in dropdown */
+      .role-tag,
+      .status-tag {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: white;
+        white-space: nowrap;
+      }
+
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 24px;
       }
 
       .dialog-actions {
@@ -168,6 +214,10 @@ export class EditUserDialogComponent {
       return [];
     }
     return roles.map(role => role.id);
+  }
+
+  getRoleById(roleId: number | string): RoleDto | undefined {
+    return this.availableRoles.find(role => String(role.id) === String(roleId));
   }
 
   onCancel(): void {

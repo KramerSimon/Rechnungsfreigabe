@@ -46,7 +46,21 @@ export interface EscalationRuleDialogData {
           <mat-form-field appearance="outline">
             <mat-label>Status-Auslöser (mehrfach möglich) *</mat-label>
             <mat-select formControlName="triggerStatusIds" multiple>
-              <mat-option *ngFor="let status of data.statuses" [value]="status.id">{{status.displayName}}</mat-option>
+              <mat-select-trigger>
+                <span class="tag-list">
+                  <span
+                    *ngFor="let statusId of form.get('triggerStatusIds')?.value"
+                    class="status-tag"
+                    [style.backgroundColor]="getStatusById(statusId)?.color || '#9E9E9E'">
+                    {{getStatusById(statusId)?.displayName || statusId}}
+                  </span>
+                </span>
+              </mat-select-trigger>
+              <mat-option *ngFor="let status of data.statuses" [value]="status.id">
+                <span class="status-tag" [style.backgroundColor]="status.color || '#9E9E9E'">
+                  {{status.displayName}}
+                </span>
+              </mat-option>
             </mat-select>
             <mat-error *ngIf="form.get('triggerStatusIds')?.hasError('required')">Mindestens ein Status ist erforderlich</mat-error>
           </mat-form-field>
@@ -86,7 +100,21 @@ export interface EscalationRuleDialogData {
           <mat-form-field appearance="outline">
             <mat-label>Benachrichtigte Rollen (mehrfach möglich)</mat-label>
             <mat-select formControlName="notifyRoleIds" multiple>
-              <mat-option *ngFor="let role of data.roles" [value]="role.id">{{role.name}}</mat-option>
+              <mat-select-trigger>
+                <span class="tag-list">
+                  <span
+                    *ngFor="let roleId of form.get('notifyRoleIds')?.value"
+                    class="role-tag"
+                    [style.backgroundColor]="getRoleById(roleId)?.color || '#ff9800'">
+                    {{getRoleById(roleId)?.name || roleId}}
+                  </span>
+                </span>
+              </mat-select-trigger>
+              <mat-option *ngFor="let role of data.roles" [value]="role.id">
+                <span class="role-tag" [style.backgroundColor]="role.color || '#ff9800'">
+                  {{role.name}}
+                </span>
+              </mat-option>
             </mat-select>
           </mat-form-field>
 
@@ -171,6 +199,25 @@ export interface EscalationRuleDialogData {
 
     textarea {
       resize: vertical;
+    }
+
+    /* Status and Role tags in dropdown */
+    .status-tag,
+    .role-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 24px;
     }
 
     /* Time fields in a row */
@@ -262,6 +309,14 @@ export class EscalationRuleDialogComponent {
       messageTemplate: [rule?.messageTemplate || ''],
       isActive: [rule?.isActive ?? true],
     });
+  }
+
+  getStatusById(statusId: number | string): StatusDto | undefined {
+    return this.data.statuses.find(status => String(status.id) === String(statusId));
+  }
+
+  getRoleById(roleId: number | string): RoleDto | undefined {
+    return this.data.roles.find(role => String(role.id) === String(roleId));
   }
 
   onCancel(): void {
