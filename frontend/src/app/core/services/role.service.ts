@@ -56,7 +56,7 @@ export class RoleService {
       path: '/dashboard/pdf-upload',
       component: 'PdfUploadDashboard',
       requiredPermissions: ['invoices.create'],
-      title: 'PDF Upload'
+      title: 'Upload'
     },
     rules: {
       path: '/dashboard/rules',

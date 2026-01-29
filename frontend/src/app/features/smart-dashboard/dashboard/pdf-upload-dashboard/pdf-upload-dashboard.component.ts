@@ -270,12 +270,12 @@ export class PdfUploadDashboardComponent implements OnInit {
   addFiles(files: FileList) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      if (this.isPdfOrXml(file)) {
         if (!this.selectedFiles.find(f => f.name === file.name)) {
           this.selectedFiles.push(file);
         }
       } else {
-        this.snackBar.open(`${file.name} ist keine PDF-Datei`, 'Schließen', { duration: 3000 });
+        this.snackBar.open(`${file.name} ist keine PDF/XML-Datei`, 'Schließen', { duration: 3000 });
       }
     }
   }
@@ -403,9 +403,9 @@ export class PdfUploadDashboardComponent implements OnInit {
         // Check for warnings about missing data extraction
         const hasWarnings = results.successfulUploads.some((upload: any) => upload.warning || upload.requiresManualEntry);
 
-        let message = `${results.successfulUploads.length} PDFs hochgeladen, ${results.failedUploads.length} Fehler`;
+        let message = `${results.successfulUploads.length} Dateien hochgeladen, ${results.failedUploads.length} Fehler`;
         if (hasWarnings) {
-          message += ' ⚠️ Einige PDFs enthalten keine extrahierbaren Daten (gescannte Dokumente)';
+          message += ' ⚠️ Einige Dateien enthalten keine extrahierbaren Daten (gescannte Dokumente)';
         }
 
         this.snackBar.open(message, 'Schließen', { duration: 8000 });
@@ -414,7 +414,7 @@ export class PdfUploadDashboardComponent implements OnInit {
           // Show additional warning
           setTimeout(() => {
             this.snackBar.open(
-              'Bitte Rechnungsdaten für gescannte PDFs manuell vervollständigen',
+              'Bitte Rechnungsdaten manuell vervollständigen',
               'OK',
               { duration: 10000 }
             );
@@ -476,10 +476,10 @@ export class PdfUploadDashboardComponent implements OnInit {
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
       const file = files[0];
-      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      if (this.isPdfOrXml(file)) {
         this.selectedPoFile = file;
       } else {
-        this.snackBar.open(`${file.name} ist keine PDF-Datei`, 'Schließen', { duration: 3000 });
+        this.snackBar.open(`${file.name} ist keine PDF/XML-Datei`, 'Schließen', { duration: 3000 });
       }
     }
   }
@@ -488,12 +488,21 @@ export class PdfUploadDashboardComponent implements OnInit {
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      if (this.isPdfOrXml(file)) {
         this.selectedPoFile = file;
       } else {
-        this.snackBar.open(`${file.name} ist keine PDF-Datei`, 'Schließen', { duration: 3000 });
+        this.snackBar.open(`${file.name} ist keine PDF/XML-Datei`, 'Schließen', { duration: 3000 });
       }
     }
+  }
+
+  private isPdfOrXml(file: File): boolean {
+    const fileName = file.name.toLowerCase();
+    return file.type === 'application/pdf'
+      || file.type === 'application/xml'
+      || file.type === 'text/xml'
+      || fileName.endsWith('.pdf')
+      || fileName.endsWith('.xml');
   }
 
   removePoFile() {

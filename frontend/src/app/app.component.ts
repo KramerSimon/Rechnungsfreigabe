@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterOutlet, RouterLink, Router } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,6 +23,7 @@ import { RoleDto } from './core/models/user.models';
     CommonModule,
     RouterOutlet,
     RouterLink,
+    RouterLinkActive,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,

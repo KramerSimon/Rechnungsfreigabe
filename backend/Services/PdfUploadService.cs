@@ -11,6 +11,8 @@ using System.Text.RegularExpressions;
 using System.Globalization;
 using Tesseract;
 using PDFtoImage;
+using System.Xml;
+using System.Xml.Linq;
 
 using RechnungsfreigabeAPI.Services.Interfaces;
 namespace RechnungsfreigabeAPI.Services;
@@ -23,7 +25,7 @@ public class PdfUploadService : IPdfUploadService
     private readonly string uploadDirectory;
     private readonly string tessdataPath;
     private readonly long maxFileSize = 50 * 1024 * 1024; // 50 MB
-    private readonly string[] allowedExtensions = { ".pdf" };
+    private readonly string[] allowedExtensions = { ".pdf", ".xml" };
 
     public PdfUploadService(
         IUnitOfWork unitOfWork,
@@ -63,6 +65,9 @@ public class PdfUploadService : IPdfUploadService
             ValidateFile(file);
             logger.LogInformation("[PDF Upload] File validation passed");
 
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var isXml = fileExtension == ".xml";
+
             // Validiere dass der User existiert
             var userExists = await unitOfWork.Users.Query().AnyAsync(u => u.Id == userId);
             if (!userExists)
@@ -74,20 +79,20 @@ public class PdfUploadService : IPdfUploadService
             // Validiere dass Cost Center, Project und Purchase Order zusammenpassen
             await ValidateProjectPurchaseOrderRelationship(costCenterId, projectId, purchaseOrderId);
 
-            // Lies die PDF-Datei in den Speicher
+            // Lies die Datei in den Speicher
             byte[] pdfContent;
             using (var memoryStream = new MemoryStream())
             {
                 await file.CopyToAsync(memoryStream);
                 pdfContent = memoryStream.ToArray();
             }
-            logger.LogInformation("[PDF Upload] PDF content loaded into memory: {Length} bytes", pdfContent.Length);
+            logger.LogInformation("[PDF Upload] File content loaded into memory: {Length} bytes", pdfContent.Length);
 
             // Generiere eindeutigen Dateinamen
             var fileName = GenerateUniqueFileName(file.FileName);
             logger.LogInformation("[PDF Upload] Generated unique filename: {FileName}", fileName);
 
-            // Extrahiere Daten aus dem PDF
+            // Extrahiere Daten aus dem Dokument
             var tempPath = Path.Combine(uploadDirectory, fileName);
             await using (var stream = new FileStream(tempPath, FileMode.Create))
             {
@@ -95,8 +100,8 @@ public class PdfUploadService : IPdfUploadService
             }
             logger.LogInformation("[PDF Upload] Temporary file created at: {TempPath}", tempPath);
 
-            var pdfData = ExtractInvoiceDataFromPdf(tempPath);
-            logger.LogInformation("[PDF Upload] Data extracted - InvoiceNum: {InvoiceNumber}, Total: {TotalAmount}, Supplier: {SupplierName}", pdfData.InvoiceNumber, pdfData.TotalAmount, pdfData.SupplierInfo?.Name);
+            var extractedData = isXml ? ExtractInvoiceDataFromXml(tempPath) : ExtractInvoiceDataFromPdf(tempPath);
+            logger.LogInformation("[PDF Upload] Data extracted - InvoiceNum: {InvoiceNumber}, Total: {TotalAmount}, Supplier: {SupplierName}", extractedData.InvoiceNumber, extractedData.TotalAmount, extractedData.SupplierInfo?.Name);
 
             // Generiere Rechnungsnummer im Format FAT-{Nummer}-{Jahr}
             var invoiceNumber = await GenerateInvoiceNumberAsync();
@@ -119,7 +124,7 @@ public class PdfUploadService : IPdfUploadService
             else
             {
                 // Extrahiere und erstelle/finde Lieferant aus PDF
-                finalSupplierId = await FindOrCreateSupplierAsync(pdfData.SupplierInfo, tempPath);
+                finalSupplierId = await FindOrCreateSupplierAsync(extractedData.SupplierInfo, tempPath);
             logger.LogInformation("[PDF Upload] Found/created supplier ID: {FinalSupplierId}", finalSupplierId);
             }
 
@@ -165,14 +170,14 @@ public class PdfUploadService : IPdfUploadService
                 PurchaseOrderId = validatedPurchaseOrderId,
                 CostCenterId = validatedCostCenterId,
                 ProjectId = projectId,
-                NetAmount = pdfData.NetAmount ?? 0,
-                TaxAmount = pdfData.TaxAmount ?? 0,
-                TotalAmount = pdfData.TotalAmount ?? 0,
-                Currency = pdfData.Currency ?? "EUR",
-                InvoiceDate = pdfData.InvoiceDate ?? DateTime.UtcNow,
-                DueDate = pdfData.DueDate ?? DateTime.UtcNow.AddDays(30),
+                NetAmount = extractedData.NetAmount ?? 0,
+                TaxAmount = extractedData.TaxAmount ?? 0,
+                TotalAmount = extractedData.TotalAmount ?? 0,
+                Currency = extractedData.Currency ?? "EUR",
+                InvoiceDate = extractedData.InvoiceDate ?? DateTime.UtcNow,
+                DueDate = extractedData.DueDate ?? DateTime.UtcNow.AddDays(30),
                 RequiresApproval = true,
-                Description = pdfData.Description ?? $"PDF-Upload: {file.FileName}"
+                Description = extractedData.Description ?? $"{(isXml ? "XML" : "PDF")}-Upload: {file.FileName}"
             };
 
             logger.LogInformation("[PDF Upload] Creating invoice with data - Number: {InvoiceNumber}, Total: {TotalAmount}, Net: {NetAmount}, Tax: {TaxAmount}", createInvoiceDto.InvoiceNumber, createInvoiceDto.TotalAmount, createInvoiceDto.NetAmount, createInvoiceDto.TaxAmount);
@@ -211,7 +216,7 @@ public class PdfUploadService : IPdfUploadService
                     invoiceDb.OriginalFilename = file.FileName;
                     invoiceDb.PdfFilePath = null; // keine lokale Ablage mehr
                     await unitOfWork.SaveChangesAsync();
-            logger.LogInformation("[PDF Upload] PDF content saved to database for invoice {InvoiceId}", invoice.Id);
+            logger.LogInformation("[PDF Upload] File content saved to database for invoice {InvoiceId}", invoice.Id);
                 }
             }
             catch (Exception ex)
@@ -252,6 +257,9 @@ public class PdfUploadService : IPdfUploadService
             ValidateFile(file);
             logger.LogInformation("[PO PDF Upload] File validation passed");
 
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var isXml = fileExtension == ".xml";
+
             // Validiere dass der User existiert
             var userExists = await unitOfWork.Users.Query().AnyAsync(u => u.Id == userId);
             if (!userExists)
@@ -260,20 +268,20 @@ public class PdfUploadService : IPdfUploadService
             }
             logger.LogInformation("[PO PDF Upload] User {UserId} validated", userId);
 
-            // Lies die PDF-Datei in den Speicher
+            // Lies die Datei in den Speicher
             byte[] pdfContent;
             using (var memoryStream = new MemoryStream())
             {
                 await file.CopyToAsync(memoryStream);
                 pdfContent = memoryStream.ToArray();
             }
-            logger.LogInformation("[PO PDF Upload] PDF content loaded into memory: {Length} bytes", pdfContent.Length);
+            logger.LogInformation("[PO PDF Upload] File content loaded into memory: {Length} bytes", pdfContent.Length);
 
             // Generiere eindeutigen Dateinamen
             var fileName = GenerateUniqueFileName(file.FileName);
             logger.LogInformation("[PO PDF Upload] Generated unique filename: {FileName}", fileName);
 
-            // Extrahiere Daten aus dem PDF
+            // Extrahiere Daten aus dem Dokument
             var tempPath = Path.Combine(uploadDirectory, fileName);
             await using (var stream = new FileStream(tempPath, FileMode.Create))
             {
@@ -281,8 +289,8 @@ public class PdfUploadService : IPdfUploadService
             }
             logger.LogInformation("[PO PDF Upload] Temporary file created at: {TempPath}", tempPath);
 
-            var pdfData = ExtractInvoiceDataFromPdf(tempPath);
-            logger.LogInformation("[PO PDF Upload] Data extracted - Total: {TotalAmount}, Supplier: {SupplierName}", pdfData.TotalAmount, pdfData.SupplierInfo?.Name);
+            var extractedData = isXml ? ExtractInvoiceDataFromXml(tempPath) : ExtractInvoiceDataFromPdf(tempPath);
+            logger.LogInformation("[PO PDF Upload] Data extracted - Total: {TotalAmount}, Supplier: {SupplierName}", extractedData.TotalAmount, extractedData.SupplierInfo?.Name);
 
             // Generiere Purchase Order ID im Format PO-{Nummer}-{Jahr}
             var poId = await GeneratePurchaseOrderIdAsync();
@@ -302,10 +310,10 @@ public class PdfUploadService : IPdfUploadService
                 finalSupplierId = supplierId.Value;
             logger.LogInformation("[PO PDF Upload] Using provided supplier ID: {FinalSupplierId}", finalSupplierId);
             }
-            else if (pdfData.SupplierInfo != null)
+            else if (extractedData.SupplierInfo != null)
             {
                 // Extrahiere und erstelle/finde Lieferant aus PDF
-                finalSupplierId = await FindOrCreateSupplierAsync(pdfData.SupplierInfo, tempPath);
+                finalSupplierId = await FindOrCreateSupplierAsync(extractedData.SupplierInfo, tempPath);
             logger.LogInformation("[PO PDF Upload] Found/created supplier ID: {FinalSupplierId}", finalSupplierId);
             }
 
@@ -355,12 +363,12 @@ public class PdfUploadService : IPdfUploadService
             {
                 Id = poId,
                 Title = poId,  // Use order number as title
-                Description = pdfData.Description,
+                Description = extractedData.Description,
                 SupplierId = finalSupplierId,
                 CostCenterId = costCenterId,  // Required
                 ProjectId = projectId,  // Required
-                TotalAmount = pdfData.TotalAmount ?? 0,
-                Currency = pdfData.Currency ?? "EUR",
+                TotalAmount = extractedData.TotalAmount ?? 0,
+                Currency = extractedData.Currency ?? "EUR",
                 StatusId = offenStatus?.Id,
                 CreatedBy = userId,
                 CreatedAt = DateTime.UtcNow,
@@ -600,6 +608,217 @@ public class PdfUploadService : IPdfUploadService
             logger.LogInformation("[PDF Extract] Stack trace: {StackTrace}", ex.StackTrace);
             return new ExtractedInvoiceData();
         }
+    }
+
+    private ExtractedInvoiceData ExtractInvoiceDataFromXml(string filePath)
+    {
+        try
+        {
+            logger.LogInformation("[XML Extract] Starting extraction from: {FilePath}", filePath);
+            var extractedData = new ExtractedInvoiceData();
+
+            var settings = new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Prohibit,
+                XmlResolver = null
+            };
+
+            using var reader = XmlReader.Create(filePath, settings);
+            var doc = XDocument.Load(reader);
+            var root = doc.Root;
+
+            if (root == null)
+            {
+                logger.LogInformation("[XML Extract] WARNING: No root element found");
+                return extractedData;
+            }
+
+            extractedData.InvoiceNumber = FindInvoiceNumberFromXml(root);
+            extractedData.InvoiceDate = ParseXmlDate(FindFirstValue(root, "Data", "IssueDate", "InvoiceDate", "IssueDateTime", "Date"));
+            extractedData.DueDate = ParseXmlDate(FindFirstValue(root, "DataScadenzaPagamento", "DueDate", "PaymentDueDate", "PaymentDueDateTime"));
+
+            decimal? totalAmount = null;
+            string? currency = FindFirstValue(root, "Divisa", "Currency", "CurrencyCode");
+
+            var legalMonetaryTotal = root.Descendants().FirstOrDefault(e => string.Equals(e.Name.LocalName, "LegalMonetaryTotal", StringComparison.OrdinalIgnoreCase));
+            if (legalMonetaryTotal != null)
+            {
+                var payable = FindAmount(legalMonetaryTotal, "PayableAmount", "GrandTotalAmount", "TotalAmount");
+                totalAmount = payable.Amount;
+                currency = payable.Currency;
+
+                var net = FindAmount(legalMonetaryTotal, "TaxExclusiveAmount", "LineExtensionAmount");
+                extractedData.NetAmount = net.Amount;
+                extractedData.Currency = currency ?? net.Currency;
+            }
+
+            if (!totalAmount.HasValue)
+            {
+                totalAmount = ParseXmlAmount(FindFirstValue(root, "ImportoTotaleDocumento"));
+            }
+
+            if (!totalAmount.HasValue)
+            {
+                var fallbackTotal = FindAmount(root, "PayableAmount", "GrandTotalAmount", "TotalAmount", "Amount");
+                totalAmount = fallbackTotal.Amount;
+                currency = currency ?? fallbackTotal.Currency;
+            }
+
+            var tax = FindAmount(root, "Imposta", "TaxAmount");
+            extractedData.TaxAmount = tax.Amount;
+            extractedData.TotalAmount = totalAmount;
+            extractedData.Currency = extractedData.Currency ?? currency ?? tax.Currency;
+
+            extractedData.NetAmount = extractedData.NetAmount ?? ParseXmlAmount(FindFirstValue(root, "ImponibileImporto"));
+
+            extractedData.Description = FindFirstValue(root, "Causale", "Descrizione", "Note", "Description", "DocumentDescription");
+            extractedData.SupplierInfo = ExtractSupplierInfoFromXml(root);
+
+            logger.LogInformation("[XML Extract] Extraction completed successfully");
+            return extractedData;
+        }
+        catch (Exception ex)
+        {
+            logger.LogInformation("[XML Extract] ERROR during extraction: {Message}", ex.Message);
+            logger.LogInformation("[XML Extract] Stack trace: {StackTrace}", ex.StackTrace);
+            return new ExtractedInvoiceData();
+        }
+    }
+
+    private string? FindInvoiceNumberFromXml(XElement root)
+    {
+        var fatturaNumero = root.Descendants().FirstOrDefault(e =>
+            string.Equals(e.Name.LocalName, "Numero", StringComparison.OrdinalIgnoreCase));
+        var fatturaNumeroValue = fatturaNumero?.Value?.Trim();
+        if (!string.IsNullOrWhiteSpace(fatturaNumeroValue))
+        {
+            return fatturaNumeroValue;
+        }
+
+        var invoiceId = root.Descendants().FirstOrDefault(e =>
+            string.Equals(e.Name.LocalName, "ID", StringComparison.OrdinalIgnoreCase) &&
+            (string.Equals(e.Parent?.Name.LocalName, "Invoice", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(e.Parent?.Name.LocalName, "ExchangedDocument", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(e.Parent?.Name.LocalName, "Document", StringComparison.OrdinalIgnoreCase)));
+
+        var value = invoiceId?.Value?.Trim();
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
+        return FindFirstValue(root, "InvoiceNumber", "InvoiceNo", "ID", "Numero");
+    }
+
+    private SupplierInfo? ExtractSupplierInfoFromXml(XElement root)
+    {
+        var supplierParty = root.Descendants().FirstOrDefault(e =>
+            string.Equals(e.Name.LocalName, "CedentePrestatore", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(e.Name.LocalName, "AccountingSupplierParty", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(e.Name.LocalName, "SellerSupplierParty", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(e.Name.LocalName, "SellerTradeParty", StringComparison.OrdinalIgnoreCase));
+
+        if (supplierParty == null)
+        {
+            return null;
+        }
+
+        var supplierInfo = new SupplierInfo
+        {
+            Name = FindFirstValue(supplierParty, "Denominazione", "RegistrationName", "Name", "PartyName", "CompanyName"),
+            LegalName = FindFirstValue(supplierParty, "Denominazione", "RegistrationName", "Name"),
+            VatNumber = FindFirstValue(supplierParty, "IdCodice", "VATIdentifier", "VATRegistrationNumber", "VATID", "CompanyID"),
+            TaxNumber = FindFirstValue(supplierParty, "CodiceFiscale", "TaxNumber")
+        };
+
+        var street = FindFirstValue(supplierParty, "Indirizzo", "StreetName", "LineOne", "Line", "Street");
+        var buildingNumber = FindFirstValue(supplierParty, "NumeroCivico", "BuildingNumber", "HouseNumber");
+        var additional = FindFirstValue(supplierParty, "AdditionalStreetName");
+        var addressParts = new[] { street, buildingNumber, additional }
+            .Where(p => !string.IsNullOrWhiteSpace(p));
+        supplierInfo.Address = string.Join(" ", addressParts);
+
+        supplierInfo.PostalCode = FindFirstValue(supplierParty, "CAP", "PostalZone", "PostcodeCode", "PostalCode");
+        supplierInfo.City = FindFirstValue(supplierParty, "Comune", "CityName", "City");
+        supplierInfo.Country = FindFirstValue(supplierParty, "Nazione", "IdentificationCode", "CountryID", "CountryName");
+
+        return string.IsNullOrWhiteSpace(supplierInfo.Name) ? null : supplierInfo;
+    }
+
+    private (decimal? Amount, string? Currency) FindAmount(XContainer root, params string[] localNames)
+    {
+        foreach (var name in localNames)
+        {
+            var element = root.Descendants().FirstOrDefault(e =>
+                string.Equals(e.Name.LocalName, name, StringComparison.OrdinalIgnoreCase));
+            if (element == null)
+            {
+                continue;
+            }
+
+            var amount = ParseXmlAmount(element.Value);
+            var currency = element.Attribute("currencyID")?.Value
+                           ?? element.Attribute("currency")?.Value
+                           ?? element.Attribute("currencyCode")?.Value;
+
+            if (amount.HasValue || !string.IsNullOrWhiteSpace(currency))
+            {
+                return (amount, currency);
+            }
+        }
+
+        return (null, null);
+    }
+
+    private decimal? ParseXmlAmount(string? amountStr)
+    {
+        if (string.IsNullOrWhiteSpace(amountStr))
+        {
+            return null;
+        }
+
+        if (decimal.TryParse(amountStr.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+        {
+            return value;
+        }
+
+        return ParseAmount(amountStr);
+    }
+
+    private DateTime? ParseXmlDate(string? dateStr)
+    {
+        if (string.IsNullOrWhiteSpace(dateStr))
+        {
+            return null;
+        }
+
+        if (TryParseDate(dateStr.Trim(), out var parsed))
+        {
+            return parsed;
+        }
+
+        if (DateTime.TryParse(dateStr.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    private static string? FindFirstValue(XContainer root, params string[] localNames)
+    {
+        foreach (var name in localNames)
+        {
+            var element = root.Descendants().FirstOrDefault(e =>
+                string.Equals(e.Name.LocalName, name, StringComparison.OrdinalIgnoreCase));
+            var value = element?.Value?.Trim();
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return null;
     }
 
     private string ExtractTextWithOcr(string pdfFilePath)
@@ -1165,20 +1384,44 @@ public class PdfUploadService : IPdfUploadService
             throw new ArgumentException($"File size exceeds maximum allowed size of {maxFileSize / (1024 * 1024)} MB");
         }
 
-        var fileExtension = Path.GetExtension(file.FileName).ToLower();
+        var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
         if (!allowedExtensions.Contains(fileExtension))
         {
-            throw new ArgumentException($"File type '{fileExtension}' is not allowed. Only PDF files are allowed.");
+            throw new ArgumentException($"File type '{fileExtension}' is not allowed. Only PDF or XML files are allowed.");
         }
 
-        // Pr�fe Magic Bytes f�r PDF
-        using (var reader = new BinaryReader(file.OpenReadStream()))
+        if (fileExtension == ".pdf")
         {
-            var bytes = reader.ReadBytes(4);
-            var header = System.Text.Encoding.ASCII.GetString(bytes);
-            if (!header.StartsWith("%PDF"))
+            // Pr�fe Magic Bytes f�r PDF
+            using (var reader = new BinaryReader(file.OpenReadStream()))
             {
-                throw new ArgumentException("File is not a valid PDF file");
+                var bytes = reader.ReadBytes(4);
+                var header = System.Text.Encoding.ASCII.GetString(bytes);
+                if (!header.StartsWith("%PDF"))
+                {
+                    throw new ArgumentException("File is not a valid PDF file");
+                }
+            }
+        }
+        else if (fileExtension == ".xml")
+        {
+            try
+            {
+                var settings = new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit,
+                    XmlResolver = null
+                };
+
+                using var reader = XmlReader.Create(file.OpenReadStream(), settings);
+                while (reader.Read())
+                {
+                    // Just iterate to validate
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException($"File is not a valid XML file: {ex.Message}");
             }
         }
     }

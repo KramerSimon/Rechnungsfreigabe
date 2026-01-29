@@ -25,9 +25,9 @@ public class PdfUploadController : ControllerBase
     }
 
     /// <summary>
-    /// Upload an invoice PDF file
+    /// Upload an invoice PDF or XML file
     /// </summary>
-    /// <param name="file">The PDF file to upload</param>
+    /// <param name="file">The PDF or XML file to upload</param>
     /// <param name="supplierId">Optional: The supplier ID associated with this invoice (will be extracted from PDF if not provided)</param>
     /// <param name="purchaseOrderId">Optional: Purchase order ID</param>
     /// <param name="costCenterId">Optional: Cost center ID</param>
@@ -66,7 +66,7 @@ public class PdfUploadController : ControllerBase
                 return Ok(new
                 {
                     invoice = result,
-                    warning = "PDF hochgeladen, aber keine Daten extrahiert. Das PDF enthält möglicherweise nur Bilder (gescanntes Dokument). Bitte Rechnungsdaten manuell vervollständigen.",
+                    warning = "Datei hochgeladen, aber keine Daten extrahiert. Das Dokument enthï¿½lt mï¿½glicherweise nur Bilder (gescanntes Dokument). Bitte Rechnungsdaten manuell vervollstï¿½ndigen.",
                     requiresManualEntry = true
                 });
             }
@@ -88,9 +88,9 @@ public class PdfUploadController : ControllerBase
     }
 
     /// <summary>
-    /// Upload a purchase order PDF file
+    /// Upload a purchase order PDF or XML file
     /// </summary>
-    /// <param name="file">The PDF file to upload</param>
+    /// <param name="file">The PDF or XML file to upload</param>
     /// <param name="supplierId">Optional: The supplier ID associated with this PO (will be extracted from PDF if not provided)</param>
     /// <param name="costCenterId">Optional: Cost center ID</param>
     /// <param name="projectId">Optional: Project ID</param>
@@ -126,7 +126,7 @@ public class PdfUploadController : ControllerBase
                 return Ok(new
                 {
                     purchaseOrder = result,
-                    warning = "PDF hochgeladen, aber keine Daten extrahiert. Das PDF enthält möglicherweise nur Bilder (gescanntes Dokument). Bitte Daten manuell vervollständigen.",
+                    warning = "Datei hochgeladen, aber keine Daten extrahiert. Das Dokument enthï¿½lt mï¿½glicherweise nur Bilder (gescanntes Dokument). Bitte Daten manuell vervollstï¿½ndigen.",
                     requiresManualEntry = true
                 });
             }
@@ -295,7 +295,7 @@ public class PdfUploadController : ControllerBase
                     // Add warning if no data was extracted
                     if (!hasExtractedData)
                     {
-                        uploadedFile.Warning = "Keine Daten extrahiert - gescanntes PDF?";
+                        uploadedFile.Warning = "Keine Daten extrahiert - gescanntes Dokument?";
                         uploadedFile.RequiresManualEntry = true;
                     }
 
