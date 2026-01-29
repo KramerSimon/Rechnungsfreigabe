@@ -10,4 +10,5 @@ export interface Project {
   status?: string;
   startDate?: string;
   endDate?: string;
+  projectManagerId?: string;
 }

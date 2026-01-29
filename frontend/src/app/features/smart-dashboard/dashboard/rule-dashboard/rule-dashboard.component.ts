@@ -82,7 +82,7 @@ export class RuleDashboardComponent implements OnInit {
     id: '',
     name: '',
     description: '',
-    manager: ''
+    managerId: ''
   };
 
   // Neues Projekt

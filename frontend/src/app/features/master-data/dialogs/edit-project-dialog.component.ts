@@ -10,6 +10,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CostCenter } from '../../../core/models/cost-center.model';
 import { Project } from '../../../core/models/project.model';
+import { User } from '../../../core/models/user.models';
 
 
 @Component({
@@ -91,9 +92,13 @@ import { Project } from '../../../core/models/project.model';
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Projektmanager ID</mat-label>
-            <input matInput type="number" formControlName="projectManagerId"
-                   placeholder="Optional">
+            <mat-label>Projektmanager</mat-label>
+            <mat-select formControlName="projectManagerId">
+              <mat-option value="null">Kein Manager</mat-option>
+              <mat-option *ngFor="let user of projectManagers" [value]="user.id">
+                {{user.firstName}} {{user.lastName}} ({{user.username}})
+              </mat-option>
+            </mat-select>
           </mat-form-field>
         </div>
 
@@ -163,17 +168,19 @@ import { Project } from '../../../core/models/project.model';
 export class EditProjectDialogComponent {
   projectForm: FormGroup;
   costCenters: CostCenter[] = [];
+  projectManagers: User[] = [];
 
   constructor(
     private dialogRef: MatDialogRef<EditProjectDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { project: Project, costCenters: CostCenter[] },
+    @Inject(MAT_DIALOG_DATA) public data: { project: Project, costCenters: CostCenter[], projectManagers: User[] },
     private fb: FormBuilder
   ) {
     this.costCenters = data.costCenters;
+    this.projectManagers = data.projectManagers || [];
     const project = data.project;
 
     this.projectForm = this.fb.group({
-      id: [{ value: project.id || '', disabled: true }], // ID is readonly
+      id: [{ value: project.id || '', disabled: true }],
       name: [project.name || '', [Validators.required, Validators.maxLength(100)]],
       description: [project.description || ''],
       costCenterId: [project.costCenterId || '', [Validators.required]],
@@ -181,7 +188,7 @@ export class EditProjectDialogComponent {
       status: [project.status || 'Geplant'],
       startDate: [project.startDate ? new Date(project.startDate) : null],
       endDate: [project.endDate ? new Date(project.endDate) : null],
-      projectManagerId: [null] // This would need to be mapped from project manager if needed
+      projectManagerId: [project.projectManagerId || null]
     });
   }
 
@@ -191,9 +198,8 @@ export class EditProjectDialogComponent {
 
   onSave(): void {
     if (this.projectForm.valid) {
-      // Format dates properly and exclude disabled fields
-      const formValue = { ...this.projectForm.value };
-      delete formValue.id; // Remove the disabled id field
+      // Format dates properly and include all fields including disabled id
+      const formValue = { ...this.projectForm.getRawValue() };
 
       if (formValue.startDate) {
         formValue.startDate = new Date(formValue.startDate).toISOString().split('T')[0];

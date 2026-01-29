@@ -10,6 +10,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CostCenter } from '../../../core/models/cost-center.model';
 import { Project } from '../../../core/models/project.model';
+import { User } from '../../../core/models/user.models';
 
 @Component({
   selector: 'app-create-project-dialog',
@@ -92,9 +93,13 @@ import { Project } from '../../../core/models/project.model';
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Projektmanager ID</mat-label>
-            <input matInput type="number" formControlName="projectManagerId"
-                   placeholder="Optional">
+            <mat-label>Projektmanager</mat-label>
+            <mat-select formControlName="projectManagerId">
+              <mat-option value="null">Kein Manager</mat-option>
+              <mat-option *ngFor="let user of projectManagers" [value]="user.id">
+                {{user.firstName}} {{user.lastName}} ({{user.username}})
+              </mat-option>
+            </mat-select>
           </mat-form-field>
         </div>
 
@@ -164,13 +169,15 @@ import { Project } from '../../../core/models/project.model';
 export class CreateProjectDialogComponent {
   projectForm: FormGroup;
   costCenters: CostCenter[] = [];
+  projectManagers: User[] = [];
 
   constructor(
     private dialogRef: MatDialogRef<CreateProjectDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { project: Project, costCenters: CostCenter[] },
+    @Inject(MAT_DIALOG_DATA) public data: { project: Project, costCenters: CostCenter[], projectManagers: User[] },
     private fb: FormBuilder
   ) {
     this.costCenters = data.costCenters;
+    this.projectManagers = data.projectManagers || [];
 
     this.projectForm = this.fb.group({
       id: [data.project.id || '', [Validators.required, Validators.maxLength(20)]],
@@ -181,6 +188,7 @@ export class CreateProjectDialogComponent {
       status: [data.project.status || 'Geplant'],
       startDate: [data.project.startDate || null],
       endDate: [data.project.endDate || null],
+      projectManagerId: [data.project.projectManagerId || null]
     });
   }
 

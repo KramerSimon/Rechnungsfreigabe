@@ -4,8 +4,10 @@ import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CostCenter } from '../../../core/models/cost-center.model';
+import { User } from '../../../core/models/user.models';
 
 @Component({
   selector: 'app-create-cost-center-dialog',
@@ -16,6 +18,7 @@ import { CostCenter } from '../../../core/models/cost-center.model';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatSelectModule,
     ReactiveFormsModule
   ],
   template: `
@@ -63,9 +66,13 @@ import { CostCenter } from '../../../core/models/cost-center.model';
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Manager ID</mat-label>
-            <input matInput type="number" formControlName="managerId"
-                   placeholder="Optional">
+            <mat-label>Manager</mat-label>
+            <mat-select formControlName="managerId">
+              <mat-option value="null">Kein Manager</mat-option>
+              <mat-option *ngFor="let user of managers" [value]="user.id">
+                {{user.firstName}} {{user.lastName}} ({{user.username}})
+              </mat-option>
+            </mat-select>
           </mat-form-field>
         </div>
       </form>
@@ -116,18 +123,21 @@ import { CostCenter } from '../../../core/models/cost-center.model';
 })
 export class CreateCostCenterDialogComponent {
   costCenterForm: FormGroup;
+  managers: User[] = [];
 
   constructor(
     private dialogRef: MatDialogRef<CreateCostCenterDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: CostCenter,
+    @Inject(MAT_DIALOG_DATA) public data: { costCenter: CostCenter; managers: User[] },
     private fb: FormBuilder
   ) {
+    this.managers = data.managers || [];
+    const costCenter = data.costCenter || {};
     this.costCenterForm = this.fb.group({
-      id: [data.id || '', [Validators.required, Validators.maxLength(20)]],
-      name: [data.name || '', [Validators.required, Validators.maxLength(100)]],
-      description: [data.description || ''],
-      budget: [data.budget || 0, [Validators.min(0)]],
-      manager: [data.manager || null]
+      id: [costCenter.id || '', [Validators.required, Validators.maxLength(20)]],
+      name: [costCenter.name || '', [Validators.required, Validators.maxLength(100)]],
+      description: [costCenter.description || ''],
+      budget: [costCenter.budget || 0, [Validators.min(0)]],
+      managerId: [costCenter.managerId || null]
     });
   }
 

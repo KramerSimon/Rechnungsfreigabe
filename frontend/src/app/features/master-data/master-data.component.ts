@@ -152,10 +152,11 @@ export class MasterDataComponent implements OnInit {
     'name',
     'description',
     'budget',
+    'manager',
     'isActive',
     'actions',
   ];
-  projectColumns = ['id', 'name', 'costCenter', 'budget', 'status', 'actions'];
+  projectColumns = ['id', 'name', 'costCenter', 'budget', 'projectManager', 'status', 'actions'];
   purchaseOrderColumns = [
     'id',
     'title',
@@ -319,6 +320,7 @@ export class MasterDataComponent implements OnInit {
     this.loadingCostCenters = true;
     this.costCenterService.getCostCenters().subscribe({
       next: (data) => {
+        console.log('Loaded cost centers:', data);
         this.costCenters = data;
         this.loadingCostCenters = false;
       },
@@ -648,7 +650,10 @@ export class MasterDataComponent implements OnInit {
     const dialogRef = this.dialog.open(CreateCostCenterDialogComponent, {
       width: '500px',
       maxWidth: '95vw',
-      data: dialogData,
+      data: {
+        costCenter: dialogData,
+        managers: this.users.filter(u => this.isUserAManager(u))
+      },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -690,6 +695,7 @@ export class MasterDataComponent implements OnInit {
       data: {
         project: dialogData,
         costCenters: this.costCenters,
+        projectManagers: this.users.filter(u => this.isUserAManager(u))
       },
     });
 
@@ -934,7 +940,10 @@ export class MasterDataComponent implements OnInit {
     const dialogRef = this.dialog.open(EditCostCenterDialogComponent, {
       width: '500px',
       maxWidth: '95vw',
-      data: costCenter,
+      data: {
+        costCenter: costCenter,
+        managers: this.users.filter(u => this.isUserAManager(u))
+      },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -970,6 +979,7 @@ export class MasterDataComponent implements OnInit {
       data: {
         project: project,
         costCenters: this.costCenters,
+        projectManagers: this.users.filter(u => this.isUserAManager(u))
       },
     });
 
@@ -1047,6 +1057,46 @@ export class MasterDataComponent implements OnInit {
     }
     const key = roleName.trim().toLowerCase();
     return this.roleColorMap[key] || '#ff9800';
+  }
+
+  // Helper method to check if user is a manager or admin
+  private isUserAManager(user: User): boolean {
+    // Check single role field (legacy)
+    if (user.role) {
+      const roleLower = user.role.toLowerCase();
+      if (roleLower === 'manager' || roleLower === 'admin' || roleLower === 'administrator') {
+        return true;
+      }
+    }
+
+    // Check roles array
+    if (user.roles && Array.isArray(user.roles)) {
+      return user.roles.some(role => {
+        const nameLower = role.name?.toLowerCase() || '';
+        return nameLower === 'manager' || nameLower === 'admin' || nameLower === 'administrator';
+      });
+    }
+    return false;
+  }
+
+  // Helper method to get manager/project manager name by ID
+  getManagerName(managerIdOrObject: string | number | any | undefined): string {
+    if (!managerIdOrObject) {
+      return '-';
+    }
+
+    // If it's already a manager object with firstName/lastName, return the name directly
+    if (typeof managerIdOrObject === 'object' && managerIdOrObject.firstName && managerIdOrObject.lastName) {
+      return `${managerIdOrObject.firstName} ${managerIdOrObject.lastName}`;
+    }
+
+    // Otherwise, treat it as an ID and look up the user
+    const managerIdStr = String(managerIdOrObject);
+    const manager = this.users.find(u => String(u.id) === managerIdStr);
+    if (manager) {
+      return `${manager.firstName} ${manager.lastName}`;
+    }
+    return '-';
   }
 
   // Approval Rules
