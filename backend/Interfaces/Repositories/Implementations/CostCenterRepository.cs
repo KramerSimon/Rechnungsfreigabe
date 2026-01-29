@@ -16,6 +16,13 @@ public class CostCenterRepository : Repository<CostCenter>, ICostCenterRepositor
             .FirstOrDefaultAsync(cc => cc.Id == id);
     }
 
+    public async Task<IEnumerable<CostCenter>> GetAllWithManagerAsync()
+    {
+        return await _dbSet
+            .Include(cc => cc.Manager)
+            .ToListAsync();
+    }
+
     public async Task<bool> HasRelatedInvoicesAsync(string id)
     {
         return await _context.Set<Invoice>()

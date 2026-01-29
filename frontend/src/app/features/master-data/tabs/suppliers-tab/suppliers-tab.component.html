@@ -1,0 +1,69 @@
+<div class="tab-content">
+  <div class="header-actions">
+    <button mat-raised-button color="primary" (click)="createSupplier()">
+      <mat-icon>add</mat-icon>
+      Neuer Lieferant
+    </button>
+    <button mat-icon-button (click)="loadSuppliers()" matTooltip="Aktualisieren">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  <mat-card>
+    <table mat-table [dataSource]="suppliers" class="data-table">
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef>ID</th>
+        <td mat-cell *matCellDef="let element">{{element.id}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let element">{{element.name}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef>E-Mail</th>
+        <td mat-cell *matCellDef="let element">{{element.email || '-'}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="phone">
+        <th mat-header-cell *matHeaderCellDef>Telefon</th>
+        <td mat-cell *matCellDef="let element">{{element.phone || '-'}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let element">
+          <span [class.active-badge]="element.isActive" [class.inactive-badge]="!element.isActive">
+            {{element.isActive ? 'Aktiv' : 'Inaktiv'}}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-icon-button matTooltip="Bearbeiten" (click)="editSupplier(element)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteSupplier(element.id)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="supplierColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: supplierColumns;"></tr>
+    </table>
+
+    <div *ngIf="loadingSuppliers" class="loading-overlay">
+      <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+      <p>Lade Lieferanten...</p>
+    </div>
+
+    <div *ngIf="!loadingSuppliers && suppliers.length === 0" class="empty-state">
+      <mat-icon>business</mat-icon>
+      <p>Keine Lieferanten vorhanden</p>
+    </div>
+  </mat-card>
+</div>

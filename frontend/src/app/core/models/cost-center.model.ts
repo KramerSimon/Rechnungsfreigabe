@@ -5,4 +5,11 @@ export interface CostCenter {
   budget?: number;
   isActive?: boolean;
   managerId?: string;
+  manager?: {
+    id: number;
+    username: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
 }

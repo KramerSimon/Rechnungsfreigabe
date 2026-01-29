@@ -1,0 +1,74 @@
+<div class="tab-content">
+  <div class="header-actions">
+    <button mat-raised-button color="primary" (click)="createCostCenter()">
+      <mat-icon>add</mat-icon>
+      Neue Kostenstelle
+    </button>
+    <button mat-icon-button (click)="loadCostCenters()" matTooltip="Aktualisieren">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  <mat-card>
+    <table mat-table [dataSource]="costCenters" class="data-table">
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef>ID</th>
+        <td mat-cell *matCellDef="let element">{{element.id}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let element">{{element.name}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th mat-header-cell *matHeaderCellDef>Beschreibung</th>
+        <td mat-cell *matCellDef="let element">{{element.description || '-'}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="budget">
+        <th mat-header-cell *matHeaderCellDef>Budget</th>
+        <td mat-cell *matCellDef="let element">{{element.budget | currency:'EUR'}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="manager">
+        <th mat-header-cell *matHeaderCellDef>Manager</th>
+        <td mat-cell *matCellDef="let element">{{getManagerName(element)}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let element">
+          <span [class.active-badge]="element.isActive" [class.inactive-badge]="!element.isActive">
+            {{element.isActive ? 'Aktiv' : 'Inaktiv'}}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-icon-button matTooltip="Bearbeiten" (click)="editCostCenter(element)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteCostCenter(element.id)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="costCenterColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: costCenterColumns;"></tr>
+    </table>
+
+    <div *ngIf="loadingCostCenters" class="loading-overlay">
+      <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+      <p>Lade Kostenstellen...</p>
+    </div>
+
+    <div *ngIf="!loadingCostCenters && costCenters.length === 0" class="empty-state">
+      <mat-icon>account_balance</mat-icon>
+      <p>Keine Kostenstellen vorhanden</p>
+    </div>
+  </mat-card>
+</div>

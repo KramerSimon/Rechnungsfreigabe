@@ -1,0 +1,83 @@
+<div class="tab-content">
+  <div class="header-actions">
+    <button mat-raised-button color="primary" (click)="createUser()">
+      <mat-icon>add</mat-icon>
+      Neuer Benutzer
+    </button>
+    <button mat-icon-button (click)="loadUsers()" matTooltip="Aktualisieren">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  <mat-card>
+    <table mat-table [dataSource]="users" class="data-table">
+      <ng-container matColumnDef="username">
+        <th mat-header-cell *matHeaderCellDef>Benutzername</th>
+        <td mat-cell *matCellDef="let element">{{element.username}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="fullName">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let element">{{getFullName(element)}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef>E-Mail</th>
+        <td mat-cell *matCellDef="let element">{{element.email || '-'}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef>Rolle</th>
+        <td mat-cell *matCellDef="let element">
+          <div class="role-badges-container">
+            <span *ngFor="let role of element.roles" class="role-badge" [style.backgroundColor]="role.color || '#2196f3'">
+              {{role.name}}
+            </span>
+            <span *ngIf="!element.roles || element.roles.length === 0" class="role-badge" style="background-color: #9e9e9e;">
+              -
+            </span>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let element">
+          <span [class.active-badge]="element.isActive" [class.inactive-badge]="!element.isActive">
+            {{element.isActive ? 'Aktiv' : 'Inaktiv'}}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="lastLogin">
+        <th mat-header-cell *matHeaderCellDef>Letzter Login</th>
+        <td mat-cell *matCellDef="let element">{{formatDateTime(element.lastLogin)}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-icon-button matTooltip="Bearbeiten" (click)="editUser(element)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteUser(element.id)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="userColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: userColumns;"></tr>
+    </table>
+
+    <div *ngIf="loadingUsers" class="loading-overlay">
+      <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
+      <p>Lade Benutzer...</p>
+    </div>
+
+    <div *ngIf="!loadingUsers && users.length === 0" class="empty-state">
+      <mat-icon>people</mat-icon>
+      <p>Keine Benutzer vorhanden</p>
+    </div>
+  </mat-card>
+</div>

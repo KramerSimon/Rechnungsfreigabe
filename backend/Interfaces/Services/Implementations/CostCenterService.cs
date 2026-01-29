@@ -16,7 +16,7 @@ public class CostCenterService : ICostCenterService
 
     public async Task<IEnumerable<CostCenterDto>> GetAllCostCentersAsync()
     {
-        var allCostCenters = await unitOfWork.CostCenters.GetAllAsync();
+        var allCostCenters = await unitOfWork.CostCenters.GetAllWithManagerAsync();
         var costCenters = allCostCenters
             .Where(cc => cc.IsActive)
             .OrderBy(cc => cc.Name);
@@ -128,7 +128,7 @@ public class CostCenterService : ICostCenterService
 
     public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync()
     {
-        var projects = await unitOfWork.Projects.GetAllAsync();
+        var projects = await unitOfWork.Projects.GetAllWithManagerAsync();
         return projects.OrderBy(p => p.Name).Select(MapProjectToDto);
     }
 
@@ -203,15 +203,18 @@ public class CostCenterService : ICostCenterService
             CostCenterName = project.CostCenter?.Name ?? string.Empty,
             Budget = project.Budget,
             SpentAmount = project.SpentAmount,
-            Status = project.Status?.ToString() ?? string.Empty,
+            Status = project.Status?.Code ?? RechnungsfreigabeAPI.Models.StatusCodes.Project.Geplant,
             StartDate = project.StartDate,
             EndDate = project.EndDate,
+            ProjectManagerId = project.ProjectManagerId,
             ProjectManager = project.ProjectManager != null ? new UserDto
             {
                 Id = project.ProjectManager.Id,
                 Username = project.ProjectManager.Username,
                 FirstName = project.ProjectManager.FirstName,
-                LastName = project.ProjectManager.LastName
+                LastName = project.ProjectManager.LastName,
+                Email = project.ProjectManager.Email,
+                IsActive = project.ProjectManager.IsActive
             } : null,
             CreatedAt = project.CreatedAt
         };

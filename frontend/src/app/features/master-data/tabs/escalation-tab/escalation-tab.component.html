@@ -1,0 +1,125 @@
+<div class="escalation-tab-container">
+  <div class="header">
+    <button mat-raised-button color="primary" (click)="createEscalationRule()">
+      <mat-icon>add</mat-icon>
+      Eskalationsregel hinzufügen
+    </button>
+  </div>
+
+  <div class="table-container" *ngIf="!isLoading && escalationRules.length > 0">
+    <table mat-table [dataSource]="escalationRules" class="escalation-table">
+      <!-- ID Column -->
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef>ID</th>
+        <td mat-cell *matCellDef="let rule">{{ rule.id }}</td>
+      </ng-container>
+
+      <!-- Name Column -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let rule">{{ rule.name }}</td>
+      </ng-container>
+
+      <!-- Trigger Statuses Column -->
+      <ng-container matColumnDef="triggerStatuses">
+        <th mat-header-cell *matHeaderCellDef>Auslösestatus</th>
+        <td mat-cell *matCellDef="let rule">
+          <div class="status-badges-container">
+            <span class="status-badge" *ngFor="let status of rule.triggerStatuses" [ngClass]="'status-' + status.code.toLowerCase()" [style.backgroundColor]="status.color">
+              {{ status.code | statusDisplay: 'Invoice' }}
+            </span>
+            <span *ngIf="!rule.triggerStatuses || rule.triggerStatuses.length === 0">-</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Trigger After Hours Column -->
+      <ng-container matColumnDef="triggerAfterHours">
+        <th mat-header-cell *matHeaderCellDef>Auslösen nach</th>
+        <td mat-cell *matCellDef="let rule">
+          {{ formatMinutesToHoursAndMinutes(rule.triggerAfterMinutes) }}
+        </td>
+      </ng-container>
+
+      <!-- Repeat Interval Hours Column -->
+      <ng-container matColumnDef="repeatIntervalHours">
+        <th mat-header-cell *matHeaderCellDef>Wiederholungsintervall</th>
+        <td mat-cell *matCellDef="let rule">
+          {{ rule.repeatIntervalHours ? formatMinutesToHoursAndMinutes(rule.repeatIntervalHours * 60) : '-' }}
+        </td>
+      </ng-container>
+
+      <!-- Max Escalations Column -->
+      <ng-container matColumnDef="maxEscalations">
+        <th mat-header-cell *matHeaderCellDef>Max. Eskalationen</th>
+        <td mat-cell *matCellDef="let rule">{{ rule.maxEscalations || 'Unbegrenzt' }}</td>
+      </ng-container>
+
+      <!-- Notify Roles Column -->
+      <ng-container matColumnDef="notifyRoles">
+        <th mat-header-cell *matHeaderCellDef>Rollen benachrichtigen</th>
+        <td mat-cell *matCellDef="let rule">
+          <div class="role-badges-container">
+            <span class="role-badge" *ngFor="let role of rule.notifyRoles" [style.backgroundColor]="role.color || '#2196f3'">
+              {{ role.name }}
+            </span>
+            <span *ngIf="!rule.notifyRoles || rule.notifyRoles.length === 0">-</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Notify Users Column -->
+      <ng-container matColumnDef="notifyUsers">
+        <th mat-header-cell *matHeaderCellDef>Benutzer benachrichtigen</th>
+        <td mat-cell *matCellDef="let rule">
+          <div class="user-badges-container">
+            <span class="user-badge" *ngFor="let user of rule.notifyUsers">
+              {{ user.firstName }} {{ user.lastName }}
+            </span>
+            <span *ngIf="!rule.notifyUsers || rule.notifyUsers.length === 0">-</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Is Active Column -->
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef>Aktiv</th>
+        <td mat-cell *matCellDef="let rule">
+          <mat-icon [color]="rule.isActive ? 'primary' : ''" [matTooltip]="rule.isActive ? 'Aktiv' : 'Inaktiv'">
+            {{ rule.isActive ? 'check_circle' : 'cancel' }}
+          </mat-icon>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+        <td mat-cell *matCellDef="let rule">
+          <button mat-icon-button (click)="editEscalationRule(rule)" matTooltip="Bearbeiten">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button (click)="deleteEscalationRule(rule)" matTooltip="Löschen">
+            <mat-icon color="warn">delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </div>
+
+  <div class="loading-container" *ngIf="isLoading">
+    <mat-spinner></mat-spinner>
+    <p>Lade Eskalationsregeln...</p>
+  </div>
+
+  <div class="empty-state" *ngIf="!isLoading && escalationRules.length === 0">
+    <mat-icon>notifications_none</mat-icon>
+    <p>Keine Eskalationsregeln vorhanden</p>
+    <button mat-raised-button color="primary" (click)="createEscalationRule()">
+      <mat-icon>add</mat-icon>
+      Erste Eskalationsregel hinzufügen
+    </button>
+  </div>
+</div>

@@ -16,6 +16,15 @@ public class ProjectRepository : Repository<Project>, IProjectRepository
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
+    public async Task<IEnumerable<Project>> GetAllWithManagerAsync()
+    {
+        return await _dbSet
+            .Include(p => p.ProjectManager)
+            .Include(p => p.CostCenter)
+            .Include(p => p.Status)
+            .ToListAsync();
+    }
+
     public async Task<IEnumerable<Project>> GetByCostCenterAsync(string costCenterId)
     {
         return await _dbSet

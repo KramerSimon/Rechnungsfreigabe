@@ -1,0 +1,74 @@
+.tab-content {
+  padding: 20px;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.data-table {
+  width: 100%;
+}
+
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.loading-spinner {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: #666;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+  }
+}
+
+.active-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  background-color: #4caf50;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.inactive-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  background-color: #f44336;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+}
