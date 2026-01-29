@@ -11,7 +11,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 // Zentrale Modelle
-import { Permission, Role, UserRole } from '../../../core/models/user.models';
+import { Permission, Role, UserRole } from '../../../../core/models/user.models';
 
 @Component({
   selector: 'app-role-management-dialog',

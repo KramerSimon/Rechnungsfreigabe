@@ -1,0 +1,26 @@
+.dialog-container {
+      width: 600px;
+      max-width: 95vw;
+      overflow-x: hidden;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .form-row mat-form-field {
+      flex: 1;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 0;
+    }

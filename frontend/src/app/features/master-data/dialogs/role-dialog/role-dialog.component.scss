@@ -1,0 +1,5 @@
+.dialog-container { width: 520px; max-width: 95vw; overflow-x: hidden; }
+      .full-width { width: 100%; }
+      .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 0; }
+      .color-row { display: flex; align-items: center; gap: 12px; }
+      .color-preview { width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.12); }
