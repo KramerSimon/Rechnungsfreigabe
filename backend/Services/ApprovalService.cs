@@ -98,8 +98,11 @@ public class ApprovalService : IApprovalService
     public async Task<IEnumerable<ApprovalRule>> GetActiveRulesAsync()
     {
         return await unitOfWork.ApprovalRules.Query()
+            .Include(r => r.Conditions.OrderBy(c => c.ConditionOrder))
+            .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
+            .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+            .ThenInclude(s => s.User)
             .AsNoTracking()
-            .IgnoreAutoIncludes()
             .Where(r => r.IsActive)
             .OrderBy(r => r.Priority)
             .ToListAsync();
@@ -161,12 +164,10 @@ public class ApprovalService : IApprovalService
     {
         try
         {
+            var conditions = rule.Conditions.OrderBy(c => c.ConditionOrder).ToList();
 
-            var conditions = JsonSerializer.Deserialize<RuleCondition[]>(rule.Conditions);
-
-            if (conditions == null || !conditions.Any())
+            if (!conditions.Any())
             {
-                
                 return true; // No conditions means rule applies to all
             }
 
@@ -185,7 +186,7 @@ public class ApprovalService : IApprovalService
         }
     }
 
-    private Task<bool> EvaluateConditionAsync(Invoice invoice, RuleCondition condition)
+    private Task<bool> EvaluateConditionAsync(Invoice invoice, ApprovalRuleCondition condition)
     {
         var fieldLower = condition.Field.ToLower();
         var result = fieldLower switch
@@ -201,7 +202,7 @@ public class ApprovalService : IApprovalService
         return Task.FromResult(result);
     }
 
-    private bool EvaluateNumericCondition(decimal value, RuleCondition condition)
+    private bool EvaluateNumericCondition(decimal value, ApprovalRuleCondition condition)
     {
         if (!decimal.TryParse(condition.Value, out var conditionValue))
             return false;
@@ -218,7 +219,7 @@ public class ApprovalService : IApprovalService
         };
     }
 
-    private bool EvaluateNumericCondition(int value, RuleCondition condition)
+    private bool EvaluateNumericCondition(int value, ApprovalRuleCondition condition)
     {
         if (!int.TryParse(condition.Value, out var conditionValue))
             return false;
@@ -235,7 +236,7 @@ public class ApprovalService : IApprovalService
         };
     }
 
-    private bool EvaluateStringCondition(string? value, RuleCondition condition)
+    private bool EvaluateStringCondition(string? value, ApprovalRuleCondition condition)
     {
         return condition.Operator switch
         {
@@ -252,9 +253,9 @@ public class ApprovalService : IApprovalService
     {
         try
         {
-            var actions = JsonSerializer.Deserialize<RuleAction[]>(rule.Actions);
+            var actions = rule.Actions.OrderBy(a => a.ActionOrder).ToList();
             
-            if (actions == null) return;
+            if (!actions.Any()) return;
 
             foreach (var action in actions)
             {
@@ -267,9 +268,9 @@ public class ApprovalService : IApprovalService
         }
     }
 
-    private async Task ProcessRuleActionAsync(Invoice invoice, ApprovalRule rule, RuleAction action)
+    private async Task ProcessRuleActionAsync(Invoice invoice, ApprovalRule rule, ApprovalRuleAction action)
     {
-        switch (action.Type.ToLower())
+        switch (action.ActionType.ToLower())
         {
             case "auto_approve":
                 await AutoApproveInvoiceAsync(invoice);
@@ -279,7 +280,7 @@ public class ApprovalService : IApprovalService
                 break;
             case "set_status":
                 var newStatus = await unitOfWork.Statuses.Query()
-                    .FirstOrDefaultAsync(s => s.Code == action.Value && s.EntityType == EntityTypes.Invoice);
+                    .FirstOrDefaultAsync(s => s.Code == action.ActionValue && s.EntityType == EntityTypes.Invoice);
                 if (newStatus != null)
                 {
                     invoice.StatusId = newStatus.Id;
@@ -288,7 +289,7 @@ public class ApprovalService : IApprovalService
                 }
                 break;
             case "assign_to":
-                if (int.TryParse(action.Value, out var assignedUserId))
+                if (int.TryParse(action.ActionValue, out var assignedUserId))
                 {
                     await AssignInvoiceToUserAsync(invoice, rule, assignedUserId);
                 }
@@ -322,19 +323,18 @@ public class ApprovalService : IApprovalService
         );
     }
 
-    private async Task CreateApprovalWorkflowStepsAsync(Invoice invoice, ApprovalRule rule, RuleAction action)
+    private async Task CreateApprovalWorkflowStepsAsync(Invoice invoice, ApprovalRule rule, ApprovalRuleAction action)
     {
         // If explicit staged workflow is provided in rule action, honor it
-        if (action.Stages != null && action.Stages.Count > 0)
+        var stages = action.Stages.OrderBy(s => s.StepNumber).ToList();
+        if (stages.Any())
         {
-            int stepNumber = 1;
-            foreach (var stage in action.Stages)
+            foreach (var stage in stages)
             {
                 var approverId = await ResolveStageApproverAsync(invoice, stage);
                 if (!approverId.HasValue)
                 {
-                    Console.WriteLine($"[WARNING] No approver resolved for stage '{stage.Role}', skipping stage {stepNumber}");
-                    stepNumber++;
+                    Console.WriteLine($"[WARNING] No approver resolved for stage '{stage.Role}', skipping stage {stage.StepNumber}");
                     continue;
                 }
 
@@ -342,8 +342,7 @@ public class ApprovalService : IApprovalService
                 var approverExists = await unitOfWork.Users.Query().AnyAsync(u => u.Id == approverId.Value && u.IsActive);
                 if (!approverExists)
                 {
-                    Console.WriteLine($"[WARNING] Approver {approverId.Value} not found or inactive, skipping stage {stepNumber}");
-                    stepNumber++;
+                    Console.WriteLine($"[WARNING] Approver {approverId.Value} not found or inactive, skipping stage {stage.StepNumber}");
                     continue;
                 }
 
@@ -351,10 +350,10 @@ public class ApprovalService : IApprovalService
                 {
                     InvoiceId = invoice.Id,
                     RuleId = rule.Id,
-                    StepNumber = stepNumber,
+                    StepNumber = stage.StepNumber,
                     ApproverId = approverId.Value,
-                    ApprovalLevel = stage.ApprovalLevel ?? stepNumber,
-                    StatusId = (stepNumber == 1) ? 
+                    ApprovalLevel = stage.ApprovalLevel,
+                    StatusId = (stage.StepNumber == 1) ? 
                         (await unitOfWork.Statuses.Query()
                             .Where(s => s.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending && 
                                         s.EntityType == EntityTypes.ApprovalWorkflow)
@@ -369,7 +368,6 @@ public class ApprovalService : IApprovalService
                 };
 
                 unitOfWork.ApprovalWorkflows.Add(workflow);
-                stepNumber++;
             }
         }
         else
@@ -572,11 +570,12 @@ public class ApprovalService : IApprovalService
         await unitOfWork.SaveChangesAsync();
     }
 
-    private async Task<int[]> GetApproversForActionAsync(Invoice invoice, RuleAction action)
+    private async Task<int[]> GetApproversForActionAsync(Invoice invoice, ApprovalRuleAction action)
     {
         var approvers = new List<int>();
 
-        switch (action.Value.ToLower())
+        var actionValue = action.ActionValue?.ToLower() ?? "";
+        switch (actionValue)
         {
             case "manager":
                 if (invoice.CostCenter?.ManagerId.HasValue == true)
@@ -600,7 +599,7 @@ public class ApprovalService : IApprovalService
                 break;
             default:
                 // Support comma-separated roles (e.g., "manager,administrator")
-                var parts = action.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var parts = actionValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 foreach (var part in parts)
                 {
                     if (part.Equals("manager", StringComparison.OrdinalIgnoreCase))
@@ -631,7 +630,7 @@ public class ApprovalService : IApprovalService
         return approvers.ToArray();
     }
 
-    private async Task<int?> ResolveStageApproverAsync(Invoice invoice, StageDefinition stage)
+    private async Task<int?> ResolveStageApproverAsync(Invoice invoice, ApprovalRuleStage stage)
     {
         if (stage.UserId.HasValue)
             return stage.UserId.Value;
@@ -640,10 +639,12 @@ public class ApprovalService : IApprovalService
         switch (role)
         {
             case "manager":
+            case "cost_center_manager":
                 return invoice.CostCenter?.ManagerId;
             case "project_manager":
                 return invoice.Project?.ProjectManagerId;
             case "administrator":
+            case "admin":
                 var admin = await unitOfWork.Users.Query()
                     .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
@@ -655,9 +656,9 @@ public class ApprovalService : IApprovalService
         }
     }
 
-    private int GetApprovalLevelForAction(RuleAction action)
+    private int GetApprovalLevelForAction(ApprovalRuleAction action)
     {
-        return action.Value.ToLower() switch
+        return (action.ActionValue?.ToLower()) switch
         {
             "double" => 2,
             _ => 1
@@ -941,51 +942,3 @@ public class ApprovalService : IApprovalService
         }
     }
 }
-
-// Helper classes for JSON deserialization
-public class RuleCondition
-{
-    [System.Text.Json.Serialization.JsonPropertyName("field")]
-    public string Field { get; set; } = string.Empty;
-    
-    [System.Text.Json.Serialization.JsonPropertyName("operator")]
-    public string Operator { get; set; } = string.Empty;
-    
-    [System.Text.Json.Serialization.JsonPropertyName("value")]
-    public string Value { get; set; } = string.Empty;
-    
-    [System.Text.Json.Serialization.JsonPropertyName("logicalOperator")]
-    public string? LogicalOperator { get; set; }
-}
-
-public class RuleAction
-{
-    [System.Text.Json.Serialization.JsonPropertyName("type")]
-    public string Type { get; set; } = string.Empty;
-    
-    [System.Text.Json.Serialization.JsonPropertyName("value")]
-    public string Value { get; set; } = string.Empty;
-    
-    [System.Text.Json.Serialization.JsonPropertyName("description")]
-    public string? Description { get; set; }
-
-    // Optional explicit staged workflow definition
-    [System.Text.Json.Serialization.JsonPropertyName("stages")]
-    public List<StageDefinition>? Stages { get; set; }
-}
-
-public class StageDefinition
-{
-    // Role-based resolution (e.g., "manager", "project_manager", "administrator")
-    [System.Text.Json.Serialization.JsonPropertyName("role")]
-    public string? Role { get; set; }
-
-    // Direct assignment to specific user
-    [System.Text.Json.Serialization.JsonPropertyName("userId")]
-    public int? UserId { get; set; }
-
-    // Optional explicit approval level; if omitted, step index is used
-    [System.Text.Json.Serialization.JsonPropertyName("approvalLevel")]
-    public int? ApprovalLevel { get; set; }
-}
-

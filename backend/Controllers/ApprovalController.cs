@@ -378,41 +378,75 @@ public class ApprovalController : ControllerBase
                 return Unauthorized(new { message = "User does not exist or is inactive" });
             }
 
-            // Validate JSON payloads early to avoid server errors
-            var conditionsJson = string.IsNullOrWhiteSpace(dto.Conditions) ? "[]" : dto.Conditions;
-            var actionsJson = string.IsNullOrWhiteSpace(dto.Actions) ? "[]" : dto.Actions;
-
-            try
-            {
-                System.Text.Json.JsonSerializer.Deserialize<RechnungsfreigabeAPI.Services.RuleCondition[]>(conditionsJson);
-            }
-            catch
-            {
-                return BadRequest(new { message = "Invalid JSON for conditions" });
-            }
-
-            try
-            {
-                System.Text.Json.JsonSerializer.Deserialize<RechnungsfreigabeAPI.Services.RuleAction[]>(actionsJson);
-            }
-            catch
-            {
-                return BadRequest(new { message = "Invalid JSON for actions" });
-            }
-
             var rule = new ApprovalRule
             {
                 Name = dto.Name,
                 Description = dto.Description,
                 RuleType = dto.RuleType,
                 Priority = dto.Priority ?? 10,
-                Conditions = conditionsJson,
-                Actions = actionsJson,
                 CreatedBy = userId
             };
 
+            // Add conditions
+            if (dto.Conditions != null && dto.Conditions.Any())
+            {
+                int order = 1;
+                foreach (var condDto in dto.Conditions)
+                {
+                    rule.Conditions.Add(new ApprovalRuleCondition
+                    {
+                        Field = condDto.Field,
+                        Operator = condDto.Operator,
+                        Value = condDto.Value,
+                        LogicalOperator = condDto.LogicalOperator ?? "AND",
+                        ConditionOrder = order++
+                    });
+                }
+            }
+
+            // Add actions
+            if (dto.Actions != null && dto.Actions.Any())
+            {
+                int actionOrder = 1;
+                foreach (var actDto in dto.Actions)
+                {
+                    var action = new ApprovalRuleAction
+                    {
+                        ActionType = actDto.ActionType,
+                        ActionValue = actDto.ActionValue,
+                        Description = actDto.Description,
+                        ActionOrder = actionOrder++
+                    };
+
+                    // Add stages if present
+                    if (actDto.Stages != null && actDto.Stages.Any())
+                    {
+                        foreach (var stageDto in actDto.Stages)
+                        {
+                            action.Stages.Add(new ApprovalRuleStage
+                            {
+                                StepNumber = stageDto.StepNumber,
+                                ApprovalLevel = stageDto.ApprovalLevel,
+                                Role = stageDto.Role,
+                                UserId = stageDto.UserId
+                            });
+                        }
+                    }
+
+                    rule.Actions.Add(action);
+                }
+            }
+
             var createdRule = await approvalService.CreateRuleAsync(rule);
-            return CreatedAtAction(nameof(GetApprovalRules), new { id = createdRule.Id }, createdRule);
+            
+            // Reload with related entities
+            var loadedRule = await context.ApprovalRules
+                .Include(r => r.Conditions.OrderBy(c => c.ConditionOrder))
+                .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
+                .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+                .FirstOrDefaultAsync(r => r.Id == createdRule.Id);
+
+            return CreatedAtAction(nameof(GetApprovalRules), new { id = createdRule.Id }, loadedRule);
         }
         catch (Exception)
         {
@@ -430,12 +464,18 @@ public class ApprovalController : ControllerBase
     {
         try
         {
-            var rule = await context.ApprovalRules.FindAsync(ruleId);
+            var rule = await context.ApprovalRules
+                .Include(r => r.Conditions)
+                .Include(r => r.Actions)
+                .ThenInclude(a => a.Stages)
+                .FirstOrDefaultAsync(r => r.Id == ruleId);
+                
             if (rule == null)
             {
                 return NotFound(new { message = "Approval rule not found" });
             }
 
+            // Update basic properties
             if (!string.IsNullOrEmpty(dto.Name))
                 rule.Name = dto.Name;
             if (dto.Description != null)
@@ -444,19 +484,78 @@ public class ApprovalController : ControllerBase
                 rule.RuleType = dto.RuleType.Value;
             if (dto.Priority.HasValue)
                 rule.Priority = dto.Priority.Value;
-            if (dto.Conditions != null)
-                rule.Conditions = dto.Conditions;
-            if (dto.Actions != null)
-                rule.Actions = dto.Actions;
             if (dto.IsActive.HasValue)
                 rule.IsActive = dto.IsActive.Value;
+
+            // Update conditions
+            if (dto.Conditions != null)
+            {
+                // Remove existing conditions
+                context.ApprovalRuleConditions.RemoveRange(rule.Conditions);
+                
+                // Add new conditions
+                int order = 1;
+                foreach (var condDto in dto.Conditions)
+                {
+                    rule.Conditions.Add(new ApprovalRuleCondition
+                    {
+                        Field = condDto.Field,
+                        Operator = condDto.Operator,
+                        Value = condDto.Value,
+                        LogicalOperator = condDto.LogicalOperator ?? "AND",
+                        ConditionOrder = order++
+                    });
+                }
+            }
+
+            // Update actions
+            if (dto.Actions != null)
+            {
+                // Remove existing actions (cascade will remove stages)
+                context.ApprovalRuleActions.RemoveRange(rule.Actions);
+                
+                // Add new actions
+                int actionOrder = 1;
+                foreach (var actDto in dto.Actions)
+                {
+                    var action = new ApprovalRuleAction
+                    {
+                        ActionType = actDto.ActionType,
+                        ActionValue = actDto.ActionValue,
+                        Description = actDto.Description,
+                        ActionOrder = actionOrder++
+                    };
+
+                    // Add stages if present
+                    if (actDto.Stages != null && actDto.Stages.Any())
+                    {
+                        foreach (var stageDto in actDto.Stages)
+                        {
+                            action.Stages.Add(new ApprovalRuleStage
+                            {
+                                StepNumber = stageDto.StepNumber,
+                                ApprovalLevel = stageDto.ApprovalLevel,
+                                Role = stageDto.Role,
+                                UserId = stageDto.UserId
+                            });
+                        }
+                    }
+
+                    rule.Actions.Add(action);
+                }
+            }
             
             rule.UpdatedAt = DateTime.UtcNow;
-
-            context.ApprovalRules.Update(rule);
             await context.SaveChangesAsync();
 
-            return Ok(rule);
+            // Reload with all related entities
+            var updatedRule = await context.ApprovalRules
+                .Include(r => r.Conditions.OrderBy(c => c.ConditionOrder))
+                .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
+                .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+                .FirstOrDefaultAsync(r => r.Id == ruleId);
+
+            return Ok(updatedRule);
         }
         catch (Exception)
         {
@@ -522,14 +621,38 @@ public class ApprovalRequestDto
     public string? Comments { get; set; }
 }
 
+public class ApprovalRuleConditionDto
+{
+    public string Field { get; set; } = string.Empty;
+    public string Operator { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+    public string? LogicalOperator { get; set; } = "AND";
+}
+
+public class ApprovalRuleActionDto
+{
+    public string ActionType { get; set; } = string.Empty;
+    public string? ActionValue { get; set; }
+    public string? Description { get; set; }
+    public List<ApprovalRuleStageDto>? Stages { get; set; }
+}
+
+public class ApprovalRuleStageDto
+{
+    public int StepNumber { get; set; }
+    public int ApprovalLevel { get; set; }
+    public string? Role { get; set; }
+    public int? UserId { get; set; }
+}
+
 public class CreateApprovalRuleDto
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public RuleType RuleType { get; set; } = RuleType.Manual;
     public int? Priority { get; set; }
-    public string? Conditions { get; set; }
-    public string? Actions { get; set; }
+    public List<ApprovalRuleConditionDto>? Conditions { get; set; }
+    public List<ApprovalRuleActionDto>? Actions { get; set; }
     public int? SupplierId { get; set; }
     public string? CostCenterId { get; set; }
     public string? ProjectId { get; set; }
@@ -541,8 +664,8 @@ public class UpdateApprovalRuleDto
     public string? Description { get; set; }
     public RuleType? RuleType { get; set; }
     public int? Priority { get; set; }
-    public string? Conditions { get; set; }
-    public string? Actions { get; set; }
+    public List<ApprovalRuleConditionDto>? Conditions { get; set; }
+    public List<ApprovalRuleActionDto>? Actions { get; set; }
     public bool? IsActive { get; set; }
     public int? SupplierId { get; set; }
     public string? CostCenterId { get; set; }

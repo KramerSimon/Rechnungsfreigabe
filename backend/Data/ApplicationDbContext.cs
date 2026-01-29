@@ -22,6 +22,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<ApprovalRule> ApprovalRules { get; set; }
+    public DbSet<ApprovalRuleCondition> ApprovalRuleConditions { get; set; }
+    public DbSet<ApprovalRuleAction> ApprovalRuleActions { get; set; }
+    public DbSet<ApprovalRuleStage> ApprovalRuleStages { get; set; }
     public DbSet<ApprovalWorkflow> ApprovalWorkflows { get; set; }
     public DbSet<InvoiceHistory> InvoiceHistories { get; set; }
     public DbSet<Notification> Notifications { get; set; }
@@ -49,6 +52,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<PurchaseOrder>().ToTable("purchase_orders");
         modelBuilder.Entity<Invoice>().ToTable("invoices");
         modelBuilder.Entity<ApprovalRule>().ToTable("approval_rules");
+        modelBuilder.Entity<ApprovalRuleCondition>().ToTable("approval_rule_conditions");
+        modelBuilder.Entity<ApprovalRuleAction>().ToTable("approval_rule_actions");
+        modelBuilder.Entity<ApprovalRuleStage>().ToTable("approval_rule_stages");
         modelBuilder.Entity<ApprovalWorkflow>().ToTable("approval_workflows");
         modelBuilder.Entity<InvoiceHistory>().ToTable("invoice_history");
         modelBuilder.Entity<Notification>().ToTable("notifications");
@@ -338,6 +344,31 @@ public class ApplicationDbContext : DbContext
             .WithMany()
             .HasForeignKey(ernu => ernu.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Approval Rule relationships
+        modelBuilder.Entity<ApprovalRuleCondition>()
+            .HasOne(arc => arc.ApprovalRule)
+            .WithMany(ar => ar.Conditions)
+            .HasForeignKey(arc => arc.ApprovalRuleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ApprovalRuleAction>()
+            .HasOne(ara => ara.ApprovalRule)
+            .WithMany(ar => ar.Actions)
+            .HasForeignKey(ara => ara.ApprovalRuleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ApprovalRuleStage>()
+            .HasOne(ars => ars.ApprovalRuleAction)
+            .WithMany(ara => ara.Stages)
+            .HasForeignKey(ars => ars.ApprovalRuleActionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ApprovalRuleStage>()
+            .HasOne(ars => ars.User)
+            .WithMany()
+            .HasForeignKey(ars => ars.UserId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<SystemConfig>()
             .HasOne(sc => sc.UpdatedByUser)

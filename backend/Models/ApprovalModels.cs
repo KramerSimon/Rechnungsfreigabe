@@ -26,14 +26,6 @@ public class ApprovalRule
     [Column("is_active")]
     public bool IsActive { get; set; } = true;
 
-    [Required]
-    [Column("conditions", TypeName = "json")]
-    public string Conditions { get; set; } = "[]";
-
-    [Required]
-    [Column("actions", TypeName = "json")]
-    public string Actions { get; set; } = "[]";
-
     [Column("created_by")]
     public int CreatedBy { get; set; }
     
@@ -48,6 +40,113 @@ public class ApprovalRule
     public virtual User Creator { get; set; } = null!;
     [JsonIgnore]
     public virtual ICollection<ApprovalWorkflow> ApprovalWorkflows { get; set; } = new List<ApprovalWorkflow>();
+    [JsonIgnore]
+    public virtual ICollection<ApprovalRuleCondition> Conditions { get; set; } = new List<ApprovalRuleCondition>();
+    [JsonIgnore]
+    public virtual ICollection<ApprovalRuleAction> Actions { get; set; } = new List<ApprovalRuleAction>();
+}
+
+public class ApprovalRuleCondition
+{
+    [Column("id")]
+    public int Id { get; set; }
+
+    [Column("approval_rule_id")]
+    public int ApprovalRuleId { get; set; }
+
+    [Required]
+    [StringLength(50)]
+    [Column("field")]
+    public string Field { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(20)]
+    [Column("operator")]
+    public string Operator { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(255)]
+    [Column("value")]
+    public string Value { get; set; } = string.Empty;
+
+    [StringLength(3)]
+    [Column("logical_operator")]
+    public string? LogicalOperator { get; set; } = "AND";
+
+    [Column("condition_order")]
+    public int ConditionOrder { get; set; } = 1;
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation property
+    [JsonIgnore]
+    public virtual ApprovalRule ApprovalRule { get; set; } = null!;
+}
+
+public class ApprovalRuleAction
+{
+    [Column("id")]
+    public int Id { get; set; }
+
+    [Column("approval_rule_id")]
+    public int ApprovalRuleId { get; set; }
+
+    [Required]
+    [StringLength(50)]
+    [Column("action_type")]
+    public string ActionType { get; set; } = string.Empty;
+
+    [StringLength(255)]
+    [Column("action_value")]
+    public string? ActionValue { get; set; }
+
+    [StringLength(500)]
+    [Column("description")]
+    public string? Description { get; set; }
+
+    [Column("action_order")]
+    public int ActionOrder { get; set; } = 1;
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    [JsonIgnore]
+    public virtual ApprovalRule ApprovalRule { get; set; } = null!;
+    [JsonIgnore]
+    public virtual ICollection<ApprovalRuleStage> Stages { get; set; } = new List<ApprovalRuleStage>();
+}
+
+public class ApprovalRuleStage
+{
+    [Column("id")]
+    public int Id { get; set; }
+
+    [Column("approval_rule_action_id")]
+    public int ApprovalRuleActionId { get; set; }
+
+    [Column("step_number")]
+    public int StepNumber { get; set; }
+
+    [Column("approval_level")]
+    public int ApprovalLevel { get; set; }
+
+    [StringLength(50)]
+    [Column("role")]
+    public string? Role { get; set; }
+
+    [Column("user_id")]
+    public int? UserId { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    [JsonIgnore]
+    public virtual ApprovalRuleAction ApprovalRuleAction { get; set; } = null!;
+    [JsonIgnore]
+    public virtual User? User { get; set; }
 }
 
 public class ApprovalWorkflow
