@@ -1,0 +1,84 @@
+<div class="dialog-container">
+      <h2 mat-dialog-title>Neue Genehmigungsregel</h2>
+
+      <form [formGroup]="ruleForm" mat-dialog-content>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Name *</mat-label>
+            <input matInput formControlName="name" required>
+            <mat-error *ngIf="ruleForm.get('name')?.hasError('required')">
+              Name ist erforderlich
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Beschreibung</mat-label>
+            <textarea matInput formControlName="description" rows="3"></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Regeltyp *</mat-label>
+            <mat-select formControlName="ruleType" required>
+              <mat-option value="Manual">Manuell</mat-option>
+              <mat-option value="Automatic">Automatisch</mat-option>
+              <mat-option value="Conditional">Bedingt</mat-option>
+            </mat-select>
+            <mat-error *ngIf="ruleForm.get('ruleType')?.hasError('required')">
+              Regeltyp ist erforderlich
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Priorität</mat-label>
+            <input matInput type="number" formControlName="priority" min="1" max="100">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Lieferant</mat-label>
+            <mat-select formControlName="supplierId">
+              <mat-option [value]="null">-- Keiner --</mat-option>
+              <mat-option *ngFor="let supplier of suppliers" [value]="supplier.id">
+                {{ supplier.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Kostenstelle</mat-label>
+            <mat-select formControlName="costCenterId">
+              <mat-option [value]="null">-- Keine --</mat-option>
+              <mat-option *ngFor="let costCenter of costCenters" [value]="costCenter.id">
+                {{ costCenter.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Projekt</mat-label>
+            <mat-select formControlName="projectId">
+              <mat-option [value]="null">-- Keines --</mat-option>
+              <mat-option *ngFor="let project of projects" [value]="project.id">
+                {{ project.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </form>
+
+      <div mat-dialog-actions align="end">
+        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-raised-button color="primary"
+                [disabled]="!ruleForm.valid"
+                (click)="onSave()">
+          Speichern
+        </button>
+      </div>
+    </div>

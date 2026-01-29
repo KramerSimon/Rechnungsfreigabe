@@ -14,7 +14,7 @@ import { UserService } from './core/services/user.service';
 import { AuthState } from './core/models/auth.models';
 import { Observable, map, take } from 'rxjs';
 import { NotificationService } from './core/services/notification.service';
-import { EditUserDialogComponent } from './features/master-data/dialogs/edit-user-dialog.component';
+import { EditUserDialogComponent } from './features/master-data/dialogs/edit-user-dialog/edit-user-dialog.component';
 import { RoleDto } from './core/models/user.models';
 
 @Component({

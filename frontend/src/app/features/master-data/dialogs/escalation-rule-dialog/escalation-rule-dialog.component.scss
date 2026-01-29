@@ -1,0 +1,120 @@
+.dialog-container {
+      width: 100%;
+      padding: 0 16px;
+      overflow-x: hidden;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+
+    .form-row mat-form-field {
+      width: 100%;
+    }
+
+    .time-field {
+      flex: 1;
+      min-width: 80px;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+
+    mat-checkbox {
+      margin-bottom: 12px;
+      grid-column: 1 / -1;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 0 0 0;
+      flex-wrap: wrap;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    /* Status and Role tags in dropdown */
+    .status-tag,
+    .role-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 24px;
+    }
+
+    /* Time fields in a row */
+    .form-row:has(.time-field) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Mobile screens (up to 768px) */
+    @media (max-width: 768px) {
+      .dialog-container {
+        padding: 0 12px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .form-row:has(.time-field) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .dialog-actions {
+        gap: 6px;
+      }
+
+      .dialog-actions button {
+        flex: 1;
+      }
+    }
+
+    /* Small mobile screens (up to 480px) */
+    @media (max-width: 480px) {
+      .dialog-container {
+        padding: 0 8px;
+      }
+
+      .form-row {
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .dialog-actions {
+        flex-direction: column-reverse;
+        gap: 8px;
+        padding-top: 12px;
+      }
+
+      .dialog-actions button {
+        width: 100%;
+      }
+
+      h2 {
+        font-size: 18px;
+        margin-bottom: 12px;
+      }
+    }

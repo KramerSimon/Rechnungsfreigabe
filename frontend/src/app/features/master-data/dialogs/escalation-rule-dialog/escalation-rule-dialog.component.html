@@ -1,0 +1,122 @@
+<div class="dialog-container">
+      <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Neue Eskalationsregel' : 'Eskalationsregel bearbeiten' }}</h2>
+
+      <form [formGroup]="form" mat-dialog-content>
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Name *</mat-label>
+            <input matInput formControlName="name" placeholder="z.B. Eskalation nach 48h">
+            <mat-error *ngIf="form.get('name')?.hasError('required')">Name ist erforderlich</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Status-Auslöser (mehrfach möglich) *</mat-label>
+            <mat-select formControlName="triggerStatusIds" multiple>
+              <mat-select-trigger>
+                <span class="tag-list">
+                  <span
+                    *ngFor="let statusId of form.get('triggerStatusIds')?.value"
+                    class="status-tag"
+                    [style.backgroundColor]="getStatusById(statusId)?.color || '#9E9E9E'">
+                    {{ (getStatusById(statusId)?.code || '') | statusDisplay:'Invoice' }}
+                  </span>
+                </span>
+              </mat-select-trigger>
+              <mat-option *ngFor="let status of data.statuses" [value]="status.id">
+                <span class="status-tag" [style.backgroundColor]="status.color || '#9E9E9E'">
+                  {{ (status.code || '') | statusDisplay:'Invoice' }}
+                </span>
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.get('triggerStatusIds')?.hasError('required')">Mindestens ein Status ist erforderlich</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="time-field">
+            <mat-label>Tage</mat-label>
+            <input matInput type="number" formControlName="triggerDays" min="0" max="10">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="time-field">
+            <mat-label>Stunden</mat-label>
+            <input matInput type="number" formControlName="triggerHours" min="0" max="23">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="time-field">
+            <mat-label>Minuten</mat-label>
+            <input matInput type="number" formControlName="triggerMinutes" min="0" max="59">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Wiederholung alle (Stunden)</mat-label>
+            <input matInput type="number" formControlName="repeatIntervalHours" min="1">
+            <mat-hint>Optional. Wenn leer, wird nicht wiederholt.</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Max. Eskalationen</mat-label>
+            <input matInput type="number" formControlName="maxEscalations" min="0">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Benachrichtigte Rollen (mehrfach möglich)</mat-label>
+            <mat-select formControlName="notifyRoleIds" multiple>
+              <mat-select-trigger>
+                <span class="tag-list">
+                  <span
+                    *ngFor="let roleId of form.get('notifyRoleIds')?.value"
+                    class="role-tag"
+                    [style.backgroundColor]="getRoleById(roleId)?.color || '#ff9800'">
+                    {{getRoleById(roleId)?.name || roleId}}
+                  </span>
+                </span>
+              </mat-select-trigger>
+              <mat-option *ngFor="let role of data.roles" [value]="role.id">
+                <span class="role-tag" [style.backgroundColor]="role.color || '#ff9800'">
+                  {{role.name}}
+                </span>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Benutzer (mehrfach möglich)</mat-label>
+            <mat-select formControlName="notifyUserIds" multiple>
+              <mat-option *ngFor="let user of data.users" [value]="user.id">{{user.firstName}} {{user.lastName}} ({{user.username}})</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nachrichtenvorlage</mat-label>
+            <textarea matInput formControlName="messageTemplate" rows="4"
+              placeholder="Die Standard-Vorlage enthält bereits Rechnungs- und Workflow-Informationen. Geben Sie hier zusätzlichen Text ein, falls gewünscht."></textarea>
+            <mat-hint>Verfügbare Platzhalter: {{dQ}}InvoiceNumber{{dQ}}, {{dQ}}SupplierName{{dQ}}, {{dQ}}Amount{{dQ}}, {{dQ}}Status{{dQ}}, {{dQ}}RuleName{{dQ}}</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Beschreibung</mat-label>
+            <textarea matInput formControlName="description" rows="2"></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-checkbox formControlName="isActive">Regel aktiv</mat-checkbox>
+        </div>
+      </form>
+
+      <div mat-dialog-actions class="dialog-actions">
+        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-raised-button color="primary" (click)="onSave()" [disabled]="form.invalid">
+          {{ data.mode === 'create' ? 'Erstellen' : 'Speichern' }}
+        </button>
+      </div>
+    </div>

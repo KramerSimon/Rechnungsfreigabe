@@ -1,0 +1,44 @@
+.dialog-container {
+      width: 500px;
+      max-width: 95vw;
+      overflow-x: hidden;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .form-row mat-form-field {
+      flex: 1;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    /* Role tags in dropdown */
+    .role-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 24px;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 0;
+    }
