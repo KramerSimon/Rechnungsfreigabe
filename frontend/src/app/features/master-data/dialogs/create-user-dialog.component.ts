@@ -84,8 +84,20 @@ interface CreateUserDialogData {
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Rollen</mat-label>
             <mat-select formControlName="roleIds" multiple>
+              <mat-select-trigger>
+                <span class="tag-list">
+                  <span
+                    *ngFor="let roleId of userForm.get('roleIds')?.value"
+                    class="role-tag"
+                    [style.backgroundColor]="getRoleById(roleId)?.color || '#ff9800'">
+                    {{getRoleById(roleId)?.name || roleId}}
+                  </span>
+                </span>
+              </mat-select-trigger>
               <mat-option *ngFor="let role of availableRoles" [value]="role.id">
-                {{role.name}}
+                <span class="role-tag" [style.backgroundColor]="role.color || '#ff9800'">
+                  {{role.name}}
+                </span>
               </mat-option>
             </mat-select>
             <mat-hint>Wählen Sie eine oder mehrere Rollen aus</mat-hint>
@@ -151,6 +163,24 @@ interface CreateUserDialogData {
       width: 100%;
     }
 
+    /* Role tags in dropdown */
+    .role-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 24px;
+    }
+
     .dialog-actions {
       display: flex;
       justify-content: flex-end;
@@ -203,6 +233,10 @@ export class CreateUserDialogComponent {
     }
 
     return null;
+  }
+
+  getRoleById(roleId: number | string): RoleDto | undefined {
+    return this.availableRoles.find(role => String(role.id) === String(roleId));
   }
 
   onCancel(): void {
