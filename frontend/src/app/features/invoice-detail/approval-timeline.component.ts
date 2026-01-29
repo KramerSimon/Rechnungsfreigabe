@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { ApprovalService } from '../../core/services/approval.service';
 import { ApprovalWorkflow } from '../../core/models/approval.model';
+import { StatusTranslatorService } from '../../core/services/status-translator.service';
 
 @Component({
   selector: 'app-approval-timeline',
@@ -36,7 +37,7 @@ import { ApprovalWorkflow } from '../../core/models/approval.model';
             <div class="step-number">{{ s.stepNumber }}</div>
             <div class="step-content">
               <div class="step-header">
-                <span class="status-badge" [ngClass]="'status-' + (s.status || '').toLowerCase()">{{ s.status }}</span>
+                <span class="status-badge" [ngClass]="'status-' + (s.status || '').toLowerCase()">{{ translateStatus(s.status) }}</span>
                 <span class="approver">{{ s.approverName || s.approverId }}</span>
               </div>
               <div class="step-meta">
@@ -95,7 +96,10 @@ export class ApprovalTimelineComponent implements OnInit, OnChanges {
   steps: ApprovalWorkflow[] = [];
   error: string | null = null;
 
-  constructor(private approvalService: ApprovalService) {}
+  constructor(
+    private approvalService: ApprovalService,
+    private statusTranslator: StatusTranslatorService
+  ) {}
 
   ngOnInit(): void {
     this.refresh();
@@ -123,5 +127,10 @@ export class ApprovalTimelineComponent implements OnInit, OnChanges {
   statusClass(status?: string): string {
     const s = (status || '').toLowerCase();
     return `status-${s}`;
+  }
+
+  translateStatus(status?: string): string {
+    if (!status) return '';
+    return this.statusTranslator.translate(status, 'ApprovalWorkflow');
   }
 }

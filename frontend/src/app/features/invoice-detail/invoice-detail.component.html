@@ -288,7 +288,7 @@
           </div>
 
           <div class="status-info">
-            <strong>Status:</strong> {{ invoice.status }}
+            <strong>Status:</strong> {{ invoice.status | statusDisplay:'Invoice' }}
           </div>
 
           <!-- Approval Timeline -->

@@ -63,7 +63,7 @@ export class LoginComponent implements OnInit {
       this.authService.login(credentials).subscribe({
         next: (response) => {
           this.isLoading = false;
-          this.snackBar.open('Login successful!', 'Close', {
+          this.snackBar.open('Login erfolgreich!', 'Schließen', {
             duration: 3000,
             panelClass: ['success-snackbar']
           });
@@ -71,17 +71,17 @@ export class LoginComponent implements OnInit {
         },
         error: (error) => {
           this.isLoading = false;
-          let errorMessage = 'Login failed. Please try again.';
+          let errorMessage = 'Login fehlgeschlagen. Bitte versuchen Sie es erneut.';
 
           if (error.status === 401) {
-            errorMessage = 'Invalid username or password.';
+            errorMessage = 'Ungültiger Benutzername oder Passwort.';
           } else if (error.status === 500) {
-            errorMessage = 'Server error. Please try again later.';
+            errorMessage = 'Serverfehler. Bitte versuchen Sie es später erneut.';
           } else if (error.error?.message) {
             errorMessage = error.error.message;
           }
 
-          this.snackBar.open(errorMessage, 'Close', {
+          this.snackBar.open(errorMessage, 'Schließen', {
             duration: 5000,
             panelClass: ['error-snackbar']
           });

@@ -17,6 +17,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 import { InvoiceHistoryTimelineComponent } from '../invoice-history/invoice-history-timeline.component';
 import { ApprovalTimelineComponent } from './approval-timeline.component';
+import { StatusDisplayPipe } from '../../core/pipes/status-display.pipe';
 import { InvoiceService, PagedResult } from '../../core/services/invoice.service';
 import { Invoice, InvoiceDetail } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
@@ -47,7 +48,8 @@ import { Supplier } from '../../core/models/supplier.model';
     MatProgressSpinnerModule,
     NgxExtendedPdfViewerModule,
     InvoiceHistoryTimelineComponent,
-    ApprovalTimelineComponent
+    ApprovalTimelineComponent,
+    StatusDisplayPipe
   ],
   templateUrl: './invoice-detail.component.html',
   styleUrl: './invoice-detail.component.scss'

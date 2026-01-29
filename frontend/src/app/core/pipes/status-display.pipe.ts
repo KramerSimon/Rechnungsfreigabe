@@ -1,5 +1,6 @@
 import { Pipe, PipeTransform, OnInit } from '@angular/core';
 import { StatusService } from '../services/status.service';
+import { StatusTranslatorService } from '../services/status-translator.service';
 
 @Pipe({
   name: 'statusDisplay',
@@ -8,7 +9,10 @@ import { StatusService } from '../services/status.service';
 export class StatusDisplayPipe implements PipeTransform {
   private statusCache: Map<string, string> = new Map();
 
-  constructor(private statusService: StatusService) {}
+  constructor(
+    private statusService: StatusService,
+    private statusTranslator: StatusTranslatorService
+  ) {}
 
   transform(statusCode: string, entityType: string = 'Invoice'): string {
     if (!statusCode) return '';
@@ -22,8 +26,11 @@ export class StatusDisplayPipe implements PipeTransform {
 
     // Get from service (this will be synchronous after initial load)
     const displayName = this.statusService.getStatusDisplayName(statusCode, entityType);
-    this.statusCache.set(cacheKey, displayName);
 
-    return displayName || statusCode;
+    // Translate to German
+    const germanName = this.statusTranslator.translateDisplayName(displayName, entityType);
+    this.statusCache.set(cacheKey, germanName);
+
+    return germanName || statusCode;
   }
 }
