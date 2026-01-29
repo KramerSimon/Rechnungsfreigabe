@@ -40,8 +40,8 @@ export const StatusCodes = {
     Pending: 'Pending',
     Approved: 'Approved',
     Rejected: 'Rejected',
-    Waiting: 'Waiting',
-    Escalated: 'Escalated'
+    Wartend: 'Waiting',
+    Eskaliert: 'Escalated'
   }
 };
 

@@ -8,17 +8,17 @@
             Rechnungsfreigabe
           </div>
         </mat-card-title>
-        <mat-card-subtitle>Please sign in to your account</mat-card-subtitle>
+        <mat-card-subtitle>Bitte melden Sie sich bei Ihrem Konto an</mat-card-subtitle>
       </mat-card-header>
 
       <mat-card-content>
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Username</mat-label>
+            <mat-label>Benutzername</mat-label>
             <input
               matInput
               formControlName="username"
-              placeholder="Enter your username"
+              placeholder="Geben Sie Ihren Benutzernamen ein"
               autocomplete="username">
             <mat-icon matSuffix>person</mat-icon>
             <mat-error *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
@@ -27,19 +27,19 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Password</mat-label>
+            <mat-label>Passwort</mat-label>
             <input
               matInput
               [type]="hidePassword ? 'password' : 'text'"
               formControlName="password"
-              placeholder="Enter your password"
+              placeholder="Geben Sie Ihr Passwort ein"
               autocomplete="current-password">
             <button
               mat-icon-button
               matSuffix
               type="button"
               (click)="togglePasswordVisibility()"
-              [attr.aria-label]="'Hide password'"
+              [attr.aria-label]="'Passwort ausblenden'"
               [attr.aria-pressed]="hidePassword">
               <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
@@ -60,8 +60,8 @@
                 diameter="20"
                 class="login-spinner">
               </mat-spinner>
-              <span *ngIf="!isLoading">Sign In</span>
-              <span *ngIf="isLoading">Signing In...</span>
+              <span *ngIf="!isLoading">Anmelden</span>
+              <span *ngIf="isLoading">Wird angemeldet...</span>
             </button>
           </div>
         </form>

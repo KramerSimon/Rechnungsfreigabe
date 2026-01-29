@@ -76,10 +76,10 @@ export class AccountingDashboardComponent implements OnInit {
 
   statusOptions = [
     { value: 'all', label: 'Alle' },
-    { value: 'rejected', label: 'Rejected' },
-    { value: 'approved', label: 'Approved' },
-    { value: 'auto_approved', label: 'Auto-Approved' },
-    { value: 'in_approval', label: 'Approval Required' }
+    { value: 'rejected', label: 'Abgelehnt' },
+    { value: 'approved', label: 'Freigegeben' },
+    { value: 'auto_approved', label: 'Automatisch freigegeben' },
+    { value: 'in_approval', label: 'Genehmigung erforderlich' }
   ];
 
   constructor(
@@ -121,42 +121,42 @@ export class AccountingDashboardComponent implements OnInit {
 
     switch (status) {
       case 'rejected':
-        statusDisplay = '❌ Rejected (KO)';
+        statusDisplay = '❌ Abgelehnt (KO)';
         statusClass = 'status-rejected';
         assignedTo = this.getPendingApproverName(invoice) ?? '--';
         reason = 'Falsche KST';
         break;
       case 'approved':
-        statusDisplay = '✅ Approved';
+        statusDisplay = '✅ Freigegeben';
         statusClass = 'status-approved';
         assignedTo = 'Buchhaltung';
         reason = 'Wartet auf Zahlung';
         break;
       case 'approval_required':
         if (invoice.autoApproved) {
-          statusDisplay = '🤖 Auto-Approved';
+          statusDisplay = '🤖 Automatisch freigegeben';
           statusClass = 'status-auto';
           assignedTo = 'System';
           reason = 'Regel: Kleinestbetr.';
         } else {
-          statusDisplay = '⏳ Approval Required';
+          statusDisplay = '⏳ Genehmigung erforderlich';
           statusClass = 'status-pending';
           assignedTo = this.getPendingApproverName(invoice) ?? 'Unzugewiesen';
         }
         break;
       case 'received':
-        statusDisplay = '📋 Received';
+        statusDisplay = '📋 Eingegangen';
         statusClass = 'status-draft';
         assignedTo = this.getPendingApproverName(invoice) ?? 'Buchhaltung';
         break;
       case 'overdue':
-        statusDisplay = '⚠️ Overdue';
+        statusDisplay = '⚠️ Überfällig';
         statusClass = 'status-overdue';
         assignedTo = this.getPendingApproverName(invoice) ?? 'Unzugewiesen';
         reason = 'Frist überschritten';
         break;
       default:
-        statusDisplay = '📋 Received';
+        statusDisplay = '📋 Eingegangen';
         statusClass = 'status-draft';
         assignedTo = this.getPendingApproverName(invoice) ?? 'Buchhaltung';
         break;
