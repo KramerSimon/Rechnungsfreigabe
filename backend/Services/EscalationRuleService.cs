@@ -248,7 +248,8 @@ public class EscalationRuleService : IEscalationRuleService
                 Id = ts.Status.Id,
                 Code = ts.Status.Code,
                 DisplayName = ts.Status.DisplayName,
-                EntityType = ts.Status.EntityType
+                EntityType = ts.Status.EntityType,
+                Color = ts.Status.Color
             }).ToList(),
             TriggerAfterMinutes = rule.TriggerAfterMinutes,
             RepeatIntervalHours = rule.RepeatIntervalHours,

@@ -74,6 +74,21 @@ import { StatusDisplayPipe } from '../../core/pipes/status-display.pipe';
   styleUrls: ['./master-data.component.scss'],
 })
 export class MasterDataComponent implements OnInit {
+
+  // Helper method to convert minutes to hours and minutes format
+  formatMinutesToHoursAndMinutes(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (hours === 0) {
+      return `${remainingMinutes} min`;
+    } else if (remainingMinutes === 0) {
+      return `${hours} h`;
+    } else {
+      return `${hours} h ${remainingMinutes} min`;
+    }
+  }
+
   private apiUrl = environment.apiUrl;
 
   // Default colors for common roles when backend color is missing
@@ -182,11 +197,12 @@ export class MasterDataComponent implements OnInit {
   escalationColumns = [
     'id',
     'name',
-    'triggerStatus',
+    'triggerStatuses',
     'triggerAfterHours',
     'repeatIntervalHours',
     'maxEscalations',
-    'notify',
+    'notifyRoles',
+    'notifyUsers',
     'isActive',
     'actions',
   ];
@@ -784,9 +800,8 @@ export class MasterDataComponent implements OnInit {
 
   createEscalationRule(): void {
     const dialogRef = this.dialog.open(EscalationRuleDialogComponent, {
-      width: '80vw',
+      width: '700px',
       maxWidth: '95vw',
-      panelClass: 'escalation-rule-dialog',
       data: {
         mode: 'create',
         statuses: this.invoiceStatuses,
@@ -826,9 +841,8 @@ export class MasterDataComponent implements OnInit {
 
   editEscalationRule(rule: EscalationRule): void {
     const dialogRef = this.dialog.open(EscalationRuleDialogComponent, {
-      width: '80vw',
+      width: '700px',
       maxWidth: '95vw',
-      panelClass: 'escalation-rule-dialog',
       data: {
         mode: 'edit',
         statuses: this.invoiceStatuses,

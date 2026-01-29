@@ -53,14 +53,23 @@ export interface EscalationRuleDialogData {
         </div>
 
         <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Auslöser nach (Minuten) *</mat-label>
-            <input matInput type="number" formControlName="triggerAfterMinutes" min="1" [max]="14400">
-            <mat-hint>Min: 1 Minute, Max: 10 Tage (14400 Minuten)</mat-hint>
-            <mat-error *ngIf="form.get('triggerAfterMinutes')?.hasError('required')">Zeit ist erforderlich</mat-error>
-            <mat-error *ngIf="form.get('triggerAfterMinutes')?.hasError('min')">Mindestens 1 Minute</mat-error>
+          <mat-form-field appearance="outline" class="time-field">
+            <mat-label>Tage</mat-label>
+            <input matInput type="number" formControlName="triggerDays" min="0" max="10">
           </mat-form-field>
 
+          <mat-form-field appearance="outline" class="time-field">
+            <mat-label>Stunden</mat-label>
+            <input matInput type="number" formControlName="triggerHours" min="0" max="23">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="time-field">
+            <mat-label>Minuten</mat-label>
+            <input matInput type="number" formControlName="triggerMinutes" min="0" max="59">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>Wiederholung alle (Stunden)</mat-label>
             <input matInput type="number" formControlName="repeatIntervalHours" min="1">
@@ -119,11 +128,6 @@ export interface EscalationRuleDialogData {
     </div>
   `,
   styles: [`
-    :host ::ng-deep .escalation-rule-dialog {
-      width: 80vw !important;
-      max-width: 900px !important;
-    }
-
     .dialog-container {
       width: 100%;
       padding: 0 16px;
@@ -132,7 +136,7 @@ export interface EscalationRuleDialogData {
 
     .form-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
       margin-bottom: 16px;
       align-items: flex-start;
@@ -140,6 +144,11 @@ export interface EscalationRuleDialogData {
 
     .form-row mat-form-field {
       width: 100%;
+    }
+
+    .time-field {
+      flex: 1;
+      min-width: 80px;
     }
 
     .full-width {
@@ -164,26 +173,9 @@ export interface EscalationRuleDialogData {
       resize: vertical;
     }
 
-    /* Large screens */
-    @media (min-width: 1200px) {
-      .form-row {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .form-row mat-form-field:nth-child(1) {
-        grid-column: span 2;
-      }
-
-      .form-row mat-form-field:nth-child(2) {
-        grid-column: span 2;
-      }
-    }
-
-    /* Tablet screens (768px - 1199px) */
-    @media (max-width: 1199px) and (min-width: 769px) {
-      .form-row {
-        grid-template-columns: repeat(2, 1fr);
-      }
+    /* Time fields in a row */
+    .form-row:has(.time-field) {
+      grid-template-columns: repeat(3, 1fr);
     }
 
     /* Mobile screens (up to 768px) */
@@ -196,6 +188,10 @@ export interface EscalationRuleDialogData {
         grid-template-columns: 1fr;
         gap: 12px;
         margin-bottom: 12px;
+      }
+
+      .form-row:has(.time-field) {
+        grid-template-columns: repeat(3, 1fr);
       }
 
       .dialog-actions {
@@ -245,11 +241,20 @@ export class EscalationRuleDialogComponent {
     private fb: FormBuilder,
   ) {
     const rule = data.rule;
+
+    // Convert minutes to days, hours, minutes for editing
+    const totalMinutes = rule?.triggerAfterMinutes ?? 2880; // Default: 48 hours
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+
     this.form = this.fb.group({
       name: [rule?.name || '', Validators.required],
       description: [rule?.description || ''],
       triggerStatusIds: [rule?.triggerStatusIds || (data.statuses.length > 0 ? [data.statuses[0].id] : []), Validators.required],
-      triggerAfterMinutes: [rule?.triggerAfterMinutes ?? 2880, [Validators.required, Validators.min(1), Validators.max(14400)]],
+      triggerDays: [days, [Validators.min(0), Validators.max(10)]],
+      triggerHours: [hours, [Validators.min(0), Validators.max(23)]],
+      triggerMinutes: [minutes, [Validators.min(0), Validators.max(59)]],
       repeatIntervalHours: [rule?.repeatIntervalHours ?? null, [Validators.min(1)]],
       maxEscalations: [rule?.maxEscalations ?? 3, [Validators.min(0)]],
       notifyRoleIds: [rule?.notifyRoleIds || []],
@@ -268,11 +273,22 @@ export class EscalationRuleDialogComponent {
       return;
     }
 
+    // Convert days, hours, minutes to total minutes
+    const days = Number(this.form.value.triggerDays) || 0;
+    const hours = Number(this.form.value.triggerHours) || 0;
+    const minutes = Number(this.form.value.triggerMinutes) || 0;
+    const totalMinutes = days * 1440 + hours * 60 + minutes;
+
+    // Validation: at least 1 minute required
+    if (totalMinutes < 1) {
+      return;
+    }
+
     const payload: CreateEscalationRuleDto = {
       name: this.form.value.name,
       description: this.form.value.description,
       triggerStatusIds: this.form.value.triggerStatusIds || [],
-      triggerAfterMinutes: Number(this.form.value.triggerAfterMinutes),
+      triggerAfterMinutes: totalMinutes,
       repeatIntervalHours: this.form.value.repeatIntervalHours === null || this.form.value.repeatIntervalHours === ''
         ? null
         : Number(this.form.value.repeatIntervalHours),

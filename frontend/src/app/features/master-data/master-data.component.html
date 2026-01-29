@@ -566,14 +566,26 @@
               <td mat-cell *matCellDef="let element">{{element.name}}</td>
             </ng-container>
 
-            <ng-container matColumnDef="triggerStatus">
+            <ng-container matColumnDef="triggerStatuses">
               <th mat-header-cell *matHeaderCellDef>Status-Auslöser</th>
-              <td mat-cell *matCellDef="let element">{{element.triggerStatus}}</td>
+              <td mat-cell *matCellDef="let element">
+                <div *ngIf="element.triggerStatuses && element.triggerStatuses.length > 0" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                  <span *ngFor="let status of element.triggerStatuses"
+                        class="status-badge"
+                        [style.backgroundColor]="status.color || '#2196f3'"
+                        [title]="status.code | statusDisplay:status.entityType">
+                    {{status.code | statusDisplay:status.entityType}}
+                  </span>
+                </div>
+                <span *ngIf="!element.triggerStatuses || element.triggerStatuses.length === 0">–</span>
+              </td>
             </ng-container>
 
             <ng-container matColumnDef="triggerAfterHours">
               <th mat-header-cell *matHeaderCellDef>Auslöser nach</th>
-              <td mat-cell *matCellDef="let element">{{element.triggerAfterHours}} h</td>
+              <td mat-cell *matCellDef="let element">
+                {{formatMinutesToHoursAndMinutes(element.triggerAfterMinutes)}}
+              </td>
             </ng-container>
 
             <ng-container matColumnDef="repeatIntervalHours">
@@ -586,10 +598,31 @@
               <td mat-cell *matCellDef="let element">{{element.maxEscalations ?? '–'}} </td>
             </ng-container>
 
-            <ng-container matColumnDef="notify">
-              <th mat-header-cell *matHeaderCellDef>Benachrichtigen</th>
+            <ng-container matColumnDef="notifyRoles">
+              <th mat-header-cell *matHeaderCellDef>Rollen benachrichtigen</th>
               <td mat-cell *matCellDef="let element">
-                {{element.notifyUserName || element.notifyRole || 'Manager (Standard)'}}
+                <div *ngIf="element.notifyRoles && element.notifyRoles.length > 0" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                  <span *ngFor="let role of element.notifyRoles"
+                        class="role-badge"
+                        [style.backgroundColor]="role.color || '#ff9800'"
+                        [title]="role.name">
+                    {{role.name}}
+                  </span>
+                </div>
+                <span *ngIf="!element.notifyRoles || element.notifyRoles.length === 0">–</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="notifyUsers">
+              <th mat-header-cell *matHeaderCellDef>Benutzer benachrichtigen</th>
+              <td mat-cell *matCellDef="let element">
+                <div *ngIf="element.notifyUsers && element.notifyUsers.length > 0" style="display: flex; flex-direction: column; gap: 2px;">
+                  <span *ngFor="let user of element.notifyUsers"
+                        [title]="user.email">
+                    {{user.firstName}} {{user.lastName}}
+                  </span>
+                </div>
+                <span *ngIf="!element.notifyUsers || element.notifyUsers.length === 0">–</span>
               </td>
             </ng-container>
 

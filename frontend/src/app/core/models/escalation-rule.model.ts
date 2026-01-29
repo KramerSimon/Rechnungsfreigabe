@@ -24,6 +24,7 @@ export interface StatusDto {
   code: string;
   displayName: string;
   entityType: string;
+  color?: string;
 }
 
 export interface UserDto {
