@@ -1,83 +1,259 @@
-<div class="dialog-container">
-      <h2 mat-dialog-title>Neue Genehmigungsregel</h2>
+<h2 mat-dialog-title>Neue Genehmigungsregel</h2>
 
-      <form [formGroup]="ruleForm" mat-dialog-content>
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Name *</mat-label>
-            <input matInput formControlName="name" required>
-            <mat-error *ngIf="ruleForm.get('name')?.hasError('required')">
-              Name ist erforderlich
-            </mat-error>
-          </mat-form-field>
-        </div>
+<mat-dialog-content class="dialog-content">
+  <!-- Section 1: Basic Info & Description -->
+  <div class="section section-primary">
+    <h3>Regelinformation</h3>
 
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Beschreibung</mat-label>
-            <textarea matInput formControlName="description" rows="3"></textarea>
-          </mat-form-field>
-        </div>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Regelname</mat-label>
+      <input matInput [(ngModel)]="rule.name" placeholder="z.B. Kleinstbeträge Auto-Freigabe" required>
+    </mat-form-field>
 
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Regeltyp *</mat-label>
-            <mat-select formControlName="ruleType" required>
-              <mat-option value="Manual">Manuell</mat-option>
-              <mat-option value="Automatic">Automatisch</mat-option>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Beschreibung</mat-label>
+      <textarea matInput [(ngModel)]="rule.description" rows="2"
+        placeholder="Kurze Beschreibung: Wann greift diese Regel? Was ist das Ziel?"></textarea>
+    </mat-form-field>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="flex-grow">
+        <mat-label>Regeltyp</mat-label>
+        <mat-select [(ngModel)]="rule.ruleType" required (ngModelChange)="onRuleTypeChange($event)">
+          <mat-option value="automatic">Automatische Freigabe</mat-option>
+          <mat-option value="manual">Manuelle Freigabe</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="flex-grow">
+        <mat-label>Priorität</mat-label>
+        <input matInput type="number" [(ngModel)]="rule.priority" min="1" max="999">
+      </mat-form-field>
+
+      <mat-checkbox [(ngModel)]="rule.isActive" class="checkbox-inline">Aktiv</mat-checkbox>
+    </div>
+  </div>
+
+  <!-- Section 2: Conditions -->
+  <div class="section">
+    <h3>Bedingungen (WENN)</h3>
+    <p class="section-description">Definieren Sie die Bedingungen, unter denen diese Regel greift.</p>
+
+    <div class="conditions-list">
+      <div *ngFor="let condition of rule.conditions; let i = index" class="condition-item">
+        <div class="condition-row">
+          <mat-form-field appearance="outline" *ngIf="i > 0" class="logical-op">
+            <mat-label>Verknüpfung</mat-label>
+            <mat-select [(ngModel)]="condition.logicalOperator">
+              <mat-option value="AND">UND</mat-option>
+              <mat-option value="OR">ODER</mat-option>
             </mat-select>
-            <mat-error *ngIf="ruleForm.get('ruleType')?.hasError('required')">
-              Regeltyp ist erforderlich
-            </mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Priorität</mat-label>
-            <input matInput type="number" formControlName="priority" min="1" max="100">
-          </mat-form-field>
-        </div>
-
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Lieferant</mat-label>
-            <mat-select formControlName="supplierId">
-              <mat-option [value]="null">-- Keiner --</mat-option>
-              <mat-option *ngFor="let supplier of suppliers" [value]="supplier.id">
-                {{ supplier.name }}
+          <mat-form-field appearance="outline" class="flex-grow">
+            <mat-label>Feld</mat-label>
+            <mat-select [(ngModel)]="condition.field" required>
+              <mat-option *ngFor="let field of availableFields" [value]="field.value">
+                {{ field.label }}
               </mat-option>
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Kostenstelle</mat-label>
-            <mat-select formControlName="costCenterId">
-              <mat-option [value]="null">-- Keine --</mat-option>
-              <mat-option *ngFor="let costCenter of costCenters" [value]="costCenter.id">
-                {{ costCenter.name }}
+          <mat-form-field appearance="outline" class="flex-grow">
+            <mat-label>Operator</mat-label>
+            <mat-select [(ngModel)]="condition.operator" required>
+              <mat-option *ngFor="let op of getAvailableOperators(condition.field)" [value]="op.value">
+                {{ op.label }}
               </mat-option>
             </mat-select>
           </mat-form-field>
-        </div>
 
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Projekt</mat-label>
-            <mat-select formControlName="projectId">
-              <mat-option [value]="null">-- Keines --</mat-option>
-              <mat-option *ngFor="let project of projects" [value]="project.id">
-                {{ project.name }}
+          <mat-form-field appearance="outline" class="flex-grow" *ngIf="isDropdownField(condition.field)">
+            <mat-label>Wert</mat-label>
+            <mat-select [(ngModel)]="condition.value" required>
+              <mat-option *ngFor="let option of getDropdownOptions(condition.field)" [value]="option.value">
+                {{ option.label }}
               </mat-option>
             </mat-select>
           </mat-form-field>
-        </div>
-      </form>
 
-      <div mat-dialog-actions align="end">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
-        <button mat-raised-button color="primary"
-                [disabled]="!ruleForm.valid"
-                (click)="onSave()">
-          Speichern
-        </button>
+          <mat-form-field appearance="outline" class="flex-grow" *ngIf="isDateField(condition.field)">
+            <mat-label>Datum</mat-label>
+            <input matInput type="date" [(ngModel)]="condition.value" required>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="flex-grow" *ngIf="isAmountField(condition.field)">
+            <mat-label>Wert</mat-label>
+            <input matInput type="number" [(ngModel)]="condition.value" required>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="flex-grow" *ngIf="!isDropdownField(condition.field) && !isDateField(condition.field) && !isAmountField(condition.field)">
+            <mat-label>Wert</mat-label>
+            <input matInput [(ngModel)]="condition.value" required>
+          </mat-form-field>
+
+          <button mat-icon-button color="warn" (click)="removeCondition(i)" class="remove-btn">
+            <mat-icon>remove_circle</mat-icon>
+          </button>
+        </div>
       </div>
     </div>
+
+    <button mat-stroked-button color="primary" (click)="addCondition()" class="add-btn">
+      <mat-icon>add</mat-icon>
+      Bedingung hinzufügen
+    </button>
+  </div>
+
+  <!-- Section 3: Actions -->
+  <div class="section">
+    <h3>Aktionen (DANN)</h3>
+    <p class="section-description">Definieren Sie, was passiert, wenn die Bedingungen erfüllt sind.</p>
+
+    <div class="actions-list">
+      <div *ngFor="let action of rule.actions; let i = index" class="action-item">
+        <div class="action-row">
+          <mat-form-field appearance="outline" class="flex-grow">
+            <mat-label>Aktionstyp</mat-label>
+            <mat-select [(ngModel)]="action.type" required (ngModelChange)="onActionTypeChange(action, $event)">
+              <mat-option *ngFor="let actionType of getActionOptions()" [value]="actionType.value"
+                          [disabled]="isActionTypeDisabled(action, actionType.value)">
+                {{ actionType.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="flex-grow" *ngIf="action.type === 'set_status'">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="action.value" required>
+              <mat-select-trigger>
+                <ng-container *ngIf="getStatusByCode(action.value) as selectedStatus">
+                  <span class="status-badge" [ngStyle]="getStatusBadgeStyles(selectedStatus)">
+                    {{ selectedStatus.code }}
+                  </span>
+                </ng-container>
+              </mat-select-trigger>
+              <mat-option *ngFor="let status of statusOptions" [value]="status.code">
+                <span class="status-badge" [ngStyle]="getStatusBadgeStyles(status)">
+                  {{ status.code }}
+                </span>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="flex-grow" *ngIf="action.type === 'assign_to'">
+            <mat-label>Benutzer</mat-label>
+            <mat-select [(ngModel)]="action.value" required>
+              <mat-option *ngFor="let u of users" [value]="u.id">
+                {{ u.firstName }} {{ u.lastName }} ({{ u.username }})
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <button mat-icon-button color="warn" (click)="removeAction(i)" class="remove-btn">
+            <mat-icon>remove_circle</mat-icon>
+          </button>
+        </div>
+
+        <!-- Stages Timeline for require_approval -->
+        <div class="stages-timeline" *ngIf="action.type === 'require_approval'">
+          <div class="timeline-title">Freigabestufen</div>
+
+          <div class="stages-container">
+            <div *ngFor="let stage of action.stages; let si = index" class="stage-card">
+              <div class="stage-number">
+                <div class="number-badge">{{ si + 1 }}</div>
+              </div>
+
+              <div class="stage-content">
+                <div class="stage-header">
+                  <h4>Stufe {{ si + 1 }}</h4>
+                  <button mat-icon-button color="warn" (click)="removeStage(action, si)"
+                          [disabled]="(action.stages?.length || 0) <= 1" class="delete-stage-btn">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+
+                <div class="stage-fields">
+                  <mat-form-field appearance="outline" class="flex-grow">
+                    <mat-label>Rolle</mat-label>
+                    <mat-select [(ngModel)]="stage.roleId">
+                      <mat-select-trigger>
+                        <ng-container *ngIf="getRoleById(stage.roleId) as selectedRole">
+                          <span class="role-badge" [ngStyle]="getRoleBadgeStyles(selectedRole)">
+                            {{ selectedRole.name }}
+                          </span>
+                        </ng-container>
+                      </mat-select-trigger>
+                      <mat-option [value]="undefined">—</mat-option>
+                      <mat-option *ngFor="let r of roles" [value]="r.id">
+                        <span class="role-badge" [ngStyle]="getRoleBadgeStyles(r)">
+                          {{ r.name }}
+                        </span>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="flex-grow">
+                    <mat-label>Benutzer (optional)</mat-label>
+                    <mat-select [(ngModel)]="stage.userId">
+                      <mat-option [value]="undefined">—</mat-option>
+                      <mat-option *ngFor="let u of users" [value]="u.id">
+                        {{ u.firstName }} {{ u.lastName }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <div class="timeline-connector" *ngIf="si < (action.stages?.length || 0) - 1"></div>
+            </div>
+          </div>
+
+          <button mat-stroked-button color="primary" (click)="addStage(action)" class="add-stage-btn">
+            <mat-icon>add_circle</mat-icon>
+            Neue Freigabestufe
+          </button>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width" *ngIf="action.type !== 'require_approval'">
+          <mat-label>Beschreibung</mat-label>
+          <input matInput [(ngModel)]="action.description" required>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <button mat-stroked-button color="primary" (click)="addAction()" class="add-btn">
+      <mat-icon>add</mat-icon>
+      Aktion hinzufügen
+    </button>
+  </div>
+
+  <!-- Section 4: Summary Preview -->
+  <div class="section section-summary">
+    <h3>Zusammenfassung</h3>
+    <div class="summary-content">
+      <div class="summary-item" *ngIf="rule.description">
+        <strong>Ziel:</strong> {{ rule.description }}
+      </div>
+      <div class="summary-item">
+        <strong>Regeltyp:</strong> {{ rule.ruleType === 'automatic' ? 'Automatische Freigabe' : 'Manuelle Freigabe' }}
+      </div>
+      <div class="summary-item" *ngIf="rule.actions.length > 0 && rule.actions[0].type === 'require_approval'">
+        <strong>Freigabeablauf:</strong>
+        <div class="flow-preview">
+          <span *ngFor="let stage of rule.actions[0].stages; let i = index; let last = last">
+            Stufe {{ i + 1 }} • {{ getRoleById(stage.roleId)?.name || 'Keine Rolle' }}<span *ngIf="!last"> → </span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Abbrechen</button>
+  <button mat-raised-button color="primary" (click)="onSave()" [disabled]="!isValid()">
+    Erstellen
+  </button>
+</mat-dialog-actions>

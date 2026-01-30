@@ -17,6 +17,10 @@ export class ApprovalService {
     return this.http.get<ApprovalRule[]>(`${this.apiUrl}/rules`);
   }
 
+  getApprovalRuleById(id: number): Observable<ApprovalRule> {
+    return this.http.get<ApprovalRule>(`${this.apiUrl}/rules/${id}`);
+  }
+
   createApprovalRule(rule: CreateApprovalRuleDto): Observable<ApprovalRule> {
     return this.http.post<ApprovalRule>(`${this.apiUrl}/rules`, rule);
   }

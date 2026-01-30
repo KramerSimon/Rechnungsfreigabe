@@ -42,7 +42,7 @@ CREATE TABLE `approval_rule_actions` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_action_rule` (`approval_rule_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -51,6 +51,7 @@ CREATE TABLE `approval_rule_actions` (
 
 LOCK TABLES `approval_rule_actions` WRITE;
 /*!40000 ALTER TABLE `approval_rule_actions` DISABLE KEYS */;
+INSERT INTO `approval_rule_actions` VALUES (14,15,'require_approval','','Mehrstufige Freigabe',1,'2026-01-30 15:30:32'),(15,16,'require_approval','','Mehrstufige Freigabe',1,'2026-01-30 15:50:46');
 /*!40000 ALTER TABLE `approval_rule_actions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -73,7 +74,7 @@ CREATE TABLE `approval_rule_conditions` (
   PRIMARY KEY (`id`),
   KEY `fk_condition_rule` (`approval_rule_id`),
   CONSTRAINT `fk_condition_rule` FOREIGN KEY (`approval_rule_id`) REFERENCES `approval_rules` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -82,6 +83,7 @@ CREATE TABLE `approval_rule_conditions` (
 
 LOCK TABLES `approval_rule_conditions` WRITE;
 /*!40000 ALTER TABLE `approval_rule_conditions` DISABLE KEYS */;
+INSERT INTO `approval_rule_conditions` VALUES (11,16,'amount','>=','0','AND',1,'2026-01-30 15:50:46');
 /*!40000 ALTER TABLE `approval_rule_conditions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -97,15 +99,17 @@ CREATE TABLE `approval_rule_stages` (
   `approval_rule_action_id` int NOT NULL,
   `step_number` int NOT NULL,
   `approval_level` int NOT NULL,
-  `role` enum('cost_center_manager','project_manager','manager','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `role_id` int DEFAULT NULL,
   `user_id` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_stage_action` (`approval_rule_action_id`),
   KEY `fk_stage_user` (`user_id`),
+  KEY `fk_stage_role` (`role_id`),
   CONSTRAINT `fk_stage_action` FOREIGN KEY (`approval_rule_action_id`) REFERENCES `approval_rule_actions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_stage_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_stage_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -114,6 +118,7 @@ CREATE TABLE `approval_rule_stages` (
 
 LOCK TABLES `approval_rule_stages` WRITE;
 /*!40000 ALTER TABLE `approval_rule_stages` DISABLE KEYS */;
+INSERT INTO `approval_rule_stages` VALUES (10,14,1,1,NULL,NULL,'2026-01-30 15:30:32'),(11,14,2,2,NULL,NULL,'2026-01-30 15:30:32'),(12,15,1,1,3,NULL,'2026-01-30 15:50:46'),(13,15,2,2,1,NULL,'2026-01-30 15:50:46');
 /*!40000 ALTER TABLE `approval_rule_stages` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -137,7 +142,7 @@ CREATE TABLE `approval_rules` (
   PRIMARY KEY (`id`),
   KEY `created_by` (`created_by`),
   CONSTRAINT `approval_rules_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -146,6 +151,7 @@ CREATE TABLE `approval_rules` (
 
 LOCK TABLES `approval_rules` WRITE;
 /*!40000 ALTER TABLE `approval_rules` DISABLE KEYS */;
+INSERT INTO `approval_rules` VALUES (16,'Mehrstufige Freigabe','','manual',10,1,1,'2026-01-30 15:50:46','2026-01-30 15:50:46');
 /*!40000 ALTER TABLE `approval_rules` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -209,7 +215,7 @@ CREATE TABLE `approval_workflows` (
   CONSTRAINT `approval_workflows_ibfk_2` FOREIGN KEY (`rule_id`) REFERENCES `approval_rules` (`id`),
   CONSTRAINT `approval_workflows_ibfk_3` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`),
   CONSTRAINT `FK_approval_workflows_status` FOREIGN KEY (`status_id`) REFERENCES `statuses` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -218,6 +224,7 @@ CREATE TABLE `approval_workflows` (
 
 LOCK TABLES `approval_workflows` WRITE;
 /*!40000 ALTER TABLE `approval_workflows` DISABLE KEYS */;
+INSERT INTO `approval_workflows` VALUES (1,121,16,1,3,1,NULL,18,NULL,NULL,'2026-01-30 15:52:26'),(2,121,16,2,1,2,NULL,22,NULL,NULL,'2026-01-30 15:52:26');
 /*!40000 ALTER TABLE `approval_workflows` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -311,6 +318,7 @@ CREATE TABLE `escalation_rule_notify_roles` (
 
 LOCK TABLES `escalation_rule_notify_roles` WRITE;
 /*!40000 ALTER TABLE `escalation_rule_notify_roles` DISABLE KEYS */;
+INSERT INTO `escalation_rule_notify_roles` VALUES (4,1,'2026-01-29 13:34:52');
 /*!40000 ALTER TABLE `escalation_rule_notify_roles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -365,6 +373,7 @@ CREATE TABLE `escalation_rule_trigger_statuses` (
 
 LOCK TABLES `escalation_rule_trigger_statuses` WRITE;
 /*!40000 ALTER TABLE `escalation_rule_trigger_statuses` DISABLE KEYS */;
+INSERT INTO `escalation_rule_trigger_statuses` VALUES (4,1,'2026-01-29 13:34:52'),(4,2,'2026-01-29 13:34:52'),(4,3,'2026-01-29 13:34:52'),(4,4,'2026-01-29 13:34:52'),(4,5,'2026-01-29 13:34:52'),(4,6,'2026-01-29 13:34:52'),(4,7,'2026-01-29 13:34:52'),(4,8,'2026-01-29 13:34:52');
 /*!40000 ALTER TABLE `escalation_rule_trigger_statuses` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -388,7 +397,7 @@ CREATE TABLE `escalation_rules` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `ix_escalation_rules_active` (`is_active`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -397,6 +406,7 @@ CREATE TABLE `escalation_rules` (
 
 LOCK TABLES `escalation_rules` WRITE;
 /*!40000 ALTER TABLE `escalation_rules` DISABLE KEYS */;
+INSERT INTO `escalation_rules` VALUES (4,'Test','',60,NULL,3,'',1,'2026-01-29 13:34:52','2026-01-29 13:34:52');
 /*!40000 ALTER TABLE `escalation_rules` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -430,7 +440,7 @@ CREATE TABLE `invoice_history` (
   KEY `idx_action_source` (`action_source`),
   CONSTRAINT `invoice_history_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `invoice_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=152 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=153 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -439,6 +449,7 @@ CREATE TABLE `invoice_history` (
 
 LOCK TABLES `invoice_history` WRITE;
 /*!40000 ALTER TABLE `invoice_history` DISABLE KEYS */;
+INSERT INTO `invoice_history` VALUES (152,121,'Rechnung importiert','Created','Import',NULL,'Approval_Required',NULL,NULL,NULL,NULL,'E-Mail',1,'2026-01-30 15:52:26');
 /*!40000 ALTER TABLE `invoice_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -499,7 +510,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
   CONSTRAINT `invoices_ibfk_5` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `invoices_ibfk_6` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=121 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=122 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -508,6 +519,7 @@ CREATE TABLE `invoices` (
 
 LOCK TABLES `invoices` WRITE;
 /*!40000 ALTER TABLE `invoices` DISABLE KEYS */;
+INSERT INTO `invoices` VALUES (121,'FAT-001-2026',61,NULL,NULL,NULL,1024.59,225.41,1250.00,'EUR','2025-12-15','2026-03-01','2026-01-30 15:52:26',NULL,3,1,1,0,NULL,_binary '%PDF-1.6\r%\‚\„\œ\”\r\n7 0 obj\r<</Linearized 1/L 6183/O 9/E 1707/N 1/T 5894/H [ 447 132]>>\rendobj\r                       \r\n12 0 obj\r<</DecodeParms<</Columns 4/Predictor 12>>/Filter/FlateDecode/ID[<8B49BF133DB554C872F8842FFF1159FF><C30457C9E1DCAA4483AE873FF001ED09>]/Index[7 10]/Info 6 0 R/Length 48/Prev 5895/Root 8 0 R/Size 17/Type/XRef/W[1 2 1]>>stream\r\nh\ﬁbbd``b`2æ@Ç\Ò<à∏	$˛\ÿ0012LI00Bàˇå[ˇ\0võ\÷\r\nendstream\rendobj\rstartxref\r\n0\r\n%%EOF\r\n        \r\n16 0 obj\r<</Filter/FlateDecode/I 67/Length 53/S 38>>stream\r\nh\ﬁb```f``\‚a\0iT¿d\‡h@cÜbÜ\ÛúL[\Z†Ç¢\Ô!\Z%\0\0\\\⁄\Û\r\nendstream\rendobj\r8 0 obj\r<</Metadata 1 0 R/PageMode/UseNone/Pages 5 0 R/Type/Catalog>>\rendobj\r9 0 obj\r<</Contents 11 0 R/CropBox[0 0 595.2756 841.8898]/MediaBox[0 0 595.2756 841.8898]/Parent 5 0 R/Resources<</Font 13 0 R/ProcSet[/PDF/Text/ImageB/ImageC/ImageI]>>/Rotate 0/Trans<<>>/Type/Page>>\rendobj\r10 0 obj\r<</Filter/FlateDecode/First 18/Length 122/N 3/Type/ObjStm>>stream\r\nh\ﬁ24V0P04Q02Q04U040Q∞±\—w3	(\ÈªÅÑÅ,;;†∏Sbq™[~^âæGjNYjIfr¢æk^r~Jf^∫~xfûc^q&úÔóòõ\n4H?∏4©§≤ U?HÇI}ê8\Ã\”u\ \œI!d®nC\0Ω\·Bj\r\nendstream\rendobj\r11 0 obj\r<</Filter/FlateDecode/Length 557>>stream\r\nxúùUMè\⁄0Ω\Û+\ÊRâ]©a\Ï8â\Ÿ[∫\’V\€jwO\\,0mV$QCh%~}\'NN K[E\‰c\ﬁøyûëaÄt1{_%\0\˜\nFµ&<\Í	>™¡\œ´ôëÑH0O ±§\–˘\˜\Â≤f9JLh)LñKq^.ƒ¢\»cBJ\¬\’\ZÜ•æ\Õ\'7†^A\›\¬˚6L™3∫\⁄\ ‹ø™\Ã+e2Å÷ÑU~\›\'&\œ`£ãbü\Î;@\‰#é<8ä_Tc\◊}^Võ\ÍÇ4X0bˇ¶“Å\¬¿-†•`)\\\…\Ÿm∂\Ú\«\Zio≥<çã,7V˙T`Y\≈pràM∫\÷05Iã˘ì\ÂX\‰%\÷0\œ\r\ÏCdàUt9úYﬁú†g_&w\®êq_a$\«¯ñY\◊Q\‚QüY&\ﬁ6˚aK~äãV\ÔcùÆ~ƒçÀæ∫q\n\"/\Ù	\∆n\'<\…#0\Ë>i8RJ\ÛCiû%\‰6∑≠\—\È\Œ\nU\„x\rÅ˚•\◊\·\‘\ÏVy|à≥\‘8u;Lé\rw∂\◊iK_`W6\‹\Á\‹5r\…\ÎVû\Ò˝_eÖﬁö+¸K^ò¸WY3¨cXe\Ènø5\ÈA\˜\‘JOà:ë\ı\‘\·SWéã3†á=\≈\€Ã≤°ü\È\˜Z∑b˛â>~õï\ÿv\—\À6Üu[áRÅgy\‘\*F/Uå6\Õ\ÀgC\‰u6w≥˝:ËüÇ≥\Û9u\Á∞E\„ø=≠x˚¥™{‹úçe´\·|œã	£ˇ<\È–†øÑwß´\Ì~ß;\"0¯l\r	\r\nendstream\rendobj\r1 0 obj\r<</Length 3691/Subtype/XML/Type/Metadata>>stream\r\n<?xpacket begin=\"Ôªø\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"Adobe XMP Core 5.4-c006 80.159825, 2016/09/16-03:31:08        \">\n   <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n      <rdf:Description rdf:about=\"\"\n            xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n            xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\n            xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n            xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\">\n         <dc:format>application/pdf</dc:format>\n         <dc:creator>\n            <rdf:Seq>\n               <rdf:li>(anonymous)</rdf:li>\n            </rdf:Seq>\n         </dc:creator>\n         <dc:description>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">(unspecified)</rdf:li>\n            </rdf:Alt>\n         </dc:description>\n         <dc:title>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">(anonymous)</rdf:li>\n            </rdf:Alt>\n         </dc:title>\n         <xmp:CreateDate>2025-12-17T13:51:40Z</xmp:CreateDate>\n         <xmp:CreatorTool>(unspecified)</xmp:CreatorTool>\n         <xmp:ModifyDate>2026-01-21T15:31:23+01:00</xmp:ModifyDate>\n         <xmp:MetadataDate>2026-01-21T15:31:23+01:00</xmp:MetadataDate>\n         <pdf:Keywords/>\n         <pdf:Producer>ReportLab PDF Library - www.reportlab.com</pdf:Producer>\n         <pdf:Trapped>False</pdf:Trapped>\n         <xmpMM:DocumentID>uuid:51159c19-db28-4aba-b679-aeb9d688ab17</xmpMM:DocumentID>\n         <xmpMM:InstanceID>uuid:102b4301-c501-4e5e-81da-abbb2108831e</xmpMM:InstanceID>\n      </rdf:Description>\n   </rdf:RDF>\n</x:xmpmeta>\n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                                                                                                    \n                           \n<?xpacket end=\"w\"?>\r\nendstream\rendobj\r2 0 obj\r<</Filter/FlateDecode/First 4/Length 48/N 1/Type/ObjStm>>stream\r\nh\ﬁ2U0P∞±\—w\Œ/\Õ+Q0\‘\˜\ŒL)é∂ä\≈\ÍáT§\Í$¶ß\€\Ÿ\0\÷wÄ\r\nendstream\rendobj\r3 0 obj\r<</Filter/FlateDecode/First 4/Length 187/N 1/Type/ObjStm>>stream\r\nh\ﬁd\œ\À\n\¬0Ö\·W\…\Œ\—$≠U\ƒ“ç\n¢Æ\ƒM⁄åi;eöP˙\ˆ^]ˇ|Œî)∂X\»U\7$~\·¶∆∫Ø0¥!\‰ö¿xáuj<\t©(—ëû\È8\—u˛\Ù7u\€@\·Æ\Ïn†\ÔêlÀÖ‹°˝\Ú©zzù\ƒ:äáJî\Zπ\'¥°\0\‚hê¸\÷\‰lüfl\Îr2‘≥\Î∫nL\ÔVö|\\`%\‰1\‰w(¸ˇ\\…˘~oú\»4\rXôô≤Ö\Â\Ú!¿\0ENã\r\nendstream\rendobj\r4 0 obj\r<</DecodeParms<</Columns 3/Predictor 12>>/Filter/FlateDecode/ID[<8B49BF133DB554C872F8842FFF1159FF><C30457C9E1DCAA4483AE873FF001ED09>]/Info 6 0 R/Length 37/Root 8 0 R/Size 7/Type/XRef/W[1 2 0]>>stream\r\nh\ﬁbb```bd[\Õ\ƒ¿øÉâÅ°áâÅIÇâ\Ò\Âo õ ¿\0/Q\r\nendstream\rendobj\rstartxref\r\n116\r\n%%EOF\r\n',6183,'fattura_002.pdf','FATTURA | Numero fattura: 002/2025 | Data: 15/12/2025 | Fornitore | Azienda Demo SRL',NULL,1,NULL,'2026-01-30 15:52:26','2026-01-30 16:52:25');
 /*!40000 ALTER TABLE `invoices` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
@@ -564,7 +576,7 @@ CREATE TABLE `notifications` (
   KEY `idx_is_read` (`is_read`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=227 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=228 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -573,6 +585,7 @@ CREATE TABLE `notifications` (
 
 LOCK TABLES `notifications` WRITE;
 /*!40000 ALTER TABLE `notifications` DISABLE KEYS */;
+INSERT INTO `notifications` VALUES (227,3,121,'invoice_approval_required','Neue Rechnung zur Freigabe','Rechnung FAT-001-2026 von Azienda Demo SRL ÔøΩber 1.250,00 ‚Ç¨ EUR wartet auf Ihre Freigabe.',0,'normal','/invoices/121','2026-01-30 15:52:26',NULL);
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -925,7 +938,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','simon.kramer05@gmail.com','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-29 10:31:11','2026-01-29 10:31:11'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-28 11:44:10','2026-01-28 11:44:10'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','M√ºller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-21 13:36:17',NULL);
+INSERT INTO `users` VALUES (1,'admin','$2a$11$OsB0yW6RMM/44lEKraS1gOdLpCqz.s6j2oIQH1x6/x0VOTbi3ly5.','simon.kramer05@gmail.com','System','Administrator',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-30 16:32:42','2026-01-30 16:32:42'),(2,'max.mustermann','$2a$11$mAAO7nsfAEm8DkyXs.2Bmey1OYdC7pNza3wFjyZuF/MTtEPriiuFO','max.mustermann@firma.de','Max','Mustermann',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-28 11:44:10','2026-01-28 11:44:10'),(3,'maria.mueller','$2a$11$eGjbz1.YRSQ5tcJWXwmeZu5S/cCDqg2PUG68XthzP5NwOiG61oaRK','maria.mueller@firma.de','Maria','M√ºller',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(4,'hans.schmidt','$2a$11$0.kYmWmgLz8OcAou3aysd.snnN/IqV3u/b9n3EtqX.gVe0OhPIL8W','hans.schmidt@firma.de','Hans','Schmidt',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2025-12-12 08:39:48',NULL),(5,'lisa.klein','$2a$11$eIKzA9xWOS.XpIv3P83lOu7wLQNEJeCjYO2LFd18BLrtx0QIdTv.6','lisa.klein@firma.de','Lisa','Klein',NULL,'2025-12-12 09:31:16',0,NULL,1,'2025-12-12 09:31:16','2026-01-21 13:36:17',NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -999,4 +1012,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-29 13:16:36
+-- Dump completed on 2026-01-30 18:35:40

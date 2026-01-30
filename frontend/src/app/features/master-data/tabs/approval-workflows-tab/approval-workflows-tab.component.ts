@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -20,6 +21,7 @@ import { StatusDisplayPipe } from '../../../../core/pipes/status-display.pipe';
     MatTableModule,
     MatButtonModule,
     MatIconModule,
+    MatCardModule,
     MatDialogModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
@@ -61,7 +63,7 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading approval workflows:', error);
-        this.snackBar.open('Failed to load approval workflows', 'Close', { duration: 3000 });
+        this.snackBar.open('Fehler beim Laden der Genehmigungsworkflows', 'Schließen', { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -77,12 +79,12 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
       if (result) {
         this.approvalService.createApprovalWorkflow(result).subscribe({
           next: () => {
-            this.snackBar.open('Approval workflow created successfully', 'Close', { duration: 3000 });
+            this.snackBar.open('Genehmigungsworkflow erfolgreich erstellt', 'Schließen', { duration: 3000 });
             this.loadApprovalWorkflows();
           },
           error: (error: any) => {
             console.error('Error creating approval workflow:', error);
-            this.snackBar.open('Failed to create approval workflow', 'Close', { duration: 3000 });
+            this.snackBar.open('Fehler beim Erstellen des Genehmigungsworkflows', 'Schließen', { duration: 3000 });
           }
         });
       }
@@ -99,30 +101,47 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
       if (result) {
         this.approvalService.updateApprovalWorkflow(workflow.id, result).subscribe({
           next: () => {
-            this.snackBar.open('Approval workflow updated successfully', 'Close', { duration: 3000 });
+            this.snackBar.open('Genehmigungsworkflow erfolgreich aktualisiert', 'Schließen', { duration: 3000 });
             this.loadApprovalWorkflows();
           },
           error: (error: any) => {
             console.error('Error updating approval workflow:', error);
-            this.snackBar.open('Failed to update approval workflow', 'Close', { duration: 3000 });
+            this.snackBar.open('Fehler beim Aktualisieren des Genehmigungsworkflows', 'Schließen', { duration: 3000 });
           }
         });
       }
     });
   }
 
-  deleteApprovalWorkflow(workflow: ApprovalWorkflow): void {
-    if (confirm(`Are you sure you want to delete the approval workflow #${workflow.id}?`)) {
-      this.approvalService.deleteApprovalWorkflow(workflow.id).subscribe({
+  deleteApprovalWorkflow(id: number): void {
+    if (confirm(`Möchten Sie diesen Genehmigungsworkflow wirklich löschen?`)) {
+      this.approvalService.deleteApprovalWorkflow(id).subscribe({
         next: () => {
-          this.snackBar.open('Approval workflow deleted successfully', 'Close', { duration: 3000 });
+          this.snackBar.open('Genehmigungsworkflow erfolgreich gelöscht', 'Schließen', { duration: 3000 });
           this.loadApprovalWorkflows();
         },
         error: (error: any) => {
           console.error('Error deleting approval workflow:', error);
-          this.snackBar.open('Failed to delete approval workflow', 'Close', { duration: 3000 });
+          this.snackBar.open('Fehler beim Löschen des Genehmigungsworkflows', 'Schließen', { duration: 3000 });
         }
       });
     }
+  }
+
+  formatDateTime(dateTime: any): string {
+    if (!dateTime) return '-';
+    const date = new Date(dateTime);
+    return date.toLocaleString('de-DE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  adjustBackgroundOpacity(color: string): string {
+    // Return color as-is without opacity
+    return color || 'transparent';
   }
 }

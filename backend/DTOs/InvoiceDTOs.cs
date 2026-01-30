@@ -202,6 +202,7 @@ public class ApprovalWorkflowDto
     public UserDto Approver { get; set; } = null!;
     public int ApprovalLevel { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string? StatusColor { get; set; }
     public string? Comments { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public DateTime CreatedAt { get; set; }

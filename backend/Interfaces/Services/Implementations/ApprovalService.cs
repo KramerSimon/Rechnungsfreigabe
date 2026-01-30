@@ -89,8 +89,7 @@ public class ApprovalService : IApprovalService
 
     public async Task<IEnumerable<ApprovalRule>> GetActiveRulesAsync()
     {
-        var allRules = await unitOfWork.ApprovalRules.GetAllAsync();
-        return allRules.Where(r => r.IsActive).ToList();
+        return await unitOfWork.ApprovalRules.GetActiveRulesAsync();
     }
 
     public async Task<ApprovalRule> CreateRuleAsync(ApprovalRule rule)
@@ -320,7 +319,7 @@ public class ApprovalService : IApprovalService
                 var approverId = await ResolveStageApproverAsync(invoice, stage);
                 if (!approverId.HasValue)
                 {
-                    Console.WriteLine($"[WARNING] No approver resolved for stage '{stage.Role}', skipping stage {stage.StepNumber}");
+                    Console.WriteLine($"[WARNING] No approver resolved for stage '{stage.Role?.Name ?? stage.RoleId?.ToString() ?? "n/a"}', skipping stage {stage.StepNumber}");
                     continue;
                 }
 
@@ -611,7 +610,15 @@ public class ApprovalService : IApprovalService
         if (stage.UserId.HasValue)
             return stage.UserId.Value;
 
-        var role = stage.Role?.ToLower();
+        if (stage.RoleId.HasValue)
+        {
+            var users = await unitOfWork.Users.GetByRoleAsync(stage.RoleId.Value);
+            var activeUser = users.FirstOrDefault(u => u.IsActive);
+            if (activeUser != null)
+                return activeUser.Id;
+        }
+
+        var role = stage.Role?.Name?.ToLower();
         switch (role)
         {
             case "manager":
@@ -669,6 +676,7 @@ public class ApprovalService : IApprovalService
                     },
                     ApprovalLevel = w.ApprovalLevel,
                     Status = w.Status != null ? w.Status.Code : "Unknown",
+                    StatusColor = w.Status != null ? w.Status.Color : null,
                     Comments = w.Comments,
                     ApprovedAt = w.ApprovedAt,
                     CreatedAt = w.CreatedAt
@@ -870,6 +878,7 @@ public class ApprovalService : IApprovalService
                     StepNumber = w.StepNumber,
                     ApproverName = w.Approver != null ? $"{w.Approver.FirstName} {w.Approver.LastName}" : "Unknown",
                     Status = w.Status != null ? w.Status.Code : "Pending",
+                    StatusColor = w.Status != null ? w.Status.Color : null,
                     Comments = w.Comments,
                     ApprovedAt = w.ApprovedAt,
                     CreatedAt = w.CreatedAt,

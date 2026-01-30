@@ -40,9 +40,7 @@ public class ApprovalRule
     public virtual User Creator { get; set; } = null!;
     [JsonIgnore]
     public virtual ICollection<ApprovalWorkflow> ApprovalWorkflows { get; set; } = new List<ApprovalWorkflow>();
-    [JsonIgnore]
     public virtual ICollection<ApprovalRuleCondition> Conditions { get; set; } = new List<ApprovalRuleCondition>();
-    [JsonIgnore]
     public virtual ICollection<ApprovalRuleAction> Actions { get; set; } = new List<ApprovalRuleAction>();
 }
 
@@ -114,7 +112,6 @@ public class ApprovalRuleAction
     // Navigation properties
     [JsonIgnore]
     public virtual ApprovalRule ApprovalRule { get; set; } = null!;
-    [JsonIgnore]
     public virtual ICollection<ApprovalRuleStage> Stages { get; set; } = new List<ApprovalRuleStage>();
 }
 
@@ -132,9 +129,8 @@ public class ApprovalRuleStage
     [Column("approval_level")]
     public int ApprovalLevel { get; set; }
 
-    [StringLength(50)]
-    [Column("role")]
-    public string? Role { get; set; }
+    [Column("role_id")]
+    public int? RoleId { get; set; }
 
     [Column("user_id")]
     public int? UserId { get; set; }
@@ -147,6 +143,7 @@ public class ApprovalRuleStage
     public virtual ApprovalRuleAction ApprovalRuleAction { get; set; } = null!;
     [JsonIgnore]
     public virtual User? User { get; set; }
+    public virtual Role? Role { get; set; }
 }
 
 public class ApprovalWorkflow

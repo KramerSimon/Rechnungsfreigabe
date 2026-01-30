@@ -32,6 +32,7 @@ export interface ApprovalRuleActionDto {
 export interface ApprovalRuleStageDto {
   stepNumber: number;
   approvalLevel: number;
+  roleId?: number | null;
   role?: string | null;
   userId?: number | null;
 }
@@ -45,6 +46,7 @@ export interface ApprovalWorkflow {
   approverName?: string;
   approvalLevel: number;
   status: string;
+  statusColor?: string;
   comments?: string;
   approvedAt?: Date;
   createdAt: Date;

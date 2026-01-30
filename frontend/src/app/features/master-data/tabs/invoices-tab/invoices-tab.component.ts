@@ -13,6 +13,7 @@ import { Status } from '../../../../core/models/status.model';
 import { InvoiceService } from '../../../../core/services/invoice.service';
 import { SupplierService } from '../../../../core/services/supplier.service';
 import { StatusService } from '../../../../core/services/status.service';
+import { StatusDisplayPipe } from '../../../../core/pipes/status-display.pipe';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -27,6 +28,7 @@ import { forkJoin } from 'rxjs';
     MatSnackBarModule,
     MatCardModule,
     MatTooltipModule,
+    StatusDisplayPipe
   ],
   templateUrl: './invoices-tab.component.html',
   styleUrls: ['./invoices-tab.component.scss'],
@@ -77,9 +79,23 @@ export class InvoicesTabComponent implements OnInit {
     return supplier ? supplier.name : '-';
   }
 
-  getStatusName(statusId: number): string {
-    const status = this.statuses.find(s => s.id === statusId);
-    return status ? status.code : '-';
+  getStatusName(statusCode: string): string {
+    return statusCode || '-';
+  }
+
+  getContrastColor(hexColor: string): string {
+    // Determine if text should be white or black based on background brightness
+    if (!hexColor) return '#000000';
+
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Calculate luminance using relative luminance formula
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
   }
 
   formatCurrency(amount: number): string {

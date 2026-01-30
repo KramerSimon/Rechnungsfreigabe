@@ -13,6 +13,13 @@ public class ApprovalRuleRepository : Repository<ApprovalRule>, IApprovalRuleRep
     {
         return await _dbSet
             .Where(r => r.IsActive)
+            .Include(r => r.Conditions)
+            .Include(r => r.Actions)
+                .ThenInclude(a => a.Stages)
+                    .ThenInclude(s => s.Role)
+            .Include(r => r.Actions)
+                .ThenInclude(a => a.Stages)
+                    .ThenInclude(s => s.User)
             .ToListAsync();
     }
 
@@ -21,6 +28,13 @@ public class ApprovalRuleRepository : Repository<ApprovalRule>, IApprovalRuleRep
         return await _dbSet
             .Where(r => r.IsActive)
             .OrderBy(r => r.Priority)
+            .Include(r => r.Conditions)
+            .Include(r => r.Actions)
+                .ThenInclude(a => a.Stages)
+                    .ThenInclude(s => s.Role)
+            .Include(r => r.Actions)
+                .ThenInclude(a => a.Stages)
+                    .ThenInclude(s => s.User)
             .ToListAsync();
     }
 }

@@ -370,6 +370,12 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(ars => ars.UserId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<ApprovalRuleStage>()
+            .HasOne(ars => ars.Role)
+            .WithMany()
+            .HasForeignKey(ars => ars.RoleId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<SystemConfig>()
             .HasOne(sc => sc.UpdatedByUser)
             .WithMany()

@@ -9,9 +9,19 @@ public class ApprovalWorkflowRepository : Repository<ApprovalWorkflow>, IApprova
 {
     public ApprovalWorkflowRepository(ApplicationDbContext context) : base(context) { }
 
+    public override async Task<IEnumerable<ApprovalWorkflow>> GetAllAsync()
+    {
+        return await _dbSet
+            .Include(w => w.Approver)
+            .Include(w => w.Invoice)
+            .Include(w => w.Status)
+            .ToListAsync();
+    }
+
     public async Task<ApprovalWorkflow?> GetByIdWithIncludesAsync(int id)
     {
         return await _dbSet
+            .Include(w => w.Approver)
             .Include(w => w.Invoice)
             .Include(w => w.Status)
             .FirstOrDefaultAsync(w => w.Id == id);
@@ -21,6 +31,8 @@ public class ApprovalWorkflowRepository : Repository<ApprovalWorkflow>, IApprova
     {
         return await _dbSet
             .Where(w => w.InvoiceId == invoiceId)
+            .Include(w => w.Approver)
+            .Include(w => w.Status)
             .ToListAsync();
     }
 
@@ -28,6 +40,7 @@ public class ApprovalWorkflowRepository : Repository<ApprovalWorkflow>, IApprova
     {
         return await _dbSet
             .Where(w => w.ApproverId == userId && w.Status!.Code == RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending)
+            .Include(w => w.Approver)
             .Include(w => w.Invoice)
             .Include(w => w.Status)
             .ToListAsync();
@@ -37,6 +50,7 @@ public class ApprovalWorkflowRepository : Repository<ApprovalWorkflow>, IApprova
     {
         return await _dbSet
             .Where(w => w.Status!.Code == statusCode)
+            .Include(w => w.Approver)
             .ToListAsync();
     }
 }

@@ -1,24 +1,311 @@
-.dialog-container {
-      padding: 20px;
-      min-width: 400px;
-      max-width: 95vw;
-      overflow-x: hidden;
+.dialog-content {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  .section {
+    margin-bottom: 32px;
+    padding: 20px;
+    border-radius: 8px;
+    background: #fafafa;
+    border: 1px solid #e8e8e8;
+
+    &.section-primary {
+      background: #f0f7ff;
+      border-color: #2196F3;
     }
 
-    .form-row {
+    &.section-summary {
+      background: #e8f5e9;
+      border-color: #4caf50;
+      margin-bottom: 0;
+    }
+
+    h3 {
+      margin: 0 0 20px 0;
+      color: #1a1a1a;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .section-description {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 15px;
+    margin-bottom: 0;
+    align-items: flex-end;
+
+    .checkbox-inline {
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .flex-grow {
+    flex: 1;
+  }
+
+  .logical-op {
+    max-width: 120px;
+  }
+
+  .full-width {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .add-btn {
+    margin-top: 15px;
+  }
+
+  .remove-btn {
+    margin-top: 12px;
+    align-self: flex-start;
+  }
+
+  /* Conditions List */
+  .conditions-list {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .condition-item {
+      .condition-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+    }
+  }
+
+  /* Actions List */
+  .actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .action-item {
+      .action-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+    }
+  }
+
+  /* Timeline Stages */
+  .stages-timeline {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid #e0e0e0;
+
+    .timeline-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 15px;
+    }
+
+    .stages-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 20px;
+    }
+
+    .stage-card {
       display: flex;
       gap: 16px;
-      margin-bottom: 16px;
+      margin-bottom: 0;
+      position: relative;
+
+      .stage-number {
+        flex-shrink: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100%;
+        padding-top: 4px;
+
+        .number-badge {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 16px;
+          box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+      }
+
+      .stage-content {
+        flex: 1;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 16px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #2196F3;
+          box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+        }
+
+        .stage-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
+
+          h4 {
+            margin: 0;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+          }
+
+          .delete-stage-btn {
+            opacity: 0.6;
+            transition: opacity 0.2s;
+
+            &:hover:not([disabled]) {
+              opacity: 1;
+            }
+          }
+        }
+
+        .stage-fields {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+      }
+
+      .timeline-connector {
+        display: none;
+      }
     }
 
-    mat-form-field {
-      flex: 1;
-    }
-
-    .full-width {
+    .add-stage-btn {
       width: 100%;
+      margin-top: 16px;
+      justify-content: center;
+      border-style: dashed;
+      border-color: #2196F3;
+      color: #2196F3;
+
+      &:hover {
+        background: rgba(33, 150, 243, 0.08);
+      }
+    }
+  }
+
+  /* Role Badge Styling */
+  ::ng-deep .role-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    text-align: center;
+  }
+
+  /* Mat-option role badge styling */
+  ::ng-deep .mat-mdc-option .role-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    text-align: center;
+  }
+
+  /* Status Badge Styling */
+  ::ng-deep .status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    text-align: center;
+  }
+
+  /* Summary Section */
+  .summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .summary-item {
+      font-size: 14px;
+      color: #2e7d32;
+      line-height: 1.6;
+
+      strong {
+        font-weight: 600;
+        color: #1b5e20;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .flow-preview {
+        background: white;
+        padding: 12px;
+        border-radius: 6px;
+        border-left: 3px solid #4caf50;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        color: #1b5e20;
+      }
+    }
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr;
     }
 
-    [mat-dialog-actions] {
-      margin-top: 24px;
+    .stages-timeline .stages-container .stage-card {
+      flex-direction: column;
+
+      .stage-number {
+        padding-top: 0;
+      }
+
+      .timeline-connector {
+        display: none;
+      }
+
+      .stage-content .stage-fields {
+        grid-template-columns: 1fr;
+      }
     }
+  }
+}
+

@@ -33,14 +33,23 @@ import { StatusTranslatorService } from '../../core/services/status-translator.s
         </div>
 
         <div *ngIf="!loading && !error && steps.length > 0" class="timeline">
-          <div *ngFor="let s of steps; let i = index" class="timeline-step" [ngClass]="statusClass(s.status)">
+          <div *ngFor="let s of steps; let i = index"
+               class="timeline-step"
+               [ngStyle]="s.statusColor ? {
+                 'background-color': s.statusColor,
+                 'border-color': s.statusColor
+               } : {}">
             <div class="step-number">{{ s.stepNumber }}</div>
             <div class="step-content">
               <div class="step-header">
-                <span class="status-badge" [ngClass]="'status-' + (s.status || '').toLowerCase()">{{ translateStatus(s.status) }}</span>
-                <span class="approver">{{ s.approverName || s.approverId }}</span>
+                <span class="status-label" [ngStyle]="s.statusColor ? { 'color': getContrastColor(s.statusColor) } : {}">
+                  {{ translateStatus(s.status) }}
+                </span>
+                <span class="approver" [ngStyle]="s.statusColor ? { 'color': getContrastColor(s.statusColor) } : {}">
+                  {{ s.approverName || s.approverId }}
+                </span>
               </div>
-              <div class="step-meta">
+              <div class="step-meta" [ngStyle]="s.statusColor ? { 'color': getContrastColor(s.statusColor) } : {}">
                 <span>Stufe: {{ s.approvalLevel }}</span>
                 <span *ngIf="s.approvedAt">• {{ s.approvedAt | date:'dd.MM.yyyy HH:mm' }}</span>
               </div>
@@ -58,32 +67,20 @@ import { StatusTranslatorService } from '../../core/services/status-translator.s
     .timeline-loading, .timeline-empty {
       display: flex; align-items: center; gap: 8px; color: #666; padding: 8px 0;
     }
-    .timeline { display: flex; align-items: stretch; gap: 16px; overflow-x: auto; padding: 8px 0; }
+    .timeline { display: flex; align-items: stretch; gap: 16px; overflow-x: auto; padding: 8px 0; flex-wrap: wrap; }
     .timeline-step {
-      display: flex; align-items: center; position: relative; background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 8px 12px;
+      display: flex; align-items: center; position: relative; border: 2px solid; border-radius: 12px; padding: 12px 16px; flex: 1; min-width: 250px; transition: all 0.2s ease;
     }
     .step-number {
-      width: 28px; height: 28px; border-radius: 50%; background: #1976d2; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 10px;
+      width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.3); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 12px; font-size: 16px; flex-shrink: 0;
     }
-    .step-content { min-width: 220px; }
-    .step-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .approver { color: #333; font-weight: 500; }
-    .step-meta { font-size: 12px; color: #777; }
+    .step-content { min-width: 180px; }
+    .step-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+    .status-label { font-weight: 700; font-size: 14px; }
+    .approver { font-weight: 500; font-size: 13px; }
+    .step-meta { font-size: 12px; margin-top: 4px; }
     .connector { display: flex; align-items: center; }
     .connector .line { width: 24px; height: 2px; background: #ddd; margin-left: 8px; margin-right: 8px; }
-
-    .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #fff; }
-    .status-approved { background-color: #4caf50; }
-    .status-rejected { background-color: #f44336; }
-    .status-pending  { background-color: #ff9800; }
-    .status-skipped  { background-color: #9e9e9e; }
-    .status-waiting  { background-color: #607d8b; }
-
-    .timeline-step.status-approved { border-color: #c8e6c9; }
-    .timeline-step.status-rejected { border-color: #ffcdd2; }
-    .timeline-step.status-pending  { border-color: #ffe0b2; }
-    .timeline-step.status-waiting  { border-color: #cfd8dc; }
-    .timeline-step.status-skipped  { border-color: #e0e0e0; }
 
     .timeline-error { display: flex; align-items: center; gap: 8px; color: #d32f2f; padding: 8px 0; }
   `]
@@ -132,5 +129,20 @@ export class ApprovalTimelineComponent implements OnInit, OnChanges {
   translateStatus(status?: string): string {
     if (!status) return '';
     return this.statusTranslator.translate(status, 'ApprovalWorkflow');
+  }
+
+  getContrastColor(hexColor: string): string {
+    // Determine if text should be white or black based on background brightness
+    if (!hexColor) return '#000000';
+
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Calculate luminance using relative luminance formula
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    return luminance > 0.5 ? '#000000' : '#FFFFFF';
   }
 }

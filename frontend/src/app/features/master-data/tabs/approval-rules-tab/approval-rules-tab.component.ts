@@ -7,9 +7,14 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatSlideToggleModule, MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { ApprovalService } from '../../../../core/services/approval.service';
 import { ApprovalRule, ApprovalRuleActionDto, ApprovalRuleConditionDto, ApprovalRuleStageDto, CreateApprovalRuleDto, UpdateApprovalRuleDto } from '../../../../core/models/approval.model';
-import { RuleDialogComponent } from '../../../smart-dashboard/dashboard/rule-dashboard/rule-dialog/rule-dialog.component';
+import { RoleService } from '../../../../core/services/role.service';
+import { RoleDto } from '../../../../core/models/user.models';
+import { CreateApprovalRuleDialogComponent } from './dialogs/create-approval-rule-dialog.component';
+import { EditApprovalRuleDialogComponent } from './dialogs/edit-approval-rule-dialog/edit-approval-rule-dialog.component';
 
 // AdminRule interface for dialog compatibility
 interface AdminRule {
@@ -26,11 +31,6 @@ interface AdminRule {
   projectId?: string | null;
 }
 
-interface RuleDialogData {
-  mode: 'create' | 'edit';
-  rule?: AdminRule;
-}
-
 @Component({
   selector: 'app-approval-rules-tab',
   standalone: true,
@@ -42,7 +42,9 @@ interface RuleDialogData {
     MatDialogModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatExpansionModule,
+    MatSlideToggleModule
   ],
   templateUrl: './approval-rules-tab.component.html',
   styleUrls: ['./approval-rules-tab.component.scss']
@@ -51,15 +53,30 @@ export class ApprovalRulesTabComponent implements OnInit {
   displayedColumns: string[] = ['id', 'name', 'description', 'ruleType', 'priority', 'isActive', 'actions'];
   approvalRules: ApprovalRule[] = [];
   isLoading = false;
+  roles: RoleDto[] = [];
 
   constructor(
     private approvalService: ApprovalService,
+    private roleService: RoleService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
     this.loadApprovalRules();
+    this.loadRoles();
+  }
+
+  private loadRoles(): void {
+    this.roleService.getRoles().subscribe({
+      next: (roles) => {
+        this.roles = roles || [];
+      },
+      error: (error: any) => {
+        console.error('Error loading roles:', error);
+        this.roles = [];
+      }
+    });
   }
 
   loadApprovalRules(): void {
@@ -78,10 +95,9 @@ export class ApprovalRulesTabComponent implements OnInit {
   }
 
   createApprovalRule(): void {
-    const dialogRef = this.dialog.open(RuleDialogComponent, {
+    const dialogRef = this.dialog.open(CreateApprovalRuleDialogComponent, {
       width: '95vw',
-      maxWidth: '1100px',
-      data: { mode: 'create' } as RuleDialogData
+      maxWidth: '1100px'
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -102,17 +118,32 @@ export class ApprovalRulesTabComponent implements OnInit {
   }
 
   editApprovalRule(rule: ApprovalRule): void {
+    this.isLoading = true;
+    this.approvalService.getApprovalRuleById(rule.id).subscribe({
+      next: (fullRule) => {
+        this.isLoading = false;
+        this.openEditDialog(fullRule ?? rule, rule.id);
+      },
+      error: (error: any) => {
+        console.error('Error loading approval rule details:', error);
+        this.isLoading = false;
+        this.openEditDialog(rule, rule.id);
+      }
+    });
+  }
+
+  private openEditDialog(rule: ApprovalRule, ruleId: number): void {
     const dialogRule = this.mapToDialogRule(rule);
-    const dialogRef = this.dialog.open(RuleDialogComponent, {
+    const dialogRef = this.dialog.open(EditApprovalRuleDialogComponent, {
       width: '95vw',
       maxWidth: '1100px',
-      data: { mode: 'edit', rule: dialogRule } as RuleDialogData
+      data: dialogRule
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         const updateDto = this.mapToUpdateDto(result);
-        this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
+        this.approvalService.updateApprovalRule(ruleId, updateDto).subscribe({
           next: () => {
             this.snackBar.open('Approval rule updated successfully', 'Close', { duration: 3000 });
             this.loadApprovalRules();
@@ -226,7 +257,7 @@ export class ApprovalRulesTabComponent implements OnInit {
     }
     return actions.map((a: any) => ({
       actionType: a.type,
-      actionValue: a.value ?? null,
+      actionValue: a.value !== undefined && a.value !== null ? String(a.value) : null,
       description: a.description ?? null,
       stages: this.mapStages(a.stages)
     }));
@@ -251,8 +282,13 @@ export class ApprovalRulesTabComponent implements OnInit {
     return stages.map((s: any) => ({
       stepNumber: Number(s.stepNumber ?? 1),
       approvalLevel: Number(s.approvalLevel ?? 1),
-      role: s.role ?? null,
-      userId: s.userId ?? null
+      roleId: s.roleId !== undefined && s.roleId !== null && s.roleId !== ''
+        ? Number(s.roleId)
+        : null,
+      role: s.role ? String(s.role) : null,
+      userId: s.userId !== undefined && s.userId !== null && s.userId !== ''
+        ? Number(s.userId)
+        : null
     }));
   }
 
@@ -263,8 +299,113 @@ export class ApprovalRulesTabComponent implements OnInit {
     return stages.map(s => ({
       stepNumber: s.stepNumber,
       approvalLevel: s.approvalLevel,
-      role: s.role ?? undefined,
+      roleId: s.roleId ?? ((s.role as any)?.id) ?? undefined,
+      role: typeof s.role === 'object' && s.role !== null ? (s.role as any).name : (s.role ?? undefined),
       userId: s.userId ?? undefined
     }));
+  }
+
+  toggleRuleActive(rule: ApprovalRule, event: MatSlideToggleChange): void {
+    const updateDto: UpdateApprovalRuleDto = {
+      name: rule.name,
+      description: rule.description || '',
+      ruleType: this.normalizeRuleTypeForApi(rule.ruleType),
+      priority: rule.priority,
+      isActive: event.checked,
+      conditions: this.mapConditionsFromApi(rule.conditions),
+      actions: this.mapActionsFromApiForUpdate(rule.actions),
+      supplierId: rule.supplierId ?? null,
+      costCenterId: rule.costCenterId ?? null,
+      projectId: rule.projectId ?? null
+    };
+
+    this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
+      next: () => {
+        rule.isActive = event.checked;
+        this.snackBar.open(`Regel ${event.checked ? 'aktiviert' : 'deaktiviert'}`, 'Schließen', { duration: 2000 });
+      },
+      error: (error: any) => {
+        console.error('Error updating rule status:', error);
+        event.source.checked = !event.checked;
+        this.snackBar.open('Fehler beim Aktualisieren der Regel', 'Schließen', { duration: 3000 });
+      }
+    });
+  }
+
+  private mapActionsFromApiForUpdate(actions?: ApprovalRuleActionDto[]): ApprovalRuleActionDto[] {
+    if (!Array.isArray(actions)) {
+      return [];
+    }
+    return actions.map(a => ({
+      actionType: a.actionType,
+      actionValue: a.actionValue ?? null,
+      description: a.description ?? null,
+      stages: a.stages
+    }));
+  }
+
+  getConditionFieldLabel(field: string): string {
+    const fieldLabels: { [key: string]: string } = {
+      'amount': 'Betrag',
+      'supplier': 'Lieferant',
+      'costCenter': 'Kostenstelle',
+      'project': 'Projekt',
+      'invoiceDate': 'Rechnungsdatum',
+      'dueDate': 'Fälligkeitsdatum'
+    };
+    return fieldLabels[field] || field;
+  }
+
+  getOperatorLabel(operator: string): string {
+    const operatorLabels: { [key: string]: string } = {
+      'equals': 'gleich',
+      'notEquals': 'ungleich',
+      'greaterThan': 'größer als',
+      'lessThan': 'kleiner als',
+      'greaterOrEqual': 'größer oder gleich',
+      'lessOrEqual': 'kleiner oder gleich',
+      'contains': 'enthält',
+      'notContains': 'enthält nicht'
+    };
+    return operatorLabels[operator] || operator;
+  }
+
+  getActionDescription(action: ApprovalRuleActionDto): string {
+    switch (action.actionType?.toLowerCase()) {
+      case 'require_approval':
+        return 'Mehrstufige Freigabe';
+      case 'set_status':
+        return `Status setzen: ${action.actionValue}`;
+      case 'assign_to':
+        return `Zuweisen an: ${action.actionValue}`;
+      case 'notify':
+        return 'Benachrichtigung senden';
+      default:
+        return action.description || action.actionType || 'Aktion';
+    }
+  }
+
+  getRoleName(role: any): string {
+    if (!role) return 'Rolle nicht definiert';
+    if (typeof role === 'object' && role.name) {
+      return role.name;
+    }
+    if (typeof role === 'string') {
+      return role;
+    }
+    return 'Rolle nicht definiert';
+  }
+
+  getRoleNameFromStage(stage: { role?: any; roleId?: number | null }): string {
+    if (stage?.role) {
+      return this.getRoleName(stage.role);
+    }
+    if (stage?.roleId !== undefined && stage?.roleId !== null) {
+      const match = this.roles.find(r => r.id === Number(stage.roleId));
+      if (match?.name) {
+        return match.name;
+      }
+    }
+    return 'Rolle nicht definiert';
   }
 }

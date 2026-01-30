@@ -1,72 +1,83 @@
 <div class="approval-rules-tab-container">
-  <div class="header">
-    <h2>Approval Rules Management</h2>
-    <button mat-raised-button color="primary" (click)="createApprovalRule()">
-      <mat-icon>add</mat-icon>
-      Add Approval Rule
-    </button>
-  </div>
+  <button mat-raised-button color="primary" (click)="createApprovalRule()" class="create-btn">
+    <mat-icon>add</mat-icon>
+    Neue Regel erstellen
+  </button>
 
-  <div class="table-container" *ngIf="!isLoading && approvalRules.length > 0">
-    <table mat-table [dataSource]="approvalRules" class="approval-rules-table">
-      <!-- ID Column -->
-      <ng-container matColumnDef="id">
-        <th mat-header-cell *matHeaderCellDef>ID</th>
-        <td mat-cell *matCellDef="let rule">{{ rule.id }}</td>
-      </ng-container>
+  <h3 class="section-title">AKTIVE REGELN</h3>
 
-      <!-- Name Column -->
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef>Name</th>
-        <td mat-cell *matCellDef="let rule">{{ rule.name }}</td>
-      </ng-container>
+  <div class="rules-list" *ngIf="!isLoading && approvalRules.length > 0">
+    <mat-expansion-panel *ngFor="let rule of approvalRules; let i = index" class="rule-card">
+      <mat-expansion-panel-header>
+        <mat-panel-title class="rule-header">
+          <div class="rule-number">{{ i + 1 }}.</div>
+          <div class="rule-title">{{ rule.name }}</div>
+          <span class="rule-type-badge">{{ rule.ruleType === 'automatic' ? 'Automatische Freigabe' : 'Manuelle Freigabe' }}</span>
+          <div class="rule-actions">
+            <button mat-icon-button color="primary" (click)="editApprovalRule(rule); $event.stopPropagation()" matTooltip="Bearbeiten">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteApprovalRule(rule); $event.stopPropagation()" matTooltip="Löschen">
+              <mat-icon>delete</mat-icon>
+            </button>
+            <mat-slide-toggle
+              [checked]="rule.isActive"
+              (change)="toggleRuleActive(rule, $event)"
+              (click)="$event.stopPropagation()"
+              color="primary">
+            </mat-slide-toggle>
+          </div>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
 
-      <!-- Description Column -->
-      <ng-container matColumnDef="description">
-        <th mat-header-cell *matHeaderCellDef>Description</th>
-        <td mat-cell *matCellDef="let rule">{{ rule.description || '-' }}</td>
-      </ng-container>
+      <div class="rule-details">
+        <div class="detail-section" *ngIf="rule.description">
+          <strong>Beschreibung:</strong>
+          <div class="description-content">{{ rule.description }}</div>
+        </div>
 
-      <!-- Rule Type Column -->
-      <ng-container matColumnDef="ruleType">
-        <th mat-header-cell *matHeaderCellDef>Type</th>
-        <td mat-cell *matCellDef="let rule">
-          <span class="rule-type-badge">{{ rule.ruleType }}</span>
-        </td>
-      </ng-container>
+        <div class="conditions-actions-grid">
+          <div class="detail-section wenn-section">
+            <strong>WENN:</strong>
+            <div class="conditions-list" *ngIf="rule.conditions && rule.conditions.length > 0">
+              <div *ngFor="let condition of rule.conditions; let first = first" class="condition-item">
+                <span *ngIf="!first" class="logical-op">{{ condition.logicalOperator }}</span>
+                <span class="condition-field">{{ getConditionFieldLabel(condition.field) }}</span>
+                <span class="condition-operator">{{ getOperatorLabel(condition.operator) }}</span>
+                <span class="condition-value">{{ condition.value }}</span>
+              </div>
+            </div>
+            <div *ngIf="!rule.conditions || rule.conditions.length === 0" class="no-data">
+              Keine Bedingungen definiert
+            </div>
+          </div>
 
-      <!-- Priority Column -->
-      <ng-container matColumnDef="priority">
-        <th mat-header-cell *matHeaderCellDef>Priority</th>
-        <td mat-cell *matCellDef="let rule">{{ rule.priority }}</td>
-      </ng-container>
+          <div class="detail-section dann-section">
+            <strong>DANN:</strong>
+            <div class="actions-list" *ngIf="rule.actions && rule.actions.length > 0">
+              <div *ngFor="let action of rule.actions" class="action-item">
+                <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                <span class="action-description">{{ getActionDescription(action) }}</span>
 
-      <!-- Is Active Column -->
-      <ng-container matColumnDef="isActive">
-        <th mat-header-cell *matHeaderCellDef>Active</th>
-        <td mat-cell *matCellDef="let rule">
-          <mat-icon [color]="rule.isActive ? 'primary' : ''" [matTooltip]="rule.isActive ? 'Active' : 'Inactive'">
-            {{ rule.isActive ? 'check_circle' : 'cancel' }}
-          </mat-icon>
-        </td>
-      </ng-container>
+                <div *ngIf="action.stages && action.stages.length > 0" class="stages-preview">
+                  <div *ngFor="let stage of action.stages; let si = index" class="stage-item">
+                    Stufe {{ si + 1 }}: {{ getRoleNameFromStage(stage) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="!rule.actions || rule.actions.length === 0" class="no-data">
+              Keine Aktionen definiert
+            </div>
+          </div>
+        </div>
 
-      <!-- Actions Column -->
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Actions</th>
-        <td mat-cell *matCellDef="let rule">
-          <button mat-icon-button (click)="editApprovalRule(rule)" matTooltip="Edit">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button (click)="deleteApprovalRule(rule)" matTooltip="Delete">
-            <mat-icon color="warn">delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
+        <div class="rule-footer">
+          <span><strong>Priorität:</strong> {{ rule.priority }}</span>
+          <span><strong>Status:</strong> <span class="status-badge" [class.active]="rule.isActive">{{ rule.isActive ? 'Aktiv' : 'Inaktiv' }}</span></span>
+        </div>
+      </div>
+    </mat-expansion-panel>
   </div>
 
   <div class="loading-container" *ngIf="isLoading">
@@ -75,10 +86,10 @@
 
   <div class="empty-state" *ngIf="!isLoading && approvalRules.length === 0">
     <mat-icon>rule</mat-icon>
-    <p>No approval rules found</p>
+    <p>Keine Genehmigungsregeln gefunden</p>
     <button mat-raised-button color="primary" (click)="createApprovalRule()">
       <mat-icon>add</mat-icon>
-      Add First Approval Rule
+      Erste Regel erstellen
     </button>
   </div>
 </div>

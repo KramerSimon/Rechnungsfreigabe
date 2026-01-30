@@ -5,6 +5,7 @@ using RechnungsfreigabeAPI.Data;
 using RechnungsfreigabeAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 using RechnungsfreigabeAPI.Interfaces.Services;
 namespace RechnungsfreigabeAPI.Controllers;
@@ -18,17 +19,20 @@ public class ApprovalController : ControllerBase
     private readonly IInvoiceService invoiceService;
     private readonly INotificationService notificationService;
     private readonly ApplicationDbContext context;
+    private readonly ILogger<ApprovalController> logger;
 
     public ApprovalController(
         IApprovalService approvalService,
         IInvoiceService invoiceService,
         INotificationService notificationService,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        ILogger<ApprovalController> logger)
     {
         this.approvalService = approvalService;
         this.invoiceService = invoiceService;
         this.notificationService = notificationService;
         this.context = context;
+        this.logger = logger;
     }
 
     /// <summary>
@@ -131,6 +135,40 @@ public class ApprovalController : ControllerBase
             Console.WriteLine($"Error in GetApprovalRules: {ex.Message}");
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
             return StatusCode(500, new { message = "An error occurred while retrieving approval rules", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get approval rule by id
+    /// </summary>
+    [HttpGet("rules/{ruleId}")]
+    [Authorize(Roles = "Administrator")]
+    public async Task<ActionResult<ApprovalRule>> GetApprovalRule(int ruleId)
+    {
+        try
+        {
+            var rule = await context.ApprovalRules
+                .Include(r => r.Conditions.OrderBy(c => c.ConditionOrder))
+                .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
+                .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+                .ThenInclude(s => s.Role)
+                .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
+                .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+                .ThenInclude(s => s.User)
+                .FirstOrDefaultAsync(r => r.Id == ruleId);
+
+            if (rule == null)
+            {
+                return NotFound(new { message = "Approval rule not found" });
+            }
+
+            return Ok(rule);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in GetApprovalRule: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            return StatusCode(500, new { message = "An error occurred while retrieving approval rule", error = ex.Message });
         }
     }
 
@@ -427,7 +465,7 @@ public class ApprovalController : ControllerBase
                             {
                                 StepNumber = stageDto.StepNumber,
                                 ApprovalLevel = stageDto.ApprovalLevel,
-                                Role = stageDto.Role,
+                                RoleId = stageDto.RoleId,
                                 UserId = stageDto.UserId
                             });
                         }
@@ -444,14 +482,24 @@ public class ApprovalController : ControllerBase
                 .Include(r => r.Conditions.OrderBy(c => c.ConditionOrder))
                 .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
                 .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+                .ThenInclude(s => s.Role)
+                .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
+                .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+                .ThenInclude(s => s.User)
                 .FirstOrDefaultAsync(r => r.Id == createdRule.Id);
 
             return CreatedAtAction(nameof(GetApprovalRules), new { id = createdRule.Id }, loadedRule);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            
-            return StatusCode(500, new { message = "An error occurred while creating the approval rule" });
+            logger.LogError(ex, "Error creating approval rule. Payload: {@Dto}", dto);
+            return StatusCode(500, new
+            {
+                message = "An error occurred while creating the approval rule",
+                error = ex.Message,
+                innerError = ex.InnerException?.Message,
+                stackTrace = ex.StackTrace
+            });
         }
     }
 
@@ -535,7 +583,7 @@ public class ApprovalController : ControllerBase
                             {
                                 StepNumber = stageDto.StepNumber,
                                 ApprovalLevel = stageDto.ApprovalLevel,
-                                Role = stageDto.Role,
+                                RoleId = stageDto.RoleId,
                                 UserId = stageDto.UserId
                             });
                         }
@@ -553,14 +601,24 @@ public class ApprovalController : ControllerBase
                 .Include(r => r.Conditions.OrderBy(c => c.ConditionOrder))
                 .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
                 .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+                .ThenInclude(s => s.Role)
+                .Include(r => r.Actions.OrderBy(a => a.ActionOrder))
+                .ThenInclude(a => a.Stages.OrderBy(s => s.StepNumber))
+                .ThenInclude(s => s.User)
                 .FirstOrDefaultAsync(r => r.Id == ruleId);
 
             return Ok(updatedRule);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            
-            return StatusCode(500, new { message = "An error occurred while updating the approval rule" });
+            logger.LogError(ex, "Error updating approval rule {RuleId}. Payload: {@Dto}", ruleId, dto);
+            return StatusCode(500, new
+            {
+                message = "An error occurred while updating the approval rule",
+                error = ex.Message,
+                innerError = ex.InnerException?.Message,
+                stackTrace = ex.StackTrace
+            });
         }
     }
 
@@ -641,7 +699,7 @@ public class ApprovalRuleStageDto
 {
     public int StepNumber { get; set; }
     public int ApprovalLevel { get; set; }
-    public string? Role { get; set; }
+    public int? RoleId { get; set; }
     public int? UserId { get; set; }
 }
 

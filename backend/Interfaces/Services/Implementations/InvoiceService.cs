@@ -796,6 +796,7 @@ public class InvoiceService : IInvoiceService
                     },
                     ApprovalLevel = aw.ApprovalLevel,
                     Status = aw.Status?.Code ?? "Pending",
+                    StatusColor = aw.Status?.Color,
                     Comments = aw.Comments,
                     ApprovedAt = aw.ApprovedAt,
                     CreatedAt = aw.CreatedAt

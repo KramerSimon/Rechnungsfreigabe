@@ -288,7 +288,14 @@
           </div>
 
           <div class="status-info">
-            <strong>Status:</strong> {{ invoice.status | statusDisplay:'Invoice' }}
+            <strong>Status:</strong>
+            <span class="status-badge"
+                  [ngStyle]="invoice.statusColor ? {
+                    'background-color': invoice.statusColor,
+                    'color': getContrastColor(invoice.statusColor)
+                  } : {}">
+              {{ invoice.status | statusDisplay:'Invoice' }}
+            </span>
           </div>
 
           <!-- Approval Timeline -->
