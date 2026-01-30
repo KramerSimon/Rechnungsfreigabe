@@ -15,7 +15,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterModule } from '@angular/router';
 import { RuleDialogComponent } from './rule-dialog/rule-dialog.component';
-import { ApprovalRule, RuleCondition, RuleAction, RuleDialogData } from '../../../../core/models';
+import { ApprovalRule, ApprovalRuleActionDto, ApprovalRuleConditionDto, ApprovalRuleStageDto, CreateApprovalRuleDto, UpdateApprovalRuleDto } from '../../../../core/models/approval.model';
+import { RuleCondition, RuleAction, RuleDialogData } from '../../../../core/models';
 import { ProjectService } from '../../../../core/services/project.service';
 import { ApprovalService } from '../../../../core/services/approval.service';
 import { CostCenter } from '../../../../core/models/cost-center.model';
@@ -156,7 +157,6 @@ export class RuleDashboardComponent implements OnInit {
     this.loading = true;
     this.approvalService.getApprovalRules().subscribe({
       next: (rules) => {
-        // Backend liefert rules mit conditions/actions als JSON-Strings
         this.approvalRules = rules.map(rule => ({
           ...rule,
           conditions: this.parseConditions(rule.conditions),
@@ -172,35 +172,61 @@ export class RuleDashboardComponent implements OnInit {
     });
   }
 
-  private parseConditions(conditionsJson: string | undefined): RuleCondition[] {
-    if (!conditionsJson) return [];
-    try {
-      return JSON.parse(conditionsJson);
-    } catch {
-      return [];
+  private parseConditions(conditions: ApprovalRuleConditionDto[] | string | undefined): RuleCondition[] {
+    if (!conditions) return [];
+    if (typeof conditions === 'string') {
+      try {
+        return JSON.parse(conditions) as RuleCondition[];
+      } catch {
+        return [];
+      }
     }
+    return conditions.map(c => ({
+      field: c.field,
+      operator: c.operator,
+      value: c.value,
+      logicalOperator: c.logicalOperator
+    }));
   }
 
-  private parseActions(actionsJson: string | undefined): RuleAction[] {
-    if (!actionsJson) return [];
-    try {
-      return JSON.parse(actionsJson);
-    } catch {
-      return [];
+  private parseActions(actions: ApprovalRuleActionDto[] | string | undefined): RuleAction[] {
+    if (!actions) return [];
+    if (typeof actions === 'string') {
+      try {
+        return JSON.parse(actions) as RuleAction[];
+      } catch {
+        return [];
+      }
     }
+    return actions.map(a => ({
+      type: a.actionType as any,
+      value: a.actionValue ?? '',
+      description: a.description ?? '',
+      stages: this.parseStages(a.stages)
+    }));
+  }
+
+  private parseStages(stages?: ApprovalRuleStageDto[] | null): any[] | undefined {
+    if (!stages || stages.length === 0) return undefined;
+    return stages.map(s => ({
+      stepNumber: s.stepNumber,
+      approvalLevel: s.approvalLevel,
+      role: s.role ?? undefined,
+      userId: s.userId ?? undefined
+    }));
   }
 
   // Regel-Management
   onCreateRule() {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
-      width: '1100px',
-      maxWidth: '95vw',
+      width: '95vw',
+      maxWidth: '1100px',
       data: { mode: 'create' } as RuleDialogData
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        const dto = this.buildRuleDto(result);
+        const dto = this.buildCreateRuleDto(result);
 
         this.approvalService.createApprovalRule(dto).subscribe({
           next: () => {
@@ -224,14 +250,14 @@ export class RuleDashboardComponent implements OnInit {
 
   onEditRule(rule: any) {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
-      width: '1100px',
-      maxWidth: '95vw',
+      width: '95vw',
+      maxWidth: '1100px',
       data: { rule: { ...rule }, mode: 'edit' } as RuleDialogData
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        const dto = this.buildRuleDto(result);
+        const dto = this.buildUpdateRuleDto(result);
 
         this.approvalService.updateApprovalRule(rule.id, dto).subscribe({
           next: () => {
@@ -264,7 +290,7 @@ export class RuleDashboardComponent implements OnInit {
 
   onToggleRule(rule: any) {
     const newIsActive = !rule.isActive;
-    const dto = this.buildRuleDto({ ...rule, isActive: newIsActive });
+    const dto = this.buildUpdateRuleDto({ ...rule, isActive: newIsActive });
 
     this.approvalService.updateApprovalRule(rule.id, dto).subscribe({
       next: () => {
@@ -318,29 +344,72 @@ export class RuleDashboardComponent implements OnInit {
     return this.costCenters.find(c => c.id === costCenterId)?.name || costCenterId;
   }
 
-  private buildRuleDto(rule: any) {
-    const ruleType = typeof rule.ruleType === 'number'
-      ? (rule.ruleType === 0 ? 'automatic' : 'manual')
-      : String(rule.ruleType || 'manual');
-
-    const normalizeConditions = (rule.conditions || []).map((c: any) => ({
-      ...c,
-      value: c?.value !== undefined && c?.value !== null ? String(c.value) : ''
-    }));
-
-    const normalizeActions = (rule.actions || []).map((a: any) => ({
-      ...a,
-      value: a?.value !== undefined && a?.value !== null ? String(a.value) : ''
-    }));
-
+  private buildCreateRuleDto(rule: any): CreateApprovalRuleDto {
     return {
       name: rule.name,
       description: rule.description,
-      ruleType,
+      ruleType: this.normalizeRuleTypeForApi(rule.ruleType),
       priority: rule.priority,
-      conditions: JSON.stringify(normalizeConditions),
-      actions: JSON.stringify(normalizeActions),
-      isActive: rule.isActive
+      conditions: this.mapConditions(rule.conditions),
+      actions: this.mapActions(rule.actions),
+      supplierId: rule.supplierId ?? null,
+      costCenterId: rule.costCenterId ?? null,
+      projectId: rule.projectId ?? null
     };
+  }
+
+  private buildUpdateRuleDto(rule: any): UpdateApprovalRuleDto {
+    return {
+      name: rule.name,
+      description: rule.description,
+      ruleType: this.normalizeRuleTypeForApi(rule.ruleType),
+      priority: rule.priority,
+      isActive: rule.isActive,
+      conditions: this.mapConditions(rule.conditions),
+      actions: this.mapActions(rule.actions),
+      supplierId: rule.supplierId ?? null,
+      costCenterId: rule.costCenterId ?? null,
+      projectId: rule.projectId ?? null
+    };
+  }
+
+  private normalizeRuleTypeForApi(value: any): 'Automatic' | 'Manual' {
+    return String(value || '').toLowerCase() === 'automatic' ? 'Automatic' : 'Manual';
+  }
+
+  private mapConditions(conditions: any): ApprovalRuleConditionDto[] {
+    if (!Array.isArray(conditions)) {
+      return [];
+    }
+    return conditions.map((c: any) => ({
+      field: c.field,
+      operator: c.operator,
+      value: String(c.value ?? ''),
+      logicalOperator: c.logicalOperator
+    }));
+  }
+
+  private mapActions(actions: any): ApprovalRuleActionDto[] {
+    if (!Array.isArray(actions)) {
+      return [];
+    }
+    return actions.map((a: any) => ({
+      actionType: a.type,
+      actionValue: a.value ?? null,
+      description: a.description ?? null,
+      stages: this.mapStages(a.stages)
+    }));
+  }
+
+  private mapStages(stages: any): ApprovalRuleStageDto[] | undefined {
+    if (!Array.isArray(stages) || stages.length === 0) {
+      return undefined;
+    }
+    return stages.map((s: any) => ({
+      stepNumber: Number(s.stepNumber ?? 1),
+      approvalLevel: Number(s.approvalLevel ?? 1),
+      role: s.role ?? null,
+      userId: s.userId ?? null
+    }));
   }
 }

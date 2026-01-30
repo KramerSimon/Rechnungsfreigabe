@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApprovalRule, ApprovalWorkflow, CreateApprovalRuleDto, CreateApprovalWorkflowDto, UpdateApprovalWorkflowDto } from '../models/approval.model';
+import { ApprovalRule, ApprovalWorkflow, CreateApprovalRuleDto, CreateApprovalWorkflowDto, UpdateApprovalRuleDto, UpdateApprovalWorkflowDto } from '../models/approval.model';
 
 @Injectable({
   providedIn: 'root'
@@ -21,7 +21,7 @@ export class ApprovalService {
     return this.http.post<ApprovalRule>(`${this.apiUrl}/rules`, rule);
   }
 
-  updateApprovalRule(id: number, rule: CreateApprovalRuleDto): Observable<ApprovalRule> {
+  updateApprovalRule(id: number, rule: UpdateApprovalRuleDto): Observable<ApprovalRule> {
     return this.http.put<ApprovalRule>(`${this.apiUrl}/rules/${id}`, rule);
   }
 

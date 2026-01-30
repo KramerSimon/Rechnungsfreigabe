@@ -31,7 +31,21 @@
           <div class="color-preview" [style.backgroundColor]="form.value.color"></div>
         </div>
 
-        <mat-checkbox formControlName="isSystemRole" [disabled]="data.mode === 'edit' && (data.role?.isSystemRole ?? false)">Systemrolle</mat-checkbox>
+        <div class="color-swatches" aria-label="Farbvorschläge">
+          <button
+            type="button"
+            class="color-swatch"
+            *ngFor="let color of colorOptions"
+            [style.backgroundColor]="color"
+            [class.selected]="form.value.color === color"
+            (click)="setColor(color)"
+            [attr.aria-label]="'Farbe ' + color">
+          </button>
+        </div>
+
+        <div class="system-role-note" *ngIf="data.role?.isSystemRole">
+          Systemrolle: Nur die Farbe kann geändert werden
+        </div>
       </form>
 
       <div mat-dialog-actions class="dialog-actions">

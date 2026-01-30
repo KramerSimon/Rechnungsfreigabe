@@ -101,7 +101,7 @@ export class RuleDialogComponent implements OnInit {
     private costCenterService: CostCenterService,
     private projectService: ProjectService
   ) {
-    this.rule = data.rule ? { ...data.rule } : this.createEmptyRule();
+    this.rule = data.rule ? { ...data.rule, ruleType: this.normalizeRuleType(data.rule.ruleType) } : this.createEmptyRule();
   }
 
   ngOnInit() {
@@ -164,8 +164,15 @@ export class RuleDialogComponent implements OnInit {
       ruleType: 'manual',
       conditions: [],
       actions: [],
-      priority: 10
+      priority: 10,
+      supplierId: null,
+      costCenterId: null,
+      projectId: null
     };
+  }
+
+  private normalizeRuleType(value: string): 'automatic' | 'manual' {
+    return (value || '').toLowerCase() === 'automatic' ? 'automatic' : 'manual';
   }
 
   addCondition() {

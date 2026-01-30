@@ -1,6 +1,7 @@
 .dialog-content {
-  min-width: 700px;
-  max-width: min(1100px, 95vw);
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   max-height: 80vh;
   overflow-y: auto;
   overflow-x: hidden;
@@ -131,7 +132,6 @@
 
   // Responsive adjustments
   @media (max-width: 768px) {
-    min-width: auto;
     width: 95vw;
 
     .form-row {

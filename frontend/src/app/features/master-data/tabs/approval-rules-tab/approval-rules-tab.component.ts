@@ -8,7 +8,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApprovalService } from '../../../../core/services/approval.service';
-import { ApprovalRule, CreateApprovalRuleDto } from '../../../../core/models/approval.model';
+import { ApprovalRule, ApprovalRuleActionDto, ApprovalRuleConditionDto, ApprovalRuleStageDto, CreateApprovalRuleDto, UpdateApprovalRuleDto } from '../../../../core/models/approval.model';
 import { RuleDialogComponent } from '../../../smart-dashboard/dashboard/rule-dashboard/rule-dialog/rule-dialog.component';
 
 // AdminRule interface for dialog compatibility
@@ -21,6 +21,9 @@ interface AdminRule {
   isActive: boolean;
   conditions: any;
   actions: any;
+  supplierId?: number | null;
+  costCenterId?: string | null;
+  projectId?: string | null;
 }
 
 interface RuleDialogData {
@@ -76,13 +79,14 @@ export class ApprovalRulesTabComponent implements OnInit {
 
   createApprovalRule(): void {
     const dialogRef = this.dialog.open(RuleDialogComponent, {
-      width: '800px',
+      width: '95vw',
+      maxWidth: '1100px',
       data: { mode: 'create' } as RuleDialogData
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        const createDto = this.mapFromDialogRule(result);
+        const createDto = this.mapToCreateDto(result);
         this.approvalService.createApprovalRule(createDto).subscribe({
           next: () => {
             this.snackBar.open('Approval rule created successfully', 'Close', { duration: 3000 });
@@ -100,13 +104,14 @@ export class ApprovalRulesTabComponent implements OnInit {
   editApprovalRule(rule: ApprovalRule): void {
     const dialogRule = this.mapToDialogRule(rule);
     const dialogRef = this.dialog.open(RuleDialogComponent, {
-      width: '800px',
+      width: '95vw',
+      maxWidth: '1100px',
       data: { mode: 'edit', rule: dialogRule } as RuleDialogData
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        const updateDto = this.mapFromDialogRule(result);
+        const updateDto = this.mapToUpdateDto(result);
         this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
           next: () => {
             this.snackBar.open('Approval rule updated successfully', 'Close', { duration: 3000 });
@@ -142,24 +147,124 @@ export class ApprovalRulesTabComponent implements OnInit {
       id: rule.id,
       name: rule.name,
       description: rule.description || '',
-      ruleType: rule.ruleType,
+      ruleType: this.normalizeRuleType(rule.ruleType),
       priority: rule.priority,
       isActive: rule.isActive,
-      conditions: typeof rule.conditions === 'string' ? JSON.parse(rule.conditions) : rule.conditions,
-      actions: typeof rule.actions === 'string' ? JSON.parse(rule.actions) : rule.actions
+      conditions: this.mapConditionsFromApi(rule.conditions),
+      actions: this.mapActionsFromApi(rule.actions),
+      supplierId: rule.supplierId ?? null,
+      costCenterId: rule.costCenterId ?? null,
+      projectId: rule.projectId ?? null
     };
   }
 
-  // Map AdminRule to CreateApprovalRuleDto for API
-  private mapFromDialogRule(rule: AdminRule): CreateApprovalRuleDto {
+  private mapToCreateDto(rule: AdminRule): CreateApprovalRuleDto {
     return {
       name: rule.name,
       description: rule.description || '',
-      ruleType: rule.ruleType,
+      ruleType: this.normalizeRuleTypeForApi(rule.ruleType),
+      priority: rule.priority,
+      conditions: this.mapConditions(rule.conditions),
+      actions: this.mapActions(rule.actions),
+      supplierId: rule.supplierId ?? null,
+      costCenterId: rule.costCenterId ?? null,
+      projectId: rule.projectId ?? null
+    };
+  }
+
+  private mapToUpdateDto(rule: AdminRule): UpdateApprovalRuleDto {
+    return {
+      name: rule.name,
+      description: rule.description || '',
+      ruleType: this.normalizeRuleTypeForApi(rule.ruleType),
       priority: rule.priority,
       isActive: rule.isActive,
-      conditions: typeof rule.conditions === 'object' ? JSON.stringify(rule.conditions) : rule.conditions,
-      actions: typeof rule.actions === 'object' ? JSON.stringify(rule.actions) : rule.actions
+      conditions: this.mapConditions(rule.conditions),
+      actions: this.mapActions(rule.actions),
+      supplierId: rule.supplierId ?? null,
+      costCenterId: rule.costCenterId ?? null,
+      projectId: rule.projectId ?? null
     };
+  }
+
+  private normalizeRuleType(value: string): string {
+    const lower = (value || '').toLowerCase();
+    return lower === 'automatic' || lower === 'manual' ? lower : 'manual';
+  }
+
+  private normalizeRuleTypeForApi(value: string): 'Automatic' | 'Manual' {
+    return (value || '').toLowerCase() === 'automatic' ? 'Automatic' : 'Manual';
+  }
+
+  private mapConditions(conditions: any): ApprovalRuleConditionDto[] {
+    if (!Array.isArray(conditions)) {
+      return [];
+    }
+    return conditions.map((c: any) => ({
+      field: c.field,
+      operator: c.operator,
+      value: String(c.value ?? ''),
+      logicalOperator: c.logicalOperator
+    }));
+  }
+
+  private mapConditionsFromApi(conditions?: ApprovalRuleConditionDto[]): any[] {
+    if (!Array.isArray(conditions)) {
+      return [];
+    }
+    return conditions.map(c => ({
+      field: c.field,
+      operator: c.operator,
+      value: c.value,
+      logicalOperator: c.logicalOperator
+    }));
+  }
+
+  private mapActions(actions: any): ApprovalRuleActionDto[] {
+    if (!Array.isArray(actions)) {
+      return [];
+    }
+    return actions.map((a: any) => ({
+      actionType: a.type,
+      actionValue: a.value ?? null,
+      description: a.description ?? null,
+      stages: this.mapStages(a.stages)
+    }));
+  }
+
+  private mapActionsFromApi(actions?: ApprovalRuleActionDto[]): any[] {
+    if (!Array.isArray(actions)) {
+      return [];
+    }
+    return actions.map(a => ({
+      type: a.actionType,
+      value: a.actionValue ?? '',
+      description: a.description ?? '',
+      stages: this.mapStagesFromApi(a.stages)
+    }));
+  }
+
+  private mapStages(stages: any): ApprovalRuleStageDto[] | undefined {
+    if (!Array.isArray(stages) || stages.length === 0) {
+      return undefined;
+    }
+    return stages.map((s: any) => ({
+      stepNumber: Number(s.stepNumber ?? 1),
+      approvalLevel: Number(s.approvalLevel ?? 1),
+      role: s.role ?? null,
+      userId: s.userId ?? null
+    }));
+  }
+
+  private mapStagesFromApi(stages?: ApprovalRuleStageDto[]): any[] | undefined {
+    if (!Array.isArray(stages) || stages.length === 0) {
+      return undefined;
+    }
+    return stages.map(s => ({
+      stepNumber: s.stepNumber,
+      approvalLevel: s.approvalLevel,
+      role: s.role ?? undefined,
+      userId: s.userId ?? undefined
+    }));
   }
 }

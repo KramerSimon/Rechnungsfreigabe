@@ -39,6 +39,7 @@ export class RoleDialogComponent implements OnInit {
   form: FormGroup;
   availablePermissions: PermissionDto[] = [];
   loadingPermissions = false;
+  colorOptions: string[] = ['#ff9800', '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffc107', '#ff5722', '#795548', '#607d8b'];
 
   constructor(
     private dialogRef: MatDialogRef<RoleDialogComponent>,
@@ -47,13 +48,14 @@ export class RoleDialogComponent implements OnInit {
     @Inject(PermissionsApiService) private permissionsApi: PermissionsApiService
   ) {
     const role = data.role;
+    const isSystemRole = !!role?.isSystemRole;
     const permIds = (role?.permissions || []).map((p: any) => typeof p === 'string' ? parseInt(p, 10) : p);
     this.form = this.fb.group({
-      name: [{ value: role?.name || '', disabled: role?.isSystemRole }, [Validators.required, Validators.maxLength(100)]],
-      description: [role?.description || '', [Validators.maxLength(255)]],
-      permissionIds: [permIds],
+      name: [{ value: role?.name || '', disabled: isSystemRole }, [Validators.required, Validators.maxLength(100)]],
+      description: [{ value: role?.description || '', disabled: isSystemRole }, [Validators.maxLength(255)]],
+      permissionIds: [{ value: permIds, disabled: isSystemRole }],
       color: [role?.color || '#ff9800'],
-      isSystemRole: [typeof role?.isSystemRole === 'boolean' ? role.isSystemRole : false]
+      isSystemRole: [{ value: typeof role?.isSystemRole === 'boolean' ? role.isSystemRole : false, disabled: true }]
     });
   }
 
@@ -72,6 +74,10 @@ export class RoleDialogComponent implements OnInit {
         this.loadingPermissions = false;
       }
     });
+  }
+
+  setColor(color: string): void {
+    this.form.patchValue({ color });
   }
 
   private buildPayload() {

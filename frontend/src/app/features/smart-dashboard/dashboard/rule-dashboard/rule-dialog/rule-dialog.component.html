@@ -34,6 +34,40 @@
       </mat-form-field>
     </div>
 
+    <div class="form-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Lieferant</mat-label>
+        <mat-select [(ngModel)]="rule.supplierId">
+          <mat-option [value]="null">—</mat-option>
+          <mat-option *ngFor="let supplier of suppliers" [value]="supplier.id">
+            {{ supplier.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Kostenstelle</mat-label>
+        <mat-select [(ngModel)]="rule.costCenterId">
+          <mat-option [value]="null">—</mat-option>
+          <mat-option *ngFor="let costCenter of costCenters" [value]="costCenter.id">
+            {{ costCenter.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Projekt</mat-label>
+        <mat-select [(ngModel)]="rule.projectId">
+          <mat-option [value]="null">—</mat-option>
+          <mat-option *ngFor="let project of projects" [value]="project.id">
+            {{ project.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
     <mat-checkbox [(ngModel)]="rule.isActive">Regel ist aktiv</mat-checkbox>
   </div>
 

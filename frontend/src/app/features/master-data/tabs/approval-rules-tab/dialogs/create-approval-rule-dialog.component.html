@@ -25,7 +25,6 @@
             <mat-select formControlName="ruleType" required>
               <mat-option value="Manual">Manuell</mat-option>
               <mat-option value="Automatic">Automatisch</mat-option>
-              <mat-option value="Conditional">Bedingt</mat-option>
             </mat-select>
             <mat-error *ngIf="ruleForm.get('ruleType')?.hasError('required')">
               Regeltyp ist erforderlich

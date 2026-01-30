@@ -7,6 +7,9 @@ export interface ApprovalRule {
   conditions: RuleCondition[];
   actions: RuleAction[];
   priority: number;
+  supplierId?: number | null;
+  costCenterId?: string | null;
+  projectId?: string | null;
 }
 
 export interface RuleCondition {
