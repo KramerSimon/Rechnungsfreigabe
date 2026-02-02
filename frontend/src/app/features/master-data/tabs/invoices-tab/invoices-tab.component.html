@@ -1,6 +1,6 @@
 <div class="tab-content">
   <div class="header-actions">
-    <h3>Rechnungen (Nur Ansicht)</h3>
+    <h3>Rechnungen</h3>
     <button mat-icon-button (click)="loadInvoices()" matTooltip="Aktualisieren">
       <mat-icon>refresh</mat-icon>
     </button>
@@ -52,6 +52,9 @@
           <a mat-icon-button [routerLink]="['/invoice', element.id]" matTooltip="Details anzeigen">
             <mat-icon>visibility</mat-icon>
           </a>
+          <button mat-icon-button (click)="deleteInvoice(element.id, element.invoiceNumber)" matTooltip="Löschen">
+            <mat-icon>delete</mat-icon>
+          </button>
         </td>
       </ng-container>
 

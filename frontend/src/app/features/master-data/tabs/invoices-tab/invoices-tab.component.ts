@@ -109,4 +109,23 @@ export class InvoicesTabComponent implements OnInit {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('de-DE');
   }
+
+  deleteInvoice(invoiceId: number, invoiceNumber: string): void {
+    if (confirm(`Möchten Sie die Rechnung ${invoiceNumber} wirklich löschen? Dies löscht auch alle zugehörigen Genehmigungsworkflows.`)) {
+      this.invoiceService.deleteInvoice(invoiceId).subscribe({
+        next: () => {
+          this.snackBar.open('Rechnung erfolgreich gelöscht', 'Schließen', {
+            duration: 3000,
+          });
+          this.loadInvoices();
+        },
+        error: (error: any) => {
+          console.error('Fehler beim Löschen der Rechnung:', error);
+          this.snackBar.open('Fehler beim Löschen der Rechnung', 'Schließen', {
+            duration: 3000,
+          });
+        },
+      });
+    }
+  }
 }

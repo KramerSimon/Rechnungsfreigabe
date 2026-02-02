@@ -358,36 +358,69 @@ public class InvoiceService : IInvoiceService
     {
         try
         {
-            var invoice = await unitOfWork.Invoices.GetByIdWithFullDetailsAsync(id);
+            await unitOfWork.BeginTransactionAsync();
+
+            // Get all workflows first
+            var allWorkflows = await unitOfWork.ApprovalWorkflows.GetAllAsync();
+            var invoiceWorkflows = allWorkflows.Where(w => w.InvoiceId == id).ToList();
             
-            if (invoice == null) return false;
+            // Get all histories
+            var allHistories = await unitOfWork.InvoiceHistories.GetAllAsync();
+            var invoiceHistories = allHistories.Where(h => h.InvoiceId == id).ToList();
+            
+            // Get all notifications
+            var allNotifications = await unitOfWork.Notifications.GetAllAsync();
+            var invoiceNotifications = allNotifications.Where(n => n.InvoiceId == id).ToList();
 
-            // Hard delete - remove all related entities first
-            if (invoice.ApprovalWorkflows != null && invoice.ApprovalWorkflows.Any())
+            // Delete approval workflows
+            foreach (var workflow in invoiceWorkflows)
             {
-                unitOfWork.ApprovalWorkflows.RemoveRange(invoice.ApprovalWorkflows);
+                unitOfWork.ApprovalWorkflows.Remove(workflow);
+            }
+            
+            // Delete invoice histories
+            foreach (var history in invoiceHistories)
+            {
+                unitOfWork.InvoiceHistories.Remove(history);
+            }
+            
+            // Delete notifications
+            foreach (var notification in invoiceNotifications)
+            {
+                unitOfWork.Notifications.Remove(notification);
             }
 
-            if (invoice.InvoiceHistories != null && invoice.InvoiceHistories.Any())
+            // Save changes for related entities
+            if (invoiceWorkflows.Any() || invoiceHistories.Any() || invoiceNotifications.Any())
             {
-                unitOfWork.InvoiceHistories.RemoveRange(invoice.InvoiceHistories);
+                await unitOfWork.SaveChangesAsync();
             }
 
-            if (invoice.Notifications != null && invoice.Notifications.Any())
+            // Get and delete the invoice itself
+            var invoice = await unitOfWork.Invoices.GetByIdAsync(id);
+            if (invoice == null)
             {
-                unitOfWork.Notifications.RemoveRange(invoice.Notifications);
+                await unitOfWork.RollbackTransactionAsync();
+                return false;
             }
 
-            // Finally delete the invoice itself
             unitOfWork.Invoices.Remove(invoice);
             await unitOfWork.SaveChangesAsync();
+            await unitOfWork.CommitTransactionAsync();
 
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            try
+            {
+                await unitOfWork.RollbackTransactionAsync();
+            }
+            catch { }
             
-            throw;
+            Console.WriteLine($"Error deleting invoice {id}: {ex.Message}");
+            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+            return false;
         }
     }
 
@@ -429,22 +462,14 @@ public class InvoiceService : IInvoiceService
             RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending,
             EntityTypes.ApprovalWorkflow);
 
-        var invoices = (await unitOfWork.Invoices.GetAllAsync())
+        // Use the full details query which includes ApprovalWorkflows
+        var allInvoices = await unitOfWork.Invoices.GetAllWithFullDetailsQuery().ToListAsync();
+        
+        var invoices = allInvoices
             .Where(i => i.ApprovalWorkflows != null && i.ApprovalWorkflows.Any(aw => aw.ApproverId == userId && aw.StatusId == pendingStatus!.Id))
             .ToList();
 
-        // Load full details for each invoice
-        var invoicesWithDetails = new List<Invoice>();
-        foreach (var inv in invoices)
-        {
-            var fullInvoice = await unitOfWork.Invoices.GetByIdWithFullDetailsAsync(inv.Id);
-            if (fullInvoice != null)
-            {
-                invoicesWithDetails.Add(fullInvoice);
-            }
-        }
-
-        return invoicesWithDetails.Select(MapToDto);
+        return invoices.Select(MapToDto);
     }
 
     public async Task<bool> ApproveInvoiceAsync(int invoiceId, int approverId, ApproveInvoiceDto approveDto)
