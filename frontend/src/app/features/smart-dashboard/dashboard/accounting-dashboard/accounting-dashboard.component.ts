@@ -121,42 +121,42 @@ export class AccountingDashboardComponent implements OnInit {
 
     switch (status) {
       case 'rejected':
-        statusDisplay = '❌ Abgelehnt (KO)';
+        statusDisplay = 'Abgelehnt (KO)';
         statusClass = 'status-rejected';
         assignedTo = this.getPendingApproverName(invoice) ?? '--';
         reason = 'Falsche KST';
         break;
       case 'approved':
-        statusDisplay = '✅ Freigegeben';
+        statusDisplay = 'Freigegeben';
         statusClass = 'status-approved';
         assignedTo = 'Buchhaltung';
         reason = 'Wartet auf Zahlung';
         break;
       case 'approval_required':
         if (invoice.autoApproved) {
-          statusDisplay = '🤖 Automatisch freigegeben';
+          statusDisplay = 'Automatisch freigegeben';
           statusClass = 'status-auto';
           assignedTo = 'System';
           reason = 'Regel: Kleinestbetr.';
         } else {
-          statusDisplay = '⏳ Genehmigung erforderlich';
+          statusDisplay = 'Genehmigung erforderlich';
           statusClass = 'status-pending';
           assignedTo = this.getPendingApproverName(invoice) ?? 'Unzugewiesen';
         }
         break;
       case 'received':
-        statusDisplay = '📋 Eingegangen';
+        statusDisplay = 'Eingegangen';
         statusClass = 'status-draft';
         assignedTo = this.getPendingApproverName(invoice) ?? 'Buchhaltung';
         break;
       case 'overdue':
-        statusDisplay = '⚠️ Überfällig';
+        statusDisplay = 'Überfällig';
         statusClass = 'status-overdue';
         assignedTo = this.getPendingApproverName(invoice) ?? 'Unzugewiesen';
         reason = 'Frist überschritten';
         break;
       default:
-        statusDisplay = '📋 Eingegangen';
+        statusDisplay = 'Eingegangen';
         statusClass = 'status-draft';
         assignedTo = this.getPendingApproverName(invoice) ?? 'Buchhaltung';
         break;
@@ -279,5 +279,23 @@ export class AccountingDashboardComponent implements OnInit {
       year: 'numeric',
       month: 'long'
     });
+  }
+
+  getContrastColor(hexColor: string | undefined): string {
+    if (!hexColor) {
+      return 'white';
+    }
+
+    // Entferne das # und konvertiere zu RGB
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Berechne die Helligkeit (Luminance)
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+    // Wähle weiß oder schwarz basierend auf der Helligkeit
+    return brightness > 155 ? '#000000' : '#ffffff';
   }
 }

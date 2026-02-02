@@ -91,10 +91,12 @@
           <th mat-header-cell *matHeaderCellDef>STATUS</th>
           <td mat-cell *matCellDef="let invoice">
             <div class="status-cell">
-              <span class="status-badge" [ngClass]="invoice.statusClass"
-                    [style.background-color]="invoice.statusColor ? invoice.statusColor + '20' : null"
-                    [style.color]="invoice.statusColor || null"
-                    [style.border-color]="invoice.statusColor || null">
+              <span class="status-badge"
+                    [ngStyle]="invoice.statusColor ? {
+                      'background-color': invoice.statusColor,
+                      'color': getContrastColor(invoice.statusColor)
+                    } : {}"
+                    [ngClass]="invoice.statusClass">
                 {{ invoice.statusDisplay }}
               </span>
               <div class="status-reason" *ngIf="invoice.reason">{{ invoice.reason }}</div>
