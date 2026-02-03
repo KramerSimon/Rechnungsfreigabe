@@ -461,12 +461,18 @@ public class InvoiceService : IInvoiceService
         var pendingStatus = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
             RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending,
             EntityTypes.ApprovalWorkflow);
+        var waitingStatus = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
+            RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Waiting,
+            EntityTypes.ApprovalWorkflow);
 
         // Use the full details query which includes ApprovalWorkflows
         var allInvoices = await unitOfWork.Invoices.GetAllWithFullDetailsQuery().ToListAsync();
         
+        // Include both pending approvals AND waiting approvals for second-level+ approvers
         var invoices = allInvoices
-            .Where(i => i.ApprovalWorkflows != null && i.ApprovalWorkflows.Any(aw => aw.ApproverId == userId && aw.StatusId == pendingStatus!.Id))
+            .Where(i => i.ApprovalWorkflows != null && i.ApprovalWorkflows.Any(aw => 
+                aw.ApproverId == userId && (aw.StatusId == pendingStatus!.Id || 
+                (aw.StatusId == waitingStatus!.Id && aw.StepNumber > 1))))
             .ToList();
 
         return invoices.Select(MapToDto);

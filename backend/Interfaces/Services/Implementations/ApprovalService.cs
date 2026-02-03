@@ -653,10 +653,16 @@ public class ApprovalService : IApprovalService
             var pendingStatus = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
                 RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending,
                 EntityTypes.ApprovalWorkflow);
+            var waitingStatus = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
+                RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Waiting,
+                EntityTypes.ApprovalWorkflow);
 
             var allWorkflows = await unitOfWork.ApprovalWorkflows.GetAllAsync();
+            
+            // Include both pending approvals AND waiting approvals for second-level+ approvers
             var workflows = allWorkflows
-                .Where(w => w.ApproverId == userId && w.StatusId == pendingStatus!.Id)
+                .Where(w => w.ApproverId == userId && (w.StatusId == pendingStatus!.Id || 
+                    (w.StatusId == waitingStatus!.Id && w.StepNumber > 1)))
                 .OrderBy(w => w.CreatedAt)
                 .Select(w => new ApprovalWorkflowDto
                 {
