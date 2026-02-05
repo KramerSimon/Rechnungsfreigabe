@@ -89,6 +89,25 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Configure Authorization policies for dashboard permissions
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Dashboards.ViewUser", policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim("permission", "dashboards.view_all") ||
+            context.User.HasClaim("permission", "dashboards.view_user")));
+
+    options.AddPolicy("Dashboards.ViewAccounting", policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim("permission", "dashboards.view_all") ||
+            context.User.HasClaim("permission", "dashboards.view_accounting")));
+
+    options.AddPolicy("Dashboards.ViewAdmin", policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim("permission", "dashboards.view_all") ||
+            context.User.HasClaim("permission", "dashboards.view_admin")));
+});
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

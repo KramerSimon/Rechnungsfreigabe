@@ -458,6 +458,15 @@ public class InvoiceService : IInvoiceService
 
     public async Task<IEnumerable<InvoiceDto>> GetPendingApprovalsAsync(int userId)
     {
+        var userPermissions = await userService.GetUserPermissionsAsync(userId);
+        var canApprove = userPermissions.Contains("invoices.approve") ||
+                         userPermissions.Contains("invoices.approve_cost_center");
+
+        if (!canApprove)
+        {
+            return Enumerable.Empty<InvoiceDto>();
+        }
+
         var pendingStatus = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
             RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending,
             EntityTypes.ApprovalWorkflow);
@@ -490,10 +499,25 @@ public class InvoiceService : IInvoiceService
 
             // Check if user has permission to approve
             var userPermissions = await userService.GetUserPermissionsAsync(approverId);
-            var isAdmin = userPermissions.Contains("all");
+            var canApprove = userPermissions.Contains("invoices.approve") ||
+                             userPermissions.Contains("invoices.approve_cost_center");
+
+            if (!canApprove)
+            {
+                return false;
+            }
 
             var pendingStatus2 = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
                 RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending,
+                EntityTypes.ApprovalWorkflow);
+            var waitingStatus2 = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
+                RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Waiting,
+                EntityTypes.ApprovalWorkflow);
+            var approvedStatus2 = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
+                RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Approved,
+                EntityTypes.ApprovalWorkflow);
+            var rejectedStatus2 = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
+                RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Rejected,
                 EntityTypes.ApprovalWorkflow);
             
             var allWorkflows = (await unitOfWork.ApprovalWorkflows.GetAllAsync())
@@ -503,96 +527,10 @@ public class InvoiceService : IInvoiceService
             var pendingWorkflow = allWorkflows
                 .FirstOrDefault(aw => aw.StatusId == pendingStatus2?.Id);
 
-            // If user is admin and no workflow exists for them, allow approval anyway
-            if (pendingWorkflow == null && !isAdmin) return false;
-
-            // If admin approves, mark ALL pending workflows as approved/rejected
-            if (isAdmin && approveDto.Approved)
-            {
-                var allPendingWorkflows = invoice.ApprovalWorkflows
-                    .Where(aw => aw.StatusId == pendingStatus2?.Id)
-                    .ToList();
-
-                if (allPendingWorkflows.Any())
-                {
-                    // Admin approves all pending workflows at once
-                    foreach (var workflow in allPendingWorkflows)
-                    {
-                        var approvedStatus = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
-                            RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Approved,
-                            EntityTypes.ApprovalWorkflow);
-                        workflow.StatusId = approvedStatus?.Id;
-                        workflow.Comments = $"Admin-Freigabe: {approveDto.Comments}";
-                        workflow.ApprovedAt = DateTime.UtcNow;
-                    }
-
-                    invoice.StatusId = await GetStatusIdByCodeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben);
-                    invoice.ProcessedBy = approverId;
-                    invoice.UpdatedAt = DateTime.UtcNow;
-
-                    await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, 
-                        $"Admin hat alle ausstehenden Freigaben erteilt: {approveDto.Comments}");
-
-                    await unitOfWork.SaveChangesAsync();
-                    await unitOfWork.CommitTransactionAsync();
-
-                    await notificationService.NotifyInvoiceApprovalAsync(invoiceId, true);
-
-                    return true;
-                }
-                else
-                {
-                    // No pending workflows - admin override
-                    invoice.StatusId = await GetStatusIdByCodeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben);
-                    invoice.ProcessedBy = approverId;
-                    invoice.UpdatedAt = DateTime.UtcNow;
-
-                    await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
-                    await unitOfWork.SaveChangesAsync();
-                    await unitOfWork.CommitTransactionAsync();
-                    await notificationService.NotifyInvoiceApprovalAsync(invoiceId, true);
-
-                    return true;
-                }
-            }
-
-            // Admin rejection
-            if (isAdmin && !approveDto.Approved)
-            {
-                var allPendingWorkflows = invoice.ApprovalWorkflows
-                    .Where(aw => aw.StatusId == pendingStatus2?.Id)
-                    .ToList();
-
-                foreach (var workflow in allPendingWorkflows)
-                {
-                    var rejectedStatus = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
-                        RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Rejected,
-                        EntityTypes.ApprovalWorkflow);
-                    workflow.StatusId = rejectedStatus?.Id;
-                    workflow.Comments = $"Admin-Ablehnung: {approveDto.Comments}";
-                    workflow.ApprovedAt = DateTime.UtcNow;
-                }
-
-                    invoice.StatusId = await GetStatusIdByCodeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Abgelehnt);
-                invoice.ProcessedBy = approverId;
-                invoice.UpdatedAt = DateTime.UtcNow;
-
-                await historyService.CreateApprovalActionAsync(invoiceId, false, approverId, approveDto.Comments);
-                await unitOfWork.SaveChangesAsync();
-                await unitOfWork.CommitTransactionAsync();
-                await notificationService.NotifyInvoiceApprovalAsync(invoiceId, false);
-
-                return true;
-            }
-
-            // Regular user workflow
             if (pendingWorkflow == null) return false;
 
             // Update workflow status
-            var approvalStatus = approveDto.Approved ? RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Approved : RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Rejected;
-            var status = await unitOfWork.Statuses.GetByCodeAndTypeAsync(approvalStatus, EntityTypes.ApprovalWorkflow);
-            var statusId = status?.Id;
-            pendingWorkflow.StatusId = statusId;
+            pendingWorkflow.StatusId = approveDto.Approved ? approvedStatus2?.Id : rejectedStatus2?.Id;
             pendingWorkflow.Comments = approveDto.Comments;
             pendingWorkflow.ApprovedAt = DateTime.UtcNow;
 
@@ -607,23 +545,36 @@ public class InvoiceService : IInvoiceService
             }
             else
             {
-                // Check if all required approvals are completed
-                var pendingWorkflows = allWorkflows.Where(aw => aw.StatusId == pendingStatus2?.Id).ToList();
+                var allWorkflowsForInvoice = invoice.ApprovalWorkflows.ToList();
+                var pendingWorkflows = allWorkflowsForInvoice.Where(aw => aw.StatusId == pendingStatus2?.Id).ToList();
 
-                if (pendingWorkflows.Count == 1 && pendingWorkflows.First().Id == pendingWorkflow.Id)
+                if (!pendingWorkflows.Any())
                 {
-                    // This was the last pending approval
-                    invoice.StatusId = await GetStatusIdByCodeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben);
-                    invoice.ProcessedBy = approverId;
-                    invoice.UpdatedAt = DateTime.UtcNow;
+                    var nextWaiting = allWorkflowsForInvoice
+                        .Where(aw => aw.StatusId == waitingStatus2?.Id && aw.StepNumber > pendingWorkflow.StepNumber)
+                        .OrderBy(aw => aw.StepNumber)
+                        .FirstOrDefault();
 
-                    await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
+                    if (nextWaiting != null)
+                    {
+                        nextWaiting.StatusId = pendingStatus2?.Id;
+                        await historyService.CreateApprovalActionAsync(invoiceId, true, approverId,
+                            approveDto.Comments);
+                    }
+                    else
+                    {
+                        invoice.StatusId = await GetStatusIdByCodeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Freigegeben);
+                        invoice.ProcessedBy = approverId;
+                        invoice.UpdatedAt = DateTime.UtcNow;
+
+                        await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
+                    }
                 }
                 else
                 {
-                    var totalSteps = allWorkflows.Count;
+                    var totalSteps = allWorkflowsForInvoice.Count;
                     var currentStep = pendingWorkflow.StepNumber;
-                    await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, 
+                    await historyService.CreateApprovalActionAsync(invoiceId, true, approverId,
                         $"{approveDto.Comments} (Teilfreigabe - Schritt {currentStep} von {totalSteps})");
                 }
             }
@@ -677,12 +628,6 @@ public class InvoiceService : IInvoiceService
     {
         // In Entwicklungsmodus (keine Auth) alles durchlassen, damit Detail-Views nicht leer laufen
         if (userId <= 0)
-        {
-            return query;
-        }
-
-        // Admin users with "all" permission can see everything
-        if (userPermissions.Contains("all"))
         {
             return query;
         }
@@ -916,15 +861,12 @@ public class InvoiceService : IInvoiceService
 
     public async Task<decimal> GetOpenVolumeAmountAsync()
     {
-        var statusInPruefung = await unitOfWork.Statuses.GetByCodeAndTypeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung, EntityTypes.Invoice);
-        var statusEingegangen = await unitOfWork.Statuses.GetByCodeAndTypeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen, EntityTypes.Invoice);
-        var statusFreigabeErforderlich = await unitOfWork.Statuses.GetByCodeAndTypeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich, EntityTypes.Invoice);
+        var statusBezahlt = await unitOfWork.Statuses.GetByCodeAndTypeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Bezahlt, EntityTypes.Invoice);
+        var statusAbgelehnt = await unitOfWork.Statuses.GetByCodeAndTypeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Abgelehnt, EntityTypes.Invoice);
 
         var allInvoices = (await unitOfWork.Invoices.GetAllAsync()).ToList();
         return allInvoices
-            .Where(i => i.StatusId == statusInPruefung!.Id || 
-                       i.StatusId == statusEingegangen!.Id ||
-                       i.StatusId == statusFreigabeErforderlich!.Id)
+            .Where(i => i.StatusId != statusBezahlt!.Id && i.StatusId != statusAbgelehnt!.Id)
             .Sum(i => i.TotalAmount);
     }
 

@@ -102,6 +102,8 @@ public class UserService : IUserService
                 user.FirstName = updateUserDto.FirstName;
             if (!string.IsNullOrEmpty(updateUserDto.LastName))
                 user.LastName = updateUserDto.LastName;
+            if (!string.IsNullOrEmpty(updateUserDto.ActiveDirectorySid))
+                user.ActiveDirectorySid = updateUserDto.ActiveDirectorySid;
             if (updateUserDto.IsActive.HasValue)
                 user.IsActive = updateUserDto.IsActive.Value;
 

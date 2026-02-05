@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RoleDto, User } from '../../../../../../core/models/user.models';
+import { AuthService } from '../../../../../../core/services/auth.service';
 
 interface EditUserDialogData {
   user: User;
@@ -31,24 +32,30 @@ interface EditUserDialogData {
 export class EditUserDialogComponent {
   userForm: FormGroup;
   availableRoles: RoleDto[] = [];
+  canManageRoles = false;
+  canEditUserDetails = false;
 
   constructor(
     private dialogRef: MatDialogRef<EditUserDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: EditUserDialogData,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private authService: AuthService
   ) {
     this.availableRoles = data?.availableRoles || [];
     const user = data?.user || {} as User;
     const roleIds = this.getRoleIds(user.roles);
+
+    this.canManageRoles = this.authService.hasPermission('roles.manage');
+    this.canEditUserDetails = this.authService.hasPermission('users.edit');
 
     this.userForm = this.fb.group({
       username: [{ value: user.username || '', disabled: true }], // Username is readonly
       email: [user.email || '', [Validators.required, Validators.email, Validators.maxLength(255)]],
       firstName: [user.firstName || '', [Validators.required, Validators.maxLength(100)]],
       lastName: [user.lastName || '', [Validators.required, Validators.maxLength(100)]],
-      activeDirectorySid: ['', [Validators.maxLength(255)]],
-      roleIds: [roleIds, []],
-      isActive: [user.isActive]
+      activeDirectorySid: [{ value: '', disabled: !this.canEditUserDetails }, [Validators.maxLength(255)]],
+      roleIds: [{ value: roleIds, disabled: !this.canManageRoles }, []],
+      isActive: [{ value: user.isActive, disabled: !this.canEditUserDetails }]
     });
   }
 

@@ -171,17 +171,11 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
 
   private formatDueDate(dueDate: string): string {
     const date = new Date(dueDate);
-    const today = new Date();
-    const diffTime = date.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-      return 'Gestern';
-    } else if (diffDays === 0) {
-      return 'Heute';
-    } else {
-      return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-    }
+    return date.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   }
 
   private calculateCounts(): void {
@@ -231,16 +225,15 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
 
   getActionVerb(): string {
     // Admin und Freigeber sehen "freizugeben"
-    if (this.userPermissions.includes('all') ||
-        this.userPermissions.includes('approve_invoices')) {
+    if (this.userPermissions.includes('invoices.approve')) {
       return 'freizugeben';
     }
     // Manager sehen "zu genehmigen"
-    if (this.userPermissions.includes('approve_cost_center_invoices')) {
+    if (this.userPermissions.includes('invoices.approve_cost_center')) {
       return 'zu genehmigen';
     }
     // Buchhaltung und andere sehen "zu bearbeiten"
-    if (this.userPermissions.includes('edit_invoices')) {
+    if (this.userPermissions.includes('invoices.edit')) {
       return 'zu bearbeiten';
     }
     // Fallback für normale Benutzer
@@ -249,12 +242,11 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
 
   getActionButtonText(): string {
     // Admin und Freigeber sehen "Freigeben"
-    if (this.userPermissions.includes('all') ||
-        this.userPermissions.includes('approve_invoices')) {
+    if (this.userPermissions.includes('invoices.approve')) {
       return 'Freigeben';
     }
     // Manager sehen "Genehmigen"
-    if (this.userPermissions.includes('approve_cost_center_invoices')) {
+    if (this.userPermissions.includes('invoices.approve_cost_center')) {
       return 'Genehmigen';
     }
     // Buchhaltung und andere sehen "Bearbeiten"

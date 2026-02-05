@@ -72,7 +72,8 @@
                 </span>
               </mat-option>
             </mat-select>
-            <mat-hint>Wählen Sie eine oder mehrere Rollen aus</mat-hint>
+            <mat-hint *ngIf="canManageRoles">Wählen Sie eine oder mehrere Rollen aus</mat-hint>
+            <mat-hint *ngIf="!canManageRoles">Keine Berechtigung zum Zuweisen von Rollen</mat-hint>
           </mat-form-field>
         </div>
 

@@ -74,9 +74,15 @@ export class InvoicesTabComponent implements OnInit {
     });
   }
 
-  getSupplierName(supplierId: number): string {
-    const supplier = this.suppliers.find(s => s.id === supplierId);
-    return supplier ? supplier.name : '-';
+  getSupplierName(supplier?: Supplier | number | null): string {
+    if (!supplier) return '-';
+
+    if (typeof supplier === 'number') {
+      const supplierEntity = this.suppliers.find(s => s.id === supplier);
+      return supplierEntity ? supplierEntity.name : '-';
+    }
+
+    return supplier.name || '-';
   }
 
   getStatusName(statusCode: string): string {

@@ -96,6 +96,9 @@ public class UpdateUserDto
     [StringLength(100)]
     public string? LastName { get; set; }
 
+    [StringLength(255)]
+    public string? ActiveDirectorySid { get; set; }
+
     public bool? IsActive { get; set; }
 
     public int[]? RoleIds { get; set; }

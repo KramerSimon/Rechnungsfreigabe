@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RoleDto, User } from '../../../../../core/models/user.models';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 interface CreateUserDialogData {
   user: User;
@@ -31,20 +32,23 @@ interface CreateUserDialogData {
 export class CreateUserDialogComponent {
   userForm: FormGroup;
   availableRoles: RoleDto[] = [];
+  canManageRoles = false;
 
   constructor(
     private dialogRef: MatDialogRef<CreateUserDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: CreateUserDialogData,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private authService: AuthService
   ) {
     this.availableRoles = data?.availableRoles || [];
     const user = data?.user || {} as User;
+    this.canManageRoles = this.authService.hasPermission('roles.manage');
     this.userForm = this.fb.group({
       username: [user.username || '', [Validators.required, Validators.maxLength(50)]],
       email: [user.email || '', [Validators.required, Validators.email, Validators.maxLength(255)]],
       firstName: [user.firstName || '', [Validators.required, Validators.maxLength(100)]],
       lastName: [user.lastName || '', [Validators.required, Validators.maxLength(100)]],
-      roleIds: [(user as any).roleIds || []],
+      roleIds: [{ value: (user as any).roleIds || [], disabled: !this.canManageRoles }],
       password: ['', [Validators.required, Validators.minLength(8)]],
       passwordConfirm: ['', [Validators.required, Validators.minLength(8)]]
     }, { validators: this.passwordMatchValidator });

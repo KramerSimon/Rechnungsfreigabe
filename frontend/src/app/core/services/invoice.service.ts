@@ -40,10 +40,16 @@ export class InvoiceService {
     }
 
     return this.http.get<PagedResult<Invoice>>(this.apiUrl, { params }).pipe(
-      map((result: any) => ({
-        ...result,
-        items: result.items?.map((invoice: any) => this.mapInvoice(invoice)) || []
-      }))
+      map((result: any) => {
+        const rawItems = result?.items ?? result?.Items ?? [];
+
+        return {
+          ...result,
+          items: Array.isArray(rawItems)
+            ? rawItems.map((invoice: any) => this.mapInvoice(invoice))
+            : []
+        };
+      })
     );
   }
 
@@ -59,10 +65,16 @@ export class InvoiceService {
     }
 
     return this.http.get<PagedResult<Invoice>>(`${this.apiUrl}/all`, { params }).pipe(
-      map((result: any) => ({
-        ...result,
-        items: result.items?.map((invoice: any) => this.mapInvoice(invoice)) || []
-      }))
+      map((result: any) => {
+        const rawItems = result?.items ?? result?.Items ?? [];
+
+        return {
+          ...result,
+          items: Array.isArray(rawItems)
+            ? rawItems.map((invoice: any) => this.mapInvoice(invoice))
+            : []
+        };
+      })
     );
   }
 
@@ -78,6 +90,12 @@ export class InvoiceService {
 
   updateInvoice(id: number, invoice: Partial<Invoice>): Observable<Invoice> {
     return this.http.put<Invoice>(`${this.apiUrl}/${id}`, invoice);
+  }
+
+  updateInvoiceStatus(id: number, status: string): Observable<Invoice> {
+    return this.http.patch<Invoice>(`${this.apiUrl}/${id}/status`, JSON.stringify(status), {
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   deleteInvoice(id: number): Observable<void> {

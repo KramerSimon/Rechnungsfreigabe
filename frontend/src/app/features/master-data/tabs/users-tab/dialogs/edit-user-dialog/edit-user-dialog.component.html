@@ -44,6 +44,7 @@
             <mat-label>Active Directory SID</mat-label>
             <input matInput formControlName="activeDirectorySid"
                    placeholder="Optional - für AD-Integration">
+            <mat-hint *ngIf="!canEditUserDetails">Keine Berechtigung zum Ändern der AD-SID</mat-hint>
           </mat-form-field>
         </div>
 
@@ -67,7 +68,8 @@
                 </span>
               </mat-option>
             </mat-select>
-            <mat-hint>Wählen Sie eine oder mehrere Rollen aus</mat-hint>
+            <mat-hint *ngIf="canManageRoles">Wählen Sie eine oder mehrere Rollen aus</mat-hint>
+            <mat-hint *ngIf="!canManageRoles">Keine Berechtigung zum Ändern der Rollen</mat-hint>
           </mat-form-field>
         </div>
 
@@ -93,6 +95,7 @@
                 </span>
               </mat-option>
             </mat-select>
+            <mat-hint *ngIf="!canEditUserDetails">Keine Berechtigung zum Ändern des Status</mat-hint>
           </mat-form-field>
         </div>
       </form>

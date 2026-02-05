@@ -63,6 +63,10 @@
     }
   }
 
+  &.paid {
+    border-left: 4px solid #2e7d32;
+  }
+
   &.volume {
     border-left: 4px solid #1976d2;
   }
@@ -118,6 +122,10 @@
 
   &.rejected .card-amount {
     color: #f44336;
+  }
+
+  &.paid .card-amount {
+    color: #2e7d32;
   }
 
   &.ready .card-amount {
@@ -259,6 +267,11 @@
 
 .status-approved {
   background-color: #4caf50;
+  color: white;
+}
+
+.status-paid {
+  background-color: #2e7d32;
   color: white;
 }
 

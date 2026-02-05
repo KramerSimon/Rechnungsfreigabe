@@ -7,7 +7,7 @@ namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/dashboards")]
-// [Authorize] // Temporarily disabled for testing
+[Authorize]
 public class DashboardController : ControllerBase
 {
     private readonly IInvoiceService invoiceService;
@@ -20,6 +20,7 @@ public class DashboardController : ControllerBase
     /// Get system status with actual auto-approval statistics
     /// </summary>
     [HttpGet("admin/status")]
+    [Authorize(Policy = "Dashboards.ViewAdmin")]
     public async Task<ActionResult<SystemStatusDto>> GetSystemStatus()
     {
         try
@@ -31,7 +32,7 @@ public class DashboardController : ControllerBase
 
             var systemStatus = new SystemStatusDto
             {
-                ServicesActive = true, // Könnte später durch echte Gesundheitsprüfungen ersetzt werden
+                ServicesActive = true, // Kï¿½nnte spï¿½ter durch echte Gesundheitsprï¿½fungen ersetzt werden
                 AutoApprovalRate = Math.Round(autoApprovalRate, 1),
                 LastUpdate = DateTime.UtcNow,
                 TotalInvoicesThisMonth = totalInvoicesThisMonth,
@@ -51,6 +52,7 @@ public class DashboardController : ControllerBase
     /// Get user task summary
     /// </summary>
     [HttpGet("user/summary")]
+    [Authorize(Policy = "Dashboards.ViewUser")]
     public ActionResult<UserTaskSummaryDto> GetUserTaskSummary()
     {
         try
@@ -77,6 +79,7 @@ public class DashboardController : ControllerBase
     /// Get accounting overview
     /// </summary>
     [HttpGet("accounting/overview")]
+    [Authorize(Policy = "Dashboards.ViewAccounting")]
     public async Task<ActionResult<AccountingOverviewDto>> GetAccountingOverview()
     {
         try
@@ -106,7 +109,7 @@ public class DashboardController : ControllerBase
     }
 }
 
-// DTOs für Dashboard
+// DTOs fï¿½r Dashboard
 public class SystemStatusDto
 {
     public bool ServicesActive { get; set; }

@@ -37,31 +37,31 @@ export class RoleService {
     user: {
       path: '/dashboard/user',
       component: 'UserDashboard',
-      requiredPermissions: ['invoices.view_own', 'invoices.view_all'],
+      requiredPermissions: ['dashboards.view_user'],
       title: 'Meine Aufgaben'
     },
     accounting: {
       path: '/dashboard/accounting',
       component: 'AccountingDashboard',
-      requiredPermissions: ['invoices.view_all', 'invoices.approve'],
+      requiredPermissions: ['dashboards.view_accounting'],
       title: 'Cockpit'
     },
     admin: {
       path: '/dashboard/admin',
       component: 'AdminDashboard',
-      requiredPermissions: ['users.manage', 'roles.manage', 'permissions.manage'],
+      requiredPermissions: ['dashboards.view_admin'],
       title: 'Konfiguration'
     },
     'pdf-upload': {
       path: '/dashboard/pdf-upload',
       component: 'PdfUploadDashboard',
-      requiredPermissions: ['invoices.create'],
+      requiredPermissions: ['dashboards.view_pdf_upload'],
       title: 'Upload'
     },
     rules: {
       path: '/dashboard/rules',
       component: 'RuleDashboard',
-      requiredPermissions: ['roles.manage'],
+      requiredPermissions: ['dashboards.view_rules'],
       title: 'Regeln'
     }
   };
@@ -77,11 +77,21 @@ export class RoleService {
   getCurrentUserRole(): Observable<UserRole> {
     return this.authService.authState$.pipe(
       map(authState => {
-        if (!authState.user || !authState.user.roles) {
-          return UserRole.USER; // Default fallback
+        const permissions = authState.permissions || [];
+
+        if (permissions.includes('dashboards.view_all') || permissions.includes('dashboards.view_admin')) {
+          return UserRole.ADMIN;
         }
 
-        return this.determineHighestRole(authState.user.roles.map(role => role.name));
+        if (permissions.includes('dashboards.view_accounting')) {
+          return UserRole.ACCOUNTING;
+        }
+
+        if (permissions.includes('dashboards.view_pdf_upload')) {
+          return UserRole.PDF_UPLOADER;
+        }
+
+        return UserRole.USER; // Default fallback
       })
     );
   }
@@ -166,13 +176,19 @@ export class RoleService {
           return [];
         }
 
-        // Alle Benutzer sehen alle verfügbaren Dashboard-Routen
-        return Object.values(this.dashboardConfig).map(dashboard => ({
-          path: dashboard.path,
-          component: dashboard.component,
-          role: this.getDefaultRoleForPath(dashboard.path),
-          title: dashboard.title
-        }));
+        const permissions = authState.permissions || [];
+
+        const hasDashboardAccess = (required: string[]) =>
+          permissions.includes('dashboards.view_all') || required.some(p => permissions.includes(p));
+
+        return Object.values(this.dashboardConfig)
+          .filter(dashboard => hasDashboardAccess(dashboard.requiredPermissions))
+          .map(dashboard => ({
+            path: dashboard.path,
+            component: dashboard.component,
+            role: this.getDefaultRoleForPath(dashboard.path),
+            title: dashboard.title
+          }));
       })
     );
   }
@@ -183,8 +199,20 @@ export class RoleService {
   getCurrentUserDashboardRoute(): Observable<string> {
     return this.getAvailableNavigationRoutes().pipe(
       map(routes => {
-        // Return first available route, default to user dashboard
-        return routes.length > 0 ? routes[0].path : '/dashboard/user';
+        if (!routes.length) {
+          return '/login';
+        }
+
+        const preferredOrder = [
+          '/dashboard/admin',
+          '/dashboard/accounting',
+          '/dashboard/user',
+          '/dashboard/pdf-upload',
+          '/dashboard/rules'
+        ];
+
+        const preferred = preferredOrder.find(path => routes.some(route => route.path === path));
+        return preferred || routes[0].path;
       })
     );
   }

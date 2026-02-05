@@ -105,6 +105,8 @@ export class InvoiceDetailComponent implements OnInit {
   saveStatus: 'success' | 'error' | null = null;
   saveMessage = '';
   lastSavedAt: Date | null = null;
+  currentUserId: number | null = null;
+  userPermissions: string[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -114,11 +116,16 @@ export class InvoiceDetailComponent implements OnInit {
     private costCenterService: CostCenterService,
     private purchaseOrderService: PurchaseOrderService,
     private supplierService: SupplierService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
     this.invoiceId = parseInt(this.route.snapshot.params['id']) || 1;
+    this.authService.authState$.subscribe(authState => {
+      this.currentUserId = authState?.user?.id ?? null;
+      this.userPermissions = authState?.permissions || [];
+    });
     this.loadCostCenters();
     this.loadSuppliers();
     this.loadInvoice();
@@ -377,7 +384,12 @@ export class InvoiceDetailComponent implements OnInit {
   canApprove(): boolean {
     const hasCostCenter = !!this.invoice?.costCenterId;
     const hasProject = !!this.invoice?.projectId;
-    return !!this.invoice && !this.loading && hasCostCenter && hasProject;
+    const hasPermission = this.userPermissions.includes('invoices.approve') ||
+      this.userPermissions.includes('invoices.approve_cost_center');
+    const isPendingApprover = (this.invoice?.pendingApprovals || [])
+      .some(aw => aw?.approverId === this.currentUserId && aw?.status?.toLowerCase() === 'pending');
+
+    return !!this.invoice && !this.loading && hasCostCenter && hasProject && hasPermission && isPendingApprover;
   }
 
   getContrastColor(hexColor: string): string {
@@ -397,9 +409,16 @@ export class InvoiceDetailComponent implements OnInit {
 
   onApprove() {
     if (!this.invoice || !this.canApprove()) {
-      const msg = (!this.invoice?.costCenterId || !this.invoice?.projectId)
-        ? 'Bitte Kostenstelle und Projekt ergänzen, erst dann freigeben.'
-        : 'Rechnung kann nicht freigegeben werden';
+      let msg = 'Rechnung kann nicht freigegeben werden';
+
+      if (!this.invoice?.costCenterId || !this.invoice?.projectId) {
+        msg = 'Bitte Kostenstelle und Projekt ergänzen, erst dann freigeben.';
+      } else if (!this.userPermissions.includes('invoices.approve') &&
+        !this.userPermissions.includes('invoices.approve_cost_center')) {
+        msg = 'Keine Berechtigung zur Freigabe.';
+      } else {
+        msg = 'Rechnung ist Ihnen aktuell nicht zugewiesen.';
+      }
       this.snackBar.open(msg, 'OK', { duration: 3000 });
       return;
     }

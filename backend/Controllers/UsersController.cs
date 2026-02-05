@@ -8,7 +8,7 @@ namespace RechnungsfreigabeAPI.Controllers;
 
 [ApiController]
 [Route("api/v1/users")]
-// [Authorize] // Temporarily disabled for testing
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly IUserService userService;
@@ -90,6 +90,11 @@ public class UsersController : ControllerBase
                 return BadRequest(ModelState);
             }
 
+            if (createUserDto.RoleIds != null && createUserDto.RoleIds.Length > 0 && !HasPermission("roles.manage"))
+            {
+                return Forbid();
+            }
+
             var user = await userService.CreateUserAsync(createUserDto);
             
             return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
@@ -112,6 +117,17 @@ public class UsersController : ControllerBase
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            if (updateUserDto.RoleIds != null && updateUserDto.RoleIds.Length > 0 && !HasPermission("roles.manage"))
+            {
+                return Forbid();
+            }
+
+            if ((updateUserDto.IsActive.HasValue || !string.IsNullOrWhiteSpace(updateUserDto.ActiveDirectorySid)) &&
+                !HasPermission("users.edit"))
+            {
+                return Forbid();
             }
 
             var user = await userService.UpdateUserAsync(id, updateUserDto);
@@ -152,5 +168,10 @@ public class UsersController : ControllerBase
             
             return StatusCode(500, new { message = "An error occurred while deleting the user" });
         }
+    }
+
+    private bool HasPermission(string permission)
+    {
+        return User.Claims.Any(c => c.Type == "permission" && c.Value == permission);
     }
 }

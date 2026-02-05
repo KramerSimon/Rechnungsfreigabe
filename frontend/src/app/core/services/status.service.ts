@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { Status, EntityTypes } from '../models/status.model';
@@ -20,7 +20,7 @@ export class StatusService {
    */
   getAllStatuses(): Observable<Status[]> {
     if (this.allStatuses$.value.length > 0) {
-      return this.allStatuses$.asObservable();
+      return of(this.allStatuses$.value);
     }
 
     return this.http.get<Status[]>(this.apiUrl).pipe(

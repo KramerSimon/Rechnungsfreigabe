@@ -13,13 +13,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
 import { InvoiceService, PagedResult } from '../../../../core/services/invoice.service';
 import { Invoice } from '../../../../core/models';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, finalize, of, forkJoin } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 interface AccountingOverview {
   rejectedCount: number;
   rejectedAmount: number;
   readyForPaymentCount: number;
   readyForPaymentAmount: number;
+  paidCount: number;
+  paidAmount: number;
   openVolumeAmount: number;
 }
 
@@ -63,6 +67,8 @@ export class AccountingDashboardComponent implements OnInit {
     rejectedAmount: 0,
     readyForPaymentCount: 0,
     readyForPaymentAmount: 0,
+    paidCount: 0,
+    paidAmount: 0,
     openVolumeAmount: 0
   };
 
@@ -78,13 +84,16 @@ export class AccountingDashboardComponent implements OnInit {
     { value: 'all', label: 'Alle' },
     { value: 'rejected', label: 'Abgelehnt' },
     { value: 'approved', label: 'Freigegeben' },
+    { value: 'paid', label: 'Bezahlt' },
     { value: 'auto_approved', label: 'Automatisch freigegeben' },
     { value: 'in_approval', label: 'Genehmigung erforderlich' }
   ];
 
   constructor(
     private invoiceService: InvoiceService,
-    private router: Router
+    private router: Router,
+    private authService: AuthService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -132,6 +141,11 @@ export class AccountingDashboardComponent implements OnInit {
         assignedTo = 'Buchhaltung';
         reason = 'Wartet auf Zahlung';
         break;
+      case 'paid':
+        statusDisplay = 'Bezahlt';
+        statusClass = 'status-paid';
+        assignedTo = 'Erledigt';
+        break;
       case 'approval_required':
         if (invoice.autoApproved) {
           statusDisplay = 'Automatisch freigegeben';
@@ -178,12 +192,15 @@ export class AccountingDashboardComponent implements OnInit {
   }
 
   private getPendingApproverName(invoice: Invoice): string | null {
-    const pending = (invoice.pendingApprovals || [])
-      .filter(aw => aw?.status?.toLowerCase() === 'pending')
+    const workflows = (invoice.pendingApprovals || [])
+      .filter(aw => {
+        const status = aw?.status?.toLowerCase();
+        return status === 'pending' || status === 'waiting';
+      })
       .sort((a, b) => (a.stepNumber ?? 0) - (b.stepNumber ?? 0) ||
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-    const next = pending[0];
+    const next = workflows.find(aw => aw?.status?.toLowerCase() === 'pending') || workflows[0];
     if (!next) {
       return null;
     }
@@ -204,13 +221,23 @@ export class AccountingDashboardComponent implements OnInit {
       const status = inv.status.toLowerCase();
       return status === 'approved';
     });
+    const paidInvoices = this.invoices.filter(inv => {
+      const status = inv.status.toLowerCase();
+      return status === 'paid';
+    });
+    const openVolumeInvoices = this.invoices.filter(inv => {
+      const status = inv.status.toLowerCase();
+      return status !== 'paid' && status !== 'rejected';
+    });
 
     this.overview = {
       rejectedCount: rejectedInvoices.length,
       rejectedAmount: rejectedInvoices.reduce((sum, inv) => sum + inv.originalInvoice.totalAmount, 0),
       readyForPaymentCount: approvedInvoices.length,
       readyForPaymentAmount: approvedInvoices.reduce((sum, inv) => sum + inv.originalInvoice.totalAmount, 0),
-      openVolumeAmount: this.invoices.reduce((sum, inv) => sum + inv.originalInvoice.totalAmount, 0)
+      paidCount: paidInvoices.length,
+      paidAmount: paidInvoices.reduce((sum, inv) => sum + inv.originalInvoice.totalAmount, 0),
+      openVolumeAmount: openVolumeInvoices.reduce((sum, inv) => sum + inv.originalInvoice.totalAmount, 0)
     };
   }
 
@@ -224,6 +251,7 @@ export class AccountingDashboardComponent implements OnInit {
         switch (this.selectedStatus) {
           case 'rejected': return status === 'rejected';
           case 'approved': return status === 'approved';
+          case 'paid': return status === 'paid';
           case 'auto_approved': return invoice.originalInvoice.autoApproved;
           case 'in_approval': return status === 'approval_required' && !invoice.originalInvoice.autoApproved;
           default: return true;
@@ -261,8 +289,37 @@ export class AccountingDashboardComponent implements OnInit {
   }
 
   onInitiatePayment(): void {
-    // Navigation zu Zahlungslauf
-    console.log('Starte Zahlungslauf');
+    if (!this.authService.hasPermission('payments.process')) {
+      this.snackBar.open('Keine Berechtigung zum Ausführen des Zahlungslaufs.', 'OK', { duration: 3000 });
+      return;
+    }
+
+    const readyInvoices = this.invoices
+      .filter(inv => inv.status.toLowerCase() === 'approved')
+      .map(inv => inv.originalInvoice);
+
+    if (!readyInvoices.length) {
+      this.snackBar.open('Keine zahlungsbereiten Rechnungen gefunden.', 'OK', { duration: 3000 });
+      return;
+    }
+
+    if (!confirm(`Zahlungslauf starten und ${readyInvoices.length} Rechnung(en) als bezahlt markieren?`)) {
+      return;
+    }
+
+    this.loading = true;
+    forkJoin(readyInvoices.map(inv => this.invoiceService.updateInvoiceStatus(inv.id, 'Paid')))
+      .pipe(finalize(() => this.loading = false))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Rechnungen wurden als bezahlt markiert.', 'OK', { duration: 4000 });
+          this.loadAccountingData();
+        },
+        error: (error) => {
+          console.error('Fehler beim Zahlungslauf:', error);
+          this.snackBar.open('Zahlungslauf fehlgeschlagen.', 'OK', { duration: 4000 });
+        }
+      });
   }
 
   onExportData(): void {

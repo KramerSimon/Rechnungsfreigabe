@@ -9,6 +9,7 @@ import { RuleDashboardComponent } from './features/smart-dashboard/dashboard/rul
 import { LoginComponent } from './features/login/login.component';
 import { MasterDataComponent } from './features/master-data/master-data.component';
 import { authGuard } from './core/guards/auth.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 import { NotificationsComponent } from './features/notifications/notifications.component';
 import { PdfUploadDashboardComponent } from './features/smart-dashboard/dashboard/pdf-upload-dashboard/pdf-upload-dashboard.component';
 
@@ -18,12 +19,12 @@ export const routes: Routes = [
 
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
 
-  { path: 'dashboard/smart', component: SmartDashboardComponent, canActivate: [authGuard] },
-  { path: 'dashboard/user', component: UserDashboardComponent, canActivate: [authGuard] },
-  { path: 'dashboard/accounting', component: AccountingDashboardComponent, canActivate: [authGuard] },
-  { path: 'dashboard/admin', component: AdminDashboardComponent, canActivate: [authGuard] },
-  { path: 'dashboard/pdf-upload', component: PdfUploadDashboardComponent, canActivate: [authGuard] },
-  { path: 'dashboard/rules', component: RuleDashboardComponent, canActivate: [authGuard] },
+  { path: 'dashboard/smart', component: SmartDashboardComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['dashboards.view_user', 'dashboards.view_accounting', 'dashboards.view_admin', 'dashboards.view_pdf_upload', 'dashboards.view_rules'] } },
+  { path: 'dashboard/user', component: UserDashboardComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['dashboards.view_user'] } },
+  { path: 'dashboard/accounting', component: AccountingDashboardComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['dashboards.view_accounting'] } },
+  { path: 'dashboard/admin', component: AdminDashboardComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['dashboards.view_admin'] } },
+  { path: 'dashboard/pdf-upload', component: PdfUploadDashboardComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['dashboards.view_pdf_upload'] } },
+  { path: 'dashboard/rules', component: RuleDashboardComponent, canActivate: [authGuard, permissionGuard], data: { requiredPermissions: ['dashboards.view_rules'] } },
 
   { path: 'admin/users', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'users' } },
   { path: 'admin/roles', component: MasterDataComponent, canActivate: [authGuard], data: { activeTab: 'roles' } },

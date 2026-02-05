@@ -257,6 +257,14 @@ public class InvoicesController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
+            if (string.Equals(status, RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Bezahlt, StringComparison.OrdinalIgnoreCase))
+            {
+                var permissions = await userService.GetUserPermissionsAsync(userId);
+                if (!permissions.Contains("payments.process"))
+                {
+                    return Forbid();
+                }
+            }
             var invoice = await invoiceService.UpdateInvoiceStatusAsync(id, status, userId);
             
             if (invoice == null)
