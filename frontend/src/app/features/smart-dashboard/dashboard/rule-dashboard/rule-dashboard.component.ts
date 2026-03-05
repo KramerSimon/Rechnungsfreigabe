@@ -13,7 +13,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTabsModule } from '@angular/material/tabs';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { ApprovalRule, ApprovalRuleActionDto, ApprovalRuleConditionDto, ApprovalRuleStageDto, CreateApprovalRuleDto, UpdateApprovalRuleDto } from '../../../../core/models/approval.model';
 import { RuleCondition, RuleAction, RuleDialogData } from '../../../../core/models';
@@ -24,7 +25,8 @@ import { Project } from '../../../../core/models/project.model';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { UserService } from '../../../../core/services/user.service';
-import { User } from '../../../../core/models/user.models';
+import { RoleDto, User } from '../../../../core/models/user.models';
+import { RoleService } from '../../../../core/services/role.service';
 import { CreateApprovalRuleDialogComponent } from '../../../master-data/tabs/approval-rules-tab/dialogs/create-approval-rule-dialog.component';
 import { EditApprovalRuleDialogComponent } from '../../../master-data/tabs/approval-rules-tab/dialogs/edit-approval-rule-dialog/edit-approval-rule-dialog.component';
 
@@ -50,6 +52,7 @@ export type { ApprovalRule, RuleCondition, RuleAction };
     MatSnackBarModule,
     MatProgressSpinnerModule,
     MatSlideToggleModule,
+    MatTooltipModule,
     RouterModule
   ],
   templateUrl: './rule-dashboard.component.html',
@@ -69,6 +72,7 @@ export class RuleDashboardComponent implements OnInit {
   projects: Project[] = [];
   // Benutzer für Zuweisungen
   users: User[] = [];
+  roles: RoleDto[] = [];
 
   // Formular für neue Regel
   newRule: Partial<ApprovalRule> = {
@@ -133,7 +137,8 @@ export class RuleDashboardComponent implements OnInit {
     private projectService: ProjectService,
     private approvalService: ApprovalService,
     private snackBar: MatSnackBar,
-    private userService: UserService
+    private userService: UserService,
+    private roleService: RoleService
   ) {}
 
   ngOnInit() {
@@ -146,6 +151,14 @@ export class RuleDashboardComponent implements OnInit {
     });
     this.userService.getUsers().subscribe(users => {
       this.users = users || [];
+    });
+    this.roleService.getRoles().subscribe({
+      next: (roles) => {
+        this.roles = roles || [];
+      },
+      error: () => {
+        this.roles = [];
+      }
     });
   }
 
@@ -363,6 +376,34 @@ export class RuleDashboardComponent implements OnInit {
     });
   }
 
+  createApprovalRule(): void {
+    this.onCreateRule();
+  }
+
+  editApprovalRule(rule: ApprovalRule): void {
+    this.onEditRule(rule);
+  }
+
+  deleteApprovalRule(rule: ApprovalRule): void {
+    this.onDeleteRule(rule.id);
+  }
+
+  toggleRuleActive(rule: ApprovalRule, event: MatSlideToggleChange): void {
+    const dto = this.buildUpdateRuleDto({ ...rule, isActive: event.checked });
+
+    this.approvalService.updateApprovalRule(rule.id, dto).subscribe({
+      next: () => {
+        rule.isActive = event.checked;
+        this.snackBar.open(`Regel ${event.checked ? 'aktiviert' : 'deaktiviert'}`, 'Schließen', { duration: 2000 });
+      },
+      error: (error) => {
+        console.error('Fehler beim Aktualisieren der Regel:', error);
+        event.source.checked = !event.checked;
+        this.snackBar.open('Fehler beim Aktualisieren der Regel', 'Schließen', { duration: 3000 });
+      }
+    });
+  }
+
   // Hilfsfunktionen
   getRuleConditionText(conditions: RuleCondition[]): string {
     return conditions.map(condition => {
@@ -387,12 +428,83 @@ export class RuleDashboardComponent implements OnInit {
     }).join(', ');
   }
 
-  getFieldLabel(fieldValue: string): string {
-    return this.availableFields.find(f => f.value === fieldValue)?.label || fieldValue;
+  getConditionFieldLabel(field: string): string {
+    const fieldLabels: { [key: string]: string } = {
+      'amount': 'Betrag',
+      'supplier': 'Lieferant',
+      'costCenter': 'Kostenstelle',
+      'project': 'Projekt',
+      'invoiceDate': 'Rechnungsdatum',
+      'dueDate': 'Fälligkeitsdatum'
+    };
+    return fieldLabels[field] || field;
   }
 
-  getOperatorLabel(operatorValue: string): string {
-    return this.availableOperators.find(o => o.value === operatorValue)?.label || operatorValue;
+  getOperatorLabel(operator: string): string {
+    const operatorLabels: { [key: string]: string } = {
+      'equals': 'gleich',
+      'notEquals': 'ungleich',
+      'greaterThan': 'größer als',
+      'lessThan': 'kleiner als',
+      'greaterOrEqual': 'größer oder gleich',
+      'lessOrEqual': 'kleiner oder gleich',
+      'contains': 'enthält',
+      'notContains': 'enthält nicht'
+    };
+    return operatorLabels[operator] || operator;
+  }
+
+  getActionDescription(action: any): string {
+    const actionType = String(action?.type ?? action?.actionType ?? '').toLowerCase();
+    const actionValue = action?.value ?? action?.actionValue ?? '';
+
+    switch (actionType) {
+      case 'require_approval':
+        return 'Mehrstufige Freigabe';
+      case 'set_status':
+        return `Status setzen: ${actionValue}`;
+      case 'assign_to': {
+        const user = this.users.find(u => String(u.id) === String(actionValue));
+        const name = user ? `${user.firstName} ${user.lastName}` : actionValue;
+        return `Zuweisen an: ${name}`;
+      }
+      case 'notify':
+        return 'Benachrichtigung senden';
+      default:
+        return action?.description || actionType || 'Aktion';
+    }
+  }
+
+  getRoleNameFromStage(stage: { role?: any; roleId?: number | null }): string {
+    if (stage?.role) {
+      return this.getRoleName(stage.role);
+    }
+    if (stage?.roleId !== undefined && stage?.roleId !== null) {
+      const match = this.roles.find(r => r.id === Number(stage.roleId));
+      if (match?.name) {
+        return match.name;
+      }
+    }
+    return 'Rolle nicht definiert';
+  }
+
+  private getRoleName(role: any): string {
+    if (!role) return 'Rolle nicht definiert';
+    if (typeof role === 'object' && role.name) {
+      return role.name;
+    }
+    if (typeof role === 'string') {
+      return role;
+    }
+    return 'Rolle nicht definiert';
+  }
+
+  getRuleTypeLabel(ruleType: any): string {
+    if (ruleType === 0) {
+      return 'Automatische Freigabe';
+    }
+    const normalized = String(ruleType ?? '').toLowerCase();
+    return normalized === 'automatic' ? 'Automatische Freigabe' : 'Manuelle Freigabe';
   }
 
   getCostCenterName(costCenterId: string): string {

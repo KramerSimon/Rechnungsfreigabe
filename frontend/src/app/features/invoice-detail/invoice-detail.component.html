@@ -33,7 +33,7 @@
           </div>
 
           <!-- PDF Viewer mit ngx-extended-pdf-viewer -->
-          <div *ngIf="pdfSrc && !pdfLoading" class="pdf-viewer-wrapper">
+          <div *ngIf="pdfSrc && !pdfLoading && !useFallbackViewer" class="pdf-viewer-wrapper">
             <ngx-extended-pdf-viewer
               [src]="pdfSrc"
               [height]="'700px'"
@@ -49,7 +49,16 @@
               [showSidebarButton]="true"
               [mobileFriendlyZoom]="'150%'"
               [zoom]="'page-width'"
+              (pdfLoadingFailed)="onPdfLoadingFailed($event)"
+              (pdfLoaded)="onPdfLoaded()"
             ></ngx-extended-pdf-viewer>
+          </div>
+
+          <!-- Fallback: Browser-PDF-Viewer -->
+          <div *ngIf="pdfSafeUrl && !pdfLoading && useFallbackViewer" class="pdf-viewer-wrapper">
+            <object [data]="pdfSafeUrl" type="application/pdf" width="100%" height="700px">
+              <p>PDF-Vorschau nicht verfügbar. Bitte nutzen Sie den Download.</p>
+            </object>
           </div>
 
           <!-- Fallback wenn kein PDF vorhanden -->

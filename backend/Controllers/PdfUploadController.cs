@@ -151,6 +151,7 @@ public class PdfUploadController : ControllerBase
     /// Download a PDF by invoice ID (from database)
     /// </summary>
     [HttpGet("download/{invoiceId}")]
+    [AllowAnonymous]
     public async Task<IActionResult> DownloadInvoicePdf(int invoiceId)
     {
         try
@@ -164,7 +165,7 @@ public class PdfUploadController : ControllerBase
             if (invoice.PdfContent != null && invoice.PdfContent.Length > 0)
             {
                 var fileName = invoice.OriginalFilename ?? $"invoice_{invoiceId}.pdf";
-                return File(invoice.PdfContent, "application/pdf", fileName);
+                return File(invoice.PdfContent, "application/pdf", fileName, enableRangeProcessing: true);
             }
 
             return NotFound(new { message = "PDF not found in database" });

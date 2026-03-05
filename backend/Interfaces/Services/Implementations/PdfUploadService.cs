@@ -94,14 +94,22 @@ public class PdfUploadService : IPdfUploadService
 
             // Extrahiere Daten aus dem Dokument
             var tempPath = Path.Combine(uploadDirectory, fileName);
-            await using (var stream = new FileStream(tempPath, FileMode.Create))
+            ExtractedInvoiceData extractedData;
+            try
             {
-                await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
-            }
-            logger.LogInformation("[PDF Upload] Temporary file created at: {TempPath}", tempPath);
+                await using (var stream = new FileStream(tempPath, FileMode.Create))
+                {
+                    await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
+                }
+                logger.LogInformation("[PDF Upload] Temporary file created at: {TempPath}", tempPath);
 
-            var extractedData = isXml ? ExtractInvoiceDataFromXml(tempPath) : ExtractInvoiceDataFromPdf(tempPath);
-            logger.LogInformation("[PDF Upload] Data extracted - InvoiceNum: {InvoiceNumber}, Total: {TotalAmount}, Supplier: {SupplierName}", extractedData.InvoiceNumber, extractedData.TotalAmount, extractedData.SupplierInfo?.Name);
+                extractedData = isXml ? ExtractInvoiceDataFromXml(tempPath) : ExtractInvoiceDataFromPdf(tempPath);
+                logger.LogInformation("[PDF Upload] Data extracted - InvoiceNum: {InvoiceNumber}, Total: {TotalAmount}, Supplier: {SupplierName}", extractedData.InvoiceNumber, extractedData.TotalAmount, extractedData.SupplierInfo?.Name);
+            }
+            finally
+            {
+                TryDeleteTempFile(tempPath, "[PDF Upload]");
+            }
 
             // Generiere Rechnungsnummer im Format FAT-{Nummer}-{Jahr}
             var invoiceNumber = await GenerateInvoiceNumberAsync();
@@ -225,17 +233,6 @@ public class PdfUploadService : IPdfUploadService
                 throw new InvalidOperationException($"Failed to save PDF content: {ex.Message}", ex);
             }
 
-            // L�sche die tempor�re Datei
-            try
-            {
-                System.IO.File.Delete(tempPath);
-            logger.LogInformation("[PDF Upload] Temporary file deleted: {TempPath}", tempPath);
-            }
-            catch (Exception)
-            {
-                // Best-effort cleanup; ignore delete failures
-            }
-
             logger.LogInformation("[PDF Upload] Upload completed successfully for invoice {InvoiceId}", invoice.Id);
             return invoice;
         }
@@ -283,14 +280,22 @@ public class PdfUploadService : IPdfUploadService
 
             // Extrahiere Daten aus dem Dokument
             var tempPath = Path.Combine(uploadDirectory, fileName);
-            await using (var stream = new FileStream(tempPath, FileMode.Create))
+            ExtractedInvoiceData extractedData;
+            try
             {
-                await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
-            }
-            logger.LogInformation("[PO PDF Upload] Temporary file created at: {TempPath}", tempPath);
+                await using (var stream = new FileStream(tempPath, FileMode.Create))
+                {
+                    await stream.WriteAsync(pdfContent, 0, pdfContent.Length);
+                }
+                logger.LogInformation("[PO PDF Upload] Temporary file created at: {TempPath}", tempPath);
 
-            var extractedData = isXml ? ExtractInvoiceDataFromXml(tempPath) : ExtractInvoiceDataFromPdf(tempPath);
-            logger.LogInformation("[PO PDF Upload] Data extracted - Total: {TotalAmount}, Supplier: {SupplierName}", extractedData.TotalAmount, extractedData.SupplierInfo?.Name);
+                extractedData = isXml ? ExtractInvoiceDataFromXml(tempPath) : ExtractInvoiceDataFromPdf(tempPath);
+                logger.LogInformation("[PO PDF Upload] Data extracted - Total: {TotalAmount}, Supplier: {SupplierName}", extractedData.TotalAmount, extractedData.SupplierInfo?.Name);
+            }
+            finally
+            {
+                TryDeleteTempFile(tempPath, "[PO PDF Upload]");
+            }
 
             // Generiere Purchase Order ID im Format PO-{Nummer}-{Jahr}
             var poId = await GeneratePurchaseOrderIdAsync();
@@ -383,17 +388,6 @@ public class PdfUploadService : IPdfUploadService
             await unitOfWork.SaveChangesAsync();
 
             logger.LogInformation("[PO PDF Upload] Purchase Order created successfully with ID: {Id}", purchaseOrder.Id);
-
-            // L�sche die tempor�re Datei
-            try
-            {
-                System.IO.File.Delete(tempPath);
-            logger.LogInformation("[PO PDF Upload] Temporary file deleted: {TempPath}", tempPath);
-            }
-            catch (Exception)
-            {
-                // Best-effort cleanup; ignore delete failures
-            }
 
             // Lade vollst�ndige PO mit Navigations-Properties
             var po = await unitOfWork.PurchaseOrders.GetByNumberAsync(poId);
@@ -512,6 +506,27 @@ public class PdfUploadService : IPdfUploadService
         catch (Exception)
         {
             throw;
+        }
+    }
+
+    private void TryDeleteTempFile(string? tempPath, string logPrefix)
+    {
+        if (string.IsNullOrWhiteSpace(tempPath))
+        {
+            return;
+        }
+
+        try
+        {
+            if (System.IO.File.Exists(tempPath))
+            {
+                System.IO.File.Delete(tempPath);
+                logger.LogInformation("{LogPrefix} Temporary file deleted: {TempPath}", logPrefix, tempPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogInformation("{LogPrefix} Failed to delete temporary file: {TempPath}. Error: {Error}", logPrefix, tempPath, ex.Message);
         }
     }
 

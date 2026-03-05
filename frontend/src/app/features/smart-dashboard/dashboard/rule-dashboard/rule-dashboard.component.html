@@ -8,102 +8,100 @@
     <!-- Tab 1: Freigabe-Regeln -->
     <mat-tab label="Freigabe-Regeln">
       <div class="tab-content">
-        <div class="action-bar">
-          <button mat-raised-button color="primary" (click)="onCreateRule()">
+        <div class="approval-rules-tab-container">
+          <button mat-raised-button color="primary" (click)="createApprovalRule()" class="create-btn">
             <mat-icon>add</mat-icon>
             Neue Regel erstellen
           </button>
-        </div>
 
-        <div *ngIf="loading" class="loading-container">
-          <mat-spinner></mat-spinner>
-          <p>Lade Freigaberegeln...</p>
-        </div>
+          <h3 class="section-title">AKTIVE REGELN</h3>
 
-        <div class="rules-section" *ngIf="!loading">
-          <h3>AKTIVE REGELN</h3>
-
-          <mat-accordion>
-            <mat-expansion-panel
-              *ngFor="let rule of approvalRules; let i = index"
-              [expanded]="i === 0"
-              class="rule-panel"
-              [ngClass]="{'inactive-rule': !rule.isActive}">
-
+          <div class="rules-list" *ngIf="!loading && approvalRules.length > 0">
+            <mat-expansion-panel *ngFor="let rule of approvalRules; let i = index" class="rule-card">
               <mat-expansion-panel-header>
-                <mat-panel-title>
-                  <div class="rule-header">
-                    <span class="rule-number">{{ i + 1 }}.</span>
-                    <span class="rule-name">{{ rule.name }}</span>
-                    <mat-chip
-                      [color]="rule.ruleType === 'Automatic' || rule.ruleType === 0 ? 'accent' : 'primary'"
-                      selected>
-                      {{ rule.ruleType === 'Automatic' || rule.ruleType === 0 ? 'Automatische Freigabe' : 'Manuelle Freigabe' }}
-                    </mat-chip>
+                <mat-panel-title class="rule-header">
+                  <div class="rule-number">{{ i + 1 }}.</div>
+                  <div class="rule-title">{{ rule.name }}</div>
+                  <span class="rule-type-badge">{{ getRuleTypeLabel(rule.ruleType) }}</span>
+                  <div class="rule-actions">
+                    <button mat-icon-button color="primary" (click)="editApprovalRule(rule); $event.stopPropagation()" matTooltip="Bearbeiten">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="deleteApprovalRule(rule); $event.stopPropagation()" matTooltip="Löschen">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                    <mat-slide-toggle
+                      [checked]="rule.isActive"
+                      (change)="toggleRuleActive(rule, $event)"
+                      (click)="$event.stopPropagation()"
+                      color="primary">
+                    </mat-slide-toggle>
                   </div>
                 </mat-panel-title>
-                <mat-panel-description>
-                  <div class="rule-actions">
-                    <button mat-icon-button (click)="$event.stopPropagation(); onToggleRule(rule)"
-                            [title]="rule.isActive ? 'Deaktivieren' : 'Aktivieren'">
-                      <mat-icon>{{ rule.isActive ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                    </button>
-                    <button mat-button color="primary" (click)="$event.stopPropagation(); onEditRule(rule)">
-                      <mat-icon>edit</mat-icon>
-                      Edit
-                    </button>
-                    <button mat-button color="warn" (click)="$event.stopPropagation(); onDeleteRule(rule.id)">
-                      <mat-icon>delete</mat-icon>
-                      Del
-                    </button>
-                  </div>
-                </mat-panel-description>
               </mat-expansion-panel-header>
 
               <div class="rule-details">
-                <div class="rule-description">
-                  <h4>Beschreibung:</h4>
-                  <p>{{ rule.description }}</p>
+                <div class="detail-section" *ngIf="rule.description">
+                  <strong>Beschreibung:</strong>
+                  <div class="description-content">{{ rule.description }}</div>
                 </div>
 
-                <div class="rule-logic">
-                  <div class="conditions-section">
-                    <h4>WENN:</h4>
-                    <div class="condition-list">
-                      <div *ngFor="let condition of rule.conditions; let isLast = last" class="condition-item">
-                        <span class="field">{{ getFieldLabel(condition.field) }}</span>
-                        <span class="operator">{{ getOperatorLabel(condition.operator) }}</span>
-                        <span class="value">{{ condition.value }}</span>
-                        <span *ngIf="!isLast && condition.logicalOperator" class="logical-op">{{ condition.logicalOperator }}</span>
+                <div class="conditions-actions-grid">
+                  <div class="detail-section wenn-section">
+                    <strong>WENN:</strong>
+                    <div class="conditions-list" *ngIf="rule.conditions && rule.conditions.length > 0">
+                      <div *ngFor="let condition of rule.conditions; let first = first" class="condition-item">
+                        <span *ngIf="!first" class="logical-op">{{ condition.logicalOperator }}</span>
+                        <span class="condition-field">{{ getConditionFieldLabel(condition.field) }}</span>
+                        <span class="condition-operator">{{ getOperatorLabel(condition.operator) }}</span>
+                        <span class="condition-value">{{ condition.value }}</span>
                       </div>
+                    </div>
+                    <div *ngIf="!rule.conditions || rule.conditions.length === 0" class="no-data">
+                      Keine Bedingungen definiert
                     </div>
                   </div>
 
-                  <div class="actions-section">
-                    <h4>DANN:</h4>
-                    <div class="action-list">
+                  <div class="detail-section dann-section">
+                    <strong>DANN:</strong>
+                    <div class="actions-list" *ngIf="rule.actions && rule.actions.length > 0">
                       <div *ngFor="let action of rule.actions" class="action-item">
-                        <mat-icon class="action-icon">arrow_forward</mat-icon>
-                        <span>{{ action.description }}</span>
+                        <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+                        <span class="action-description">{{ getActionDescription(action) }}</span>
+
+                        <div *ngIf="action.stages && action.stages.length > 0" class="stages-preview">
+                          <div *ngFor="let stage of action.stages; let si = index" class="stage-item">
+                            Stufe {{ si + 1 }}: {{ getRoleNameFromStage(stage) }}
+                          </div>
+                        </div>
                       </div>
+                    </div>
+                    <div *ngIf="!rule.actions || rule.actions.length === 0" class="no-data">
+                      Keine Aktionen definiert
                     </div>
                   </div>
                 </div>
 
-                <div class="rule-metadata">
-                  <div class="metadata-item">
-                    <strong>Priorität:</strong> {{ rule.priority }}
-                  </div>
-                  <div class="metadata-item">
-                    <strong>Status:</strong>
-                    <mat-chip [color]="rule.isActive ? 'accent' : 'basic'" selected>
-                      {{ rule.isActive ? 'Aktiv' : 'Inaktiv' }}
-                    </mat-chip>
-                  </div>
+                <div class="rule-footer">
+                  <span><strong>Priorität:</strong> {{ rule.priority }}</span>
+                  <span><strong>Status:</strong> <span class="status-badge" [class.active]="rule.isActive">{{ rule.isActive ? 'Aktiv' : 'Inaktiv' }}</span></span>
                 </div>
               </div>
             </mat-expansion-panel>
-          </mat-accordion>
+          </div>
+
+          <div class="loading-container" *ngIf="loading">
+            <mat-spinner></mat-spinner>
+          </div>
+
+          <div class="empty-state" *ngIf="!loading && approvalRules.length === 0">
+            <mat-icon>rule</mat-icon>
+            <p>Keine Genehmigungsregeln gefunden</p>
+            <button mat-raised-button color="primary" (click)="createApprovalRule()">
+              <mat-icon>add</mat-icon>
+              Erste Regel erstellen
+            </button>
+          </div>
         </div>
       </div>
     </mat-tab>

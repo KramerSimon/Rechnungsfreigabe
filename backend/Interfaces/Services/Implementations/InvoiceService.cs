@@ -142,6 +142,11 @@ public class InvoiceService : IInvoiceService
         
         try
         {
+            var isComplete = IsInvoiceDataComplete(createInvoiceDto);
+            var initialStatusCode = isComplete
+                ? RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen
+                : RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung;
+
             var invoice = new Invoice
             {
                 InvoiceNumber = createInvoiceDto.InvoiceNumber,
@@ -158,7 +163,7 @@ public class InvoiceService : IInvoiceService
                 Description = createInvoiceDto.Description,
                 InternalNotes = createInvoiceDto.InternalNotes,
                 RequiresApproval = createInvoiceDto.RequiresApproval,
-                StatusId = await GetStatusIdByCodeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen),
+                StatusId = await GetStatusIdByCodeAsync(initialStatusCode),
                 CreatedBy = createdBy,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -190,7 +195,7 @@ public class InvoiceService : IInvoiceService
             }
 
             // Create approval workflows based on rules
-            if (createInvoiceDto.RequiresApproval)
+            if (createInvoiceDto.RequiresApproval && isComplete)
             {
                 await approvalService.CreateApprovalWorkflowAsync(invoice.Id);
             }
@@ -234,6 +239,8 @@ public class InvoiceService : IInvoiceService
 
             var oldStatus = invoice.Status?.ToString() ?? string.Empty;
             var changes = new List<string>();
+            var statusExplicitlySet = !string.IsNullOrEmpty(updateInvoiceDto.Status);
+            var shouldCreateWorkflow = false;
 
             // Update invoice properties and track changes
             if (!string.IsNullOrEmpty(updateInvoiceDto.InvoiceNumber) && invoice.InvoiceNumber != updateInvoiceDto.InvoiceNumber)
@@ -318,6 +325,32 @@ public class InvoiceService : IInvoiceService
                 }
             }
 
+            if (!statusExplicitlySet)
+            {
+                var isComplete = IsInvoiceDataComplete(invoice);
+                var statusUnderReviewId = await GetStatusIdByCodeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung);
+                var statusReceivedId = await GetStatusIdByCodeAsync(RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen);
+
+                if (!isComplete && statusUnderReviewId.HasValue && statusReceivedId.HasValue && invoice.StatusId == statusReceivedId.Value)
+                {
+                    changes.Add($"Status: {RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen} -> {RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung}");
+                    invoice.StatusId = statusUnderReviewId.Value;
+                }
+
+                if (isComplete && statusUnderReviewId.HasValue && invoice.StatusId == statusUnderReviewId.Value)
+                {
+                    if (invoice.RequiresApproval)
+                    {
+                        shouldCreateWorkflow = true;
+                    }
+                    else if (statusReceivedId.HasValue)
+                    {
+                        changes.Add($"Status: {RechnungsfreigabeAPI.Models.StatusCodes.Invoice.InPruefung} -> {RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen}");
+                        invoice.StatusId = statusReceivedId.Value;
+                    }
+                }
+            }
+
             invoice.ProcessedBy = updatedBy;
             invoice.UpdatedAt = DateTime.UtcNow;
 
@@ -340,6 +373,15 @@ public class InvoiceService : IInvoiceService
                 }).ToList();
                 
                 await historyService.CreateDataCompletionAsync(invoice.Id, fieldChangesList, updatedBy);
+            }
+
+            if (shouldCreateWorkflow)
+            {
+                var existingWorkflows = await unitOfWork.ApprovalWorkflows.GetByInvoiceIdAsync(invoice.Id);
+                if (!existingWorkflows.Any())
+                {
+                    await approvalService.CreateApprovalWorkflowAsync(invoice.Id);
+                }
             }
 
             await unitOfWork.CommitTransactionAsync();
@@ -899,5 +941,29 @@ public class InvoiceService : IInvoiceService
     {
         var status = await unitOfWork.Statuses.GetByCodeAndTypeAsync(statusCode, "Invoice");
         return status?.Id;
+    }
+
+    private static bool IsInvoiceDataComplete(CreateInvoiceDto dto)
+    {
+        return !string.IsNullOrWhiteSpace(dto.InvoiceNumber)
+            && dto.SupplierId > 0
+            && !string.IsNullOrWhiteSpace(dto.CostCenterId)
+            && !string.IsNullOrWhiteSpace(dto.ProjectId)
+            && dto.NetAmount > 0
+            && dto.TotalAmount > 0
+            && dto.InvoiceDate != default
+            && dto.DueDate != default;
+    }
+
+    private static bool IsInvoiceDataComplete(Invoice invoice)
+    {
+        return !string.IsNullOrWhiteSpace(invoice.InvoiceNumber)
+            && invoice.SupplierId > 0
+            && !string.IsNullOrWhiteSpace(invoice.CostCenterId)
+            && !string.IsNullOrWhiteSpace(invoice.ProjectId)
+            && invoice.NetAmount > 0
+            && invoice.TotalAmount > 0
+            && invoice.InvoiceDate != default
+            && invoice.DueDate != default;
     }
 }

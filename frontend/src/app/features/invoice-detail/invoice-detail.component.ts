@@ -14,7 +14,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
+import { NgxExtendedPdfViewerModule, pdfDefaultOptions } from 'ngx-extended-pdf-viewer';
 import { InvoiceHistoryTimelineComponent } from '../invoice-history/invoice-history-timeline.component';
 import { ApprovalTimelineComponent } from './approval-timeline.component';
 import { StatusDisplayPipe } from '../../core/pipes/status-display.pipe';
@@ -63,7 +63,12 @@ export class InvoiceDetailComponent implements OnInit {
   pdfLoading = false;
   pdfUrl: SafeResourceUrl | null = null;
   pdfBlobUrl: string | null = null;
+  pdfSafeUrl: SafeResourceUrl | null = null;
   pdfSrc: Uint8Array | null = null;
+  pdfLoadError: string | null = null;
+  useFallbackViewer = false;
+  private pdfRenderTimer: ReturnType<typeof setTimeout> | null = null;
+  private pdfRendered = false;
 
   invoice: InvoiceDetail = {
     id: 1, // This would come from route parameters in real implementation
@@ -121,6 +126,7 @@ export class InvoiceDetailComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.configurePdfViewerAssets();
     this.invoiceId = parseInt(this.route.snapshot.params['id']) || 1;
     this.authService.authState$.subscribe(authState => {
       this.currentUserId = authState?.user?.id ?? null;
@@ -161,6 +167,13 @@ export class InvoiceDetailComponent implements OnInit {
     console.log('Full invoice object:', this.invoice);
 
     this.pdfLoading = true;
+    this.pdfLoadError = null;
+    this.useFallbackViewer = false;
+    this.pdfRendered = false;
+    if (this.pdfRenderTimer) {
+      clearTimeout(this.pdfRenderTimer);
+      this.pdfRenderTimer = null;
+    }
 
     // Lade PDF als Blob und konvertiere zu Uint8Array für ngx-extended-pdf-viewer
     this.invoiceService.downloadInvoicePdf(this.invoice.id).subscribe({
@@ -171,10 +184,33 @@ export class InvoiceDetailComponent implements OnInit {
 
         // Konvertiere Blob zu ArrayBuffer und dann zu Uint8Array
         const arrayBuffer = await blob.arrayBuffer();
-        this.pdfSrc = new Uint8Array(arrayBuffer);
+        const uint8 = new Uint8Array(arrayBuffer);
+        const header = String.fromCharCode(...uint8.slice(0, 4));
+        if (header !== '%PDF') {
+          this.pdfSrc = null;
+          this.pdfBlobUrl = null;
+          this.pdfSafeUrl = null;
+          this.pdfLoading = false;
+          this.pdfLoadError = 'Datei ist kein gültiges PDF';
+          this.useFallbackViewer = false;
+          this.snackBar.open('PDF konnte nicht geladen werden: Datei ist kein gültiges PDF', 'Schließen', {
+            duration: 5000
+          });
+          return;
+        }
+
+        this.pdfSrc = uint8;
 
         // Erstelle auch Blob URL für Fallback-Buttons
         this.pdfBlobUrl = URL.createObjectURL(blob);
+        this.pdfSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfBlobUrl);
+
+        // Fallback: if viewer doesn't render shortly after load, show browser viewer
+        this.pdfRenderTimer = setTimeout(() => {
+          if (!this.pdfRendered) {
+            this.useFallbackViewer = true;
+          }
+        }, 1500);
 
         this.pdfLoading = false;
         console.log('PDF successfully loaded, pdfSrc length:', this.pdfSrc.length, 'bytes');
@@ -189,12 +225,35 @@ export class InvoiceDetailComponent implements OnInit {
 
         this.pdfSrc = null;
         this.pdfBlobUrl = null;
+        this.pdfSafeUrl = null;
         this.pdfLoading = false;
+        this.pdfLoadError = error?.message || 'Unbekannter Fehler';
         this.snackBar.open('PDF konnte nicht geladen werden: ' + (error.status || 'Unbekannter Fehler'), 'Schließen', {
           duration: 5000
         });
       }
     });
+  }
+
+  onPdfLoadingFailed(error: any): void {
+    console.error('PDF viewer failed to render:', error);
+    this.pdfLoadError = error?.message || 'PDF konnte nicht gerendert werden';
+    this.useFallbackViewer = true;
+  }
+
+  onPdfLoaded(): void {
+    this.pdfRendered = true;
+    if (this.pdfRenderTimer) {
+      clearTimeout(this.pdfRenderTimer);
+      this.pdfRenderTimer = null;
+    }
+  }
+
+  private configurePdfViewerAssets(): void {
+    pdfDefaultOptions.workerSrc = () => 'assets/pdf.worker-5.4.1105.min.mjs';
+    pdfDefaultOptions.cMapUrl = () => 'assets/cmaps/';
+    pdfDefaultOptions.standardFontDataUrl = () => 'assets/standard_fonts/';
+    pdfDefaultOptions.sandboxBundleSrc = () => 'assets/pdf.sandbox-5.4.1105.min.mjs';
   }
 
   openPdfInNewTab(): void {
