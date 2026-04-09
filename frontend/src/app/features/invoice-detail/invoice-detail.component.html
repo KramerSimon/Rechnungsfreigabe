@@ -290,7 +290,7 @@
               ABLEHNEN
             </button>
             <button mat-raised-button color="primary" class="approve-button"
-                    (click)="onApprove()" [disabled]="!canApprove()">
+                  (click)="onApprove()" [disabled]="loading">
               <mat-icon>check</mat-icon>
               FREIGEBEN
             </button>

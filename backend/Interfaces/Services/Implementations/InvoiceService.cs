@@ -543,6 +543,9 @@ public class InvoiceService : IInvoiceService
             var userPermissions = await userService.GetUserPermissionsAsync(approverId);
             var canApprove = userPermissions.Contains("invoices.approve") ||
                              userPermissions.Contains("invoices.approve_cost_center");
+            var userEntity = await userService.GetUserEntityByIdAsync(approverId);
+            var isAdministrator = userEntity?.UserRoles.Any(ur =>
+                string.Equals(ur.Role.Name, "Administrator", StringComparison.OrdinalIgnoreCase)) == true;
 
             if (!canApprove)
             {
@@ -563,18 +566,46 @@ public class InvoiceService : IInvoiceService
                 EntityTypes.ApprovalWorkflow);
             
             var allWorkflows = (await unitOfWork.ApprovalWorkflows.GetAllAsync())
-                .Where(aw => aw.InvoiceId == invoiceId && aw.ApproverId == approverId)
+                .Where(aw => aw.InvoiceId == invoiceId && (isAdministrator || aw.ApproverId == approverId))
                 .ToList();
-            
-            var pendingWorkflow = allWorkflows
-                .FirstOrDefault(aw => aw.StatusId == pendingStatus2?.Id);
 
-            if (pendingWorkflow == null) return false;
+            var pendingWorkflow = allWorkflows
+                .FirstOrDefault(aw => IsPendingApprovalWorkflow(aw, pendingStatus2?.Id));
+
+            // Fallback for multi-stage flows: allow current approver to continue when their
+            // step is still marked as Waiting but no earlier open step exists.
+            var waitingWorkflow = allWorkflows
+                .Where(aw => IsWaitingApprovalWorkflow(aw, waitingStatus2?.Id))
+                .OrderBy(aw => aw.StepNumber)
+                .FirstOrDefault(aw => !invoice.ApprovalWorkflows.Any(prev =>
+                    prev.StepNumber < aw.StepNumber &&
+                    IsOpenApprovalWorkflow(prev, pendingStatus2?.Id, waitingStatus2?.Id)));
+
+            // Legacy fallback: if statuses are inconsistent/missing, allow the current
+            // user's first non-finalized step when no earlier open step exists.
+            var legacyOpenWorkflow = allWorkflows
+                .OrderBy(aw => aw.StepNumber)
+                .FirstOrDefault(aw =>
+                    !IsFinalizedApprovalWorkflow(aw) &&
+                    !invoice.ApprovalWorkflows.Any(prev =>
+                        prev.StepNumber < aw.StepNumber &&
+                        IsOpenApprovalWorkflow(prev, pendingStatus2?.Id, waitingStatus2?.Id)));
+
+            var currentWorkflow = pendingWorkflow ?? waitingWorkflow ?? legacyOpenWorkflow;
+
+            if (currentWorkflow == null) return false;
+
+            var approvalComment = approveDto.Comments;
+            if (isAdministrator && currentWorkflow.ApproverId != approverId)
+            {
+                var baseComment = string.IsNullOrWhiteSpace(approvalComment) ? "" : approvalComment + " ";
+                approvalComment = $"{baseComment}[Admin-Override durch Benutzer {approverId}]";
+            }
 
             // Update workflow status
-            pendingWorkflow.StatusId = approveDto.Approved ? approvedStatus2?.Id : rejectedStatus2?.Id;
-            pendingWorkflow.Comments = approveDto.Comments;
-            pendingWorkflow.ApprovedAt = DateTime.UtcNow;
+            currentWorkflow.StatusId = approveDto.Approved ? approvedStatus2?.Id : rejectedStatus2?.Id;
+            currentWorkflow.Comments = approvalComment;
+            currentWorkflow.ApprovedAt = DateTime.UtcNow;
 
             // Check if this was a rejection
             if (!approveDto.Approved)
@@ -583,17 +614,19 @@ public class InvoiceService : IInvoiceService
                 invoice.ProcessedBy = approverId;
                 invoice.UpdatedAt = DateTime.UtcNow;
 
-                await historyService.CreateApprovalActionAsync(invoiceId, false, approverId, approveDto.Comments);
+                await historyService.CreateApprovalActionAsync(invoiceId, false, approverId, approvalComment);
             }
             else
             {
                 var allWorkflowsForInvoice = invoice.ApprovalWorkflows.ToList();
-                var pendingWorkflows = allWorkflowsForInvoice.Where(aw => aw.StatusId == pendingStatus2?.Id).ToList();
+                var pendingWorkflows = allWorkflowsForInvoice
+                    .Where(aw => aw.Id != currentWorkflow.Id && IsPendingApprovalWorkflow(aw, pendingStatus2?.Id))
+                    .ToList();
 
                 if (!pendingWorkflows.Any())
                 {
                     var nextWaiting = allWorkflowsForInvoice
-                        .Where(aw => aw.StatusId == waitingStatus2?.Id && aw.StepNumber > pendingWorkflow.StepNumber)
+                        .Where(aw => IsWaitingApprovalWorkflow(aw, waitingStatus2?.Id) && aw.StepNumber > currentWorkflow.StepNumber)
                         .OrderBy(aw => aw.StepNumber)
                         .FirstOrDefault();
 
@@ -601,7 +634,7 @@ public class InvoiceService : IInvoiceService
                     {
                         nextWaiting.StatusId = pendingStatus2?.Id;
                         await historyService.CreateApprovalActionAsync(invoiceId, true, approverId,
-                            approveDto.Comments);
+                            approvalComment);
                     }
                     else
                     {
@@ -609,15 +642,15 @@ public class InvoiceService : IInvoiceService
                         invoice.ProcessedBy = approverId;
                         invoice.UpdatedAt = DateTime.UtcNow;
 
-                        await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approveDto.Comments);
+                        await historyService.CreateApprovalActionAsync(invoiceId, true, approverId, approvalComment);
                     }
                 }
                 else
                 {
                     var totalSteps = allWorkflowsForInvoice.Count;
-                    var currentStep = pendingWorkflow.StepNumber;
+                    var currentStep = currentWorkflow.StepNumber;
                     await historyService.CreateApprovalActionAsync(invoiceId, true, approverId,
-                        $"{approveDto.Comments} (Teilfreigabe - Schritt {currentStep} von {totalSteps})");
+                        $"{approvalComment} (Teilfreigabe - Schritt {currentStep} von {totalSteps})");
                 }
             }
 
@@ -965,5 +998,52 @@ public class InvoiceService : IInvoiceService
             && invoice.TotalAmount > 0
             && invoice.InvoiceDate != default
             && invoice.DueDate != default;
+    }
+
+    private static bool IsOpenApprovalWorkflow(ApprovalWorkflow workflow, int? pendingStatusId, int? waitingStatusId)
+    {
+        return IsPendingApprovalWorkflow(workflow, pendingStatusId) || IsWaitingApprovalWorkflow(workflow, waitingStatusId);
+    }
+
+    private static bool IsPendingApprovalWorkflow(ApprovalWorkflow workflow, int? pendingStatusId)
+    {
+        if (pendingStatusId.HasValue && workflow.StatusId == pendingStatusId.Value)
+        {
+            return true;
+        }
+
+        var code = NormalizeApprovalStatusCode(workflow.Status?.Code);
+        return code is "pending" or "ausstehend" or "offen";
+    }
+
+    private static bool IsWaitingApprovalWorkflow(ApprovalWorkflow workflow, int? waitingStatusId)
+    {
+        if (waitingStatusId.HasValue && workflow.StatusId == waitingStatusId.Value)
+        {
+            return true;
+        }
+
+        var code = NormalizeApprovalStatusCode(workflow.Status?.Code);
+        return code is "waiting" or "wartend" or "queued";
+    }
+
+    private static string NormalizeApprovalStatusCode(string? code)
+    {
+        return (code ?? string.Empty)
+            .Trim()
+            .Replace("-", "_")
+            .Replace(" ", "_")
+            .ToLowerInvariant();
+    }
+
+    private static bool IsFinalizedApprovalWorkflow(ApprovalWorkflow workflow)
+    {
+        if (workflow.ApprovedAt.HasValue)
+        {
+            return true;
+        }
+
+        var code = NormalizeApprovalStatusCode(workflow.Status?.Code);
+        return code is "approved" or "rejected" or "skipped";
     }
 }

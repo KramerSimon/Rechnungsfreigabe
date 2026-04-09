@@ -112,6 +112,7 @@ export class InvoiceDetailComponent implements OnInit {
   lastSavedAt: Date | null = null;
   currentUserId: number | null = null;
   userPermissions: string[] = [];
+  currentUserIsAdministrator = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -131,6 +132,10 @@ export class InvoiceDetailComponent implements OnInit {
     this.authService.authState$.subscribe(authState => {
       this.currentUserId = authState?.user?.id ?? null;
       this.userPermissions = authState?.permissions || [];
+      const roleNames = (authState?.user?.roles || []).map(r => (r?.name || '').toLowerCase());
+      this.currentUserIsAdministrator = roleNames.includes('administrator') ||
+        this.userPermissions.includes('dashboards.view_admin') ||
+        this.userPermissions.includes('dashboards.view_all');
     });
     this.loadCostCenters();
     this.loadSuppliers();
@@ -443,12 +448,54 @@ export class InvoiceDetailComponent implements OnInit {
   canApprove(): boolean {
     const hasCostCenter = !!this.invoice?.costCenterId;
     const hasProject = !!this.invoice?.projectId;
-    const hasPermission = this.userPermissions.includes('invoices.approve') ||
+    const hasPermission = this.currentUserIsAdministrator ||
+      this.userPermissions.includes('invoices.approve') ||
       this.userPermissions.includes('invoices.approve_cost_center');
-    const isPendingApprover = (this.invoice?.pendingApprovals || [])
-      .some(aw => aw?.approverId === this.currentUserId && aw?.status?.toLowerCase() === 'pending');
+    const currentUserId = this.currentUserId != null ? Number(this.currentUserId) : null;
+    const normalizeStatus = (status?: string) => (status || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[-\s]/g, '_');
+    const isPendingStatus = (status?: string) => {
+      const normalized = normalizeStatus(status);
+      return normalized === 'pending' || normalized === 'ausstehend' || normalized === 'offen';
+    };
+    const isWaitingStatus = (status?: string) => {
+      const normalized = normalizeStatus(status);
+      return normalized === 'waiting' || normalized === 'wartend' || normalized === 'queued';
+    };
+    const isFinalStatus = (status?: string) => {
+      const normalized = normalizeStatus(status);
+      return normalized === 'approved' || normalized === 'rejected' || normalized === 'skipped';
+    };
+    const workflows = this.invoice?.pendingApprovals || [];
+    const myWorkflows = workflows.filter(aw => Number(aw?.approverId) === currentUserId);
+    const hasPendingStep = myWorkflows.some(aw => isPendingStatus(aw?.status));
+    const hasEligibleWaitingStep = myWorkflows.some(aw => {
+      if (!isWaitingStatus(aw?.status)) return false;
 
-    return !!this.invoice && !this.loading && hasCostCenter && hasProject && hasPermission && isPendingApprover;
+      return !workflows.some(prev => {
+        const isOpen = isPendingStatus(prev?.status) || isWaitingStatus(prev?.status);
+        return isOpen && (prev?.stepNumber ?? 0) < (aw?.stepNumber ?? 0);
+      });
+    });
+    const hasEligibleLegacyOpenStep = myWorkflows.some(aw => {
+      if (isPendingStatus(aw?.status) || isWaitingStatus(aw?.status) || isFinalStatus(aw?.status)) return false;
+      if (aw?.approvedAt) return false;
+
+      return !workflows.some(prev => {
+        const prevStatusOpen = isPendingStatus(prev?.status) || isWaitingStatus(prev?.status);
+        return prevStatusOpen && (prev?.stepNumber ?? 0) < (aw?.stepNumber ?? 0);
+      });
+    });
+
+    const isPendingApprover = hasPendingStep || hasEligibleWaitingStep || hasEligibleLegacyOpenStep;
+
+    if (this.currentUserIsAdministrator) {
+      return !!this.invoice && hasCostCenter && hasProject;
+    }
+
+    return !!this.invoice && hasCostCenter && hasProject && hasPermission && isPendingApprover;
   }
 
   getContrastColor(hexColor: string): string {
@@ -472,7 +519,7 @@ export class InvoiceDetailComponent implements OnInit {
 
       if (!this.invoice?.costCenterId || !this.invoice?.projectId) {
         msg = 'Bitte Kostenstelle und Projekt ergänzen, erst dann freigeben.';
-      } else if (!this.userPermissions.includes('invoices.approve') &&
+      } else if (!this.currentUserIsAdministrator && !this.userPermissions.includes('invoices.approve') &&
         !this.userPermissions.includes('invoices.approve_cost_center')) {
         msg = 'Keine Berechtigung zur Freigabe.';
       } else {
