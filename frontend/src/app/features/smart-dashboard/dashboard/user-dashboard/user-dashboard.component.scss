@@ -3,7 +3,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
-  background: #f8f9fa;
+  background: var(--app-bg-color);
   min-height: 100vh;
 }
 
@@ -14,13 +14,13 @@
   h1 {
     font-size: 1.8rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--text-color);
     margin: 0 0 0.5rem 0;
   }
 
   p {
     font-size: 1rem;
-    color: #666;
+    color: var(--muted-text-color);
     margin: 0;
 
     strong {
@@ -43,8 +43,8 @@
   align-items: center;
   padding: 1.5rem;
   border-radius: 12px;
-  border: 2px solid #e0e0e0;
-  background: white;
+  border: 2px solid var(--border-color);
+  background: var(--surface-color);
   transition: all 0.3s ease;
   cursor: default;
 
@@ -81,7 +81,7 @@
     .status-title {
       font-size: 0.9rem;
       font-weight: 600;
-      color: #666;
+      color: var(--muted-text-color);
       letter-spacing: 0.5px;
       margin-bottom: 0.25rem;
     }
@@ -89,7 +89,7 @@
     .status-count {
       font-size: 1.1rem;
       font-weight: 500;
-      color: #1a1a1a;
+      color: var(--text-color);
     }
   }
 
@@ -106,7 +106,7 @@
 
 /* Tasks Section */
 .tasks-section {
-  background: white;
+  background: var(--surface-color);
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -114,7 +114,7 @@
   h2 {
     font-size: 1.3rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--text-color);
     margin: 0 0 1.5rem 0;
     letter-spacing: 0.5px;
   }
@@ -128,9 +128,9 @@
 
   .filter-btn {
     padding: 0.6rem 1.2rem;
-    border: 1px solid #ddd;
-    background: white;
-    color: #666;
+    border: 1px solid var(--border-color);
+    background: var(--surface-alt-color);
+    color: var(--text-color);
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
@@ -158,23 +158,24 @@
   .mat-mdc-header-cell {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #666;
+    color: var(--text-color);
     letter-spacing: 0.5px;
     padding: 1rem 0.8rem;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--border-color);
   }
 
   .mat-mdc-cell {
     padding: 1rem 0.8rem;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.9rem;
+    color: var(--text-color);
   }
 
   .mat-mdc-row {
     transition: background-color 0.3s ease;
 
     &:hover {
-      background-color: #f8f9fa;
+      background-color: var(--surface-alt-color);
     }
   }
 }
@@ -200,7 +201,7 @@
 
     .status-reason {
       font-size: 0.75rem;
-      color: #666;
+      color: var(--muted-text-color);
       margin-top: 0.2rem;
     }
   }
@@ -234,12 +235,12 @@
 .supplier-cell {
   .supplier-name {
     font-weight: 500;
-    color: #1a1a1a;
+    color: var(--text-color);
   }
 
   .supplier-detail {
     font-size: 0.8rem;
-    color: #666;
+    color: var(--muted-text-color);
     margin-top: 0.2rem;
   }
 }
@@ -282,7 +283,7 @@
 .empty-state {
   text-align: center;
   padding: 3rem 2rem;
-  color: #666;
+  color: var(--muted-text-color);
 
   .mat-icon {
     font-size: 4rem;
@@ -307,7 +308,7 @@
 .loading-state {
   text-align: center;
   padding: 3rem 2rem;
-  color: #666;
+  color: var(--muted-text-color);
 
   .mat-spinner {
     margin: 0 auto 1rem auto;
@@ -316,6 +317,28 @@
   p {
     margin: 0;
     font-size: 0.9rem;
+  }
+}
+
+:host-context(.dark-theme) {
+  .filter-section {
+    .filter-btn {
+      background: #1e293b;
+      border-color: #334155;
+      color: #e2e8f0;
+
+      &:hover {
+        border-color: #60a5fa;
+        color: #dbeafe;
+        background: #243449;
+      }
+
+      &.active {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #f8fafc;
+      }
+    }
   }
 }
 

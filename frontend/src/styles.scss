@@ -1,7 +1,177 @@
 /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+:root {
+  --app-bg-color: #f3f4f6;
+  --surface-color: #ffffff;
+  --surface-alt-color: #f8fafc;
+  --text-color: #101828;
+  --muted-text-color: #475467;
+  --border-color: #d0d5dd;
+  --primary-color: #1976d2;
+  --shadow-color: rgba(16, 24, 40, 0.08);
+}
+
+html, body {
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background: var(--app-bg-color);
+  color: var(--text-color);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body.dark-theme {
+  --app-bg-color: #0f172a;
+  --surface-color: #111827;
+  --surface-alt-color: #1f2937;
+  --text-color: #e5e7eb;
+  --muted-text-color: #c4cedd;
+  --border-color: #374151;
+  --primary-color: #60a5fa;
+  --shadow-color: rgba(2, 6, 23, 0.5);
+}
+
+a {
+  color: var(--primary-color);
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+}
+
+.mat-mdc-card,
+.mat-mdc-dialog-surface,
+.mat-mdc-menu-panel,
+.mat-mdc-select-panel,
+.mat-mdc-table {
+  background: var(--surface-color) !important;
+  color: var(--text-color) !important;
+}
+
+.mat-mdc-header-cell,
+.mat-mdc-cell,
+.mat-mdc-option,
+.mat-mdc-menu-item,
+.mat-mdc-button,
+.mat-mdc-icon-button {
+  color: var(--text-color) !important;
+}
+
+.mat-mdc-form-field,
+.mat-mdc-select-value,
+.mdc-text-field,
+.mat-mdc-input-element {
+  color: var(--text-color) !important;
+}
+
+.mat-mdc-paginator,
+.mat-mdc-paginator-container,
+.mat-mdc-tab-group,
+.mat-mdc-tab-header {
+  background: var(--surface-color) !important;
+  color: var(--text-color) !important;
+}
+
+body.dark-theme .mdc-text-field--filled {
+  background-color: var(--surface-alt-color) !important;
+}
+
+body.dark-theme .mdc-text-field--outlined,
+body.dark-theme .mat-mdc-select-trigger,
+body.dark-theme .mat-mdc-select-value-text,
+body.dark-theme .mat-mdc-select-arrow,
+body.dark-theme .mat-mdc-form-field-label,
+body.dark-theme .mat-mdc-input-element,
+body.dark-theme .mat-mdc-input-element::placeholder {
+  color: var(--text-color) !important;
+  opacity: 1;
+}
+
+body.dark-theme .mat-mdc-header-cell,
+body.dark-theme .mat-mdc-cell,
+body.dark-theme .mdc-data-table__header-cell,
+body.dark-theme .mdc-data-table__cell {
+  color: var(--text-color) !important;
+}
+
+body.dark-theme .mat-mdc-form-field-focus-overlay {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+body.dark-theme .smart-dashboard-container,
+body.dark-theme .user-dashboard,
+body.dark-theme .accounting-dashboard,
+body.dark-theme .admin-dashboard,
+body.dark-theme .pdf-upload-dashboard {
+  background: var(--app-bg-color) !important;
+  color: var(--text-color) !important;
+}
+
+body.dark-theme .tasks-section,
+body.dark-theme .invoices-section,
+body.dark-theme .overview-card,
+body.dark-theme .status-card,
+body.dark-theme .masterdata-card,
+body.dark-theme .config-section,
+body.dark-theme .loading-container {
+  background: var(--surface-color) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 4px 12px var(--shadow-color) !important;
+}
+
+body.dark-theme .header-section h1,
+body.dark-theme .welcome-section h1,
+body.dark-theme .status-section h1,
+body.dark-theme .masterdata-section h2,
+body.dark-theme .tasks-section h2,
+body.dark-theme .invoices-section h2,
+body.dark-theme .card-content h3 {
+  color: var(--text-color) !important;
+}
+
+body.dark-theme .welcome-section p,
+body.dark-theme .card-content p,
+body.dark-theme .status-divider,
+body.dark-theme .card-title,
+body.dark-theme .card-count,
+body.dark-theme .status-title,
+body.dark-theme .status-count {
+  color: var(--muted-text-color) !important;
+}
+
+body.dark-theme .masterdata-card:hover,
+body.dark-theme .overview-card:hover {
+  background: var(--surface-alt-color) !important;
+}
+
+body.dark-theme .mat-mdc-snack-bar-container .mdc-snackbar__surface {
+  background: var(--surface-alt-color) !important;
+  color: var(--text-color) !important;
+}
+
+body.dark-theme ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 10px;
+}
+
+body.dark-theme ::-webkit-scrollbar-track {
+  background: #111827;
+}
 
 /* Global badge styling for role badges in dropdowns */
 .role-badge {

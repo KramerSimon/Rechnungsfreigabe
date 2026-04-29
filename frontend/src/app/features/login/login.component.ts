@@ -33,6 +33,7 @@ export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   isLoading = false;
   hidePassword = true;
+  isDarkMode = false;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -47,6 +48,8 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initializeTheme();
+
     // Check if user is already authenticated
     this.authService.authState$.subscribe(authState => {
       if (authState.isAuthenticated) {
@@ -114,5 +117,26 @@ export class LoginComponent implements OnInit {
 
   togglePasswordVisibility(): void {
     this.hidePassword = !this.hidePassword;
+  }
+
+  toggleDarkMode(): void {
+    this.isDarkMode = !this.isDarkMode;
+    localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
+    this.applyTheme();
+  }
+
+  private initializeTheme(): void {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      this.isDarkMode = savedTheme === 'dark';
+    } else {
+      this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    this.applyTheme();
+  }
+
+  private applyTheme(): void {
+    document.body.classList.toggle('dark-theme', this.isDarkMode);
   }
 }

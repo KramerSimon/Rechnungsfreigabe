@@ -1,4 +1,8 @@
 <div class="login-container">
+  <button mat-icon-button class="theme-toggle" (click)="toggleDarkMode()" [attr.aria-label]="isDarkMode ? 'Hellen Modus aktivieren' : 'Dunklen Modus aktivieren'">
+    <mat-icon>{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
+  </button>
+
   <div class="login-card-wrapper">
     <mat-card class="login-card">
       <mat-card-header>

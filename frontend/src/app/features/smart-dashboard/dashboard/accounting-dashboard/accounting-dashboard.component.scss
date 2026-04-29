@@ -3,7 +3,7 @@
   max-width: 1600px;
   margin: 0 auto;
   padding: 2rem;
-  background: #f8f9fa;
+  background: var(--app-bg-color);
   min-height: 100vh;
 }
 
@@ -14,7 +14,7 @@
   h1 {
     font-size: 1.8rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--text-color);
     margin: 0;
     letter-spacing: 0.5px;
   }
@@ -23,17 +23,17 @@
 /* Overview Cards */
 .overview-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .overview-card {
   display: flex;
   align-items: center;
-  padding: 2rem;
+  padding: 1.25rem;
   border-radius: 12px;
-  background: white;
+  background: var(--surface-color);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: default;
@@ -72,8 +72,8 @@
   }
 
   .card-icon {
-    font-size: 3rem;
-    margin-right: 1.5rem;
+    font-size: 2.25rem;
+    margin-right: 1rem;
     opacity: 0.8;
   }
 
@@ -81,35 +81,35 @@
     flex: 1;
 
     .card-title {
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       font-weight: 600;
-      color: #666;
+      color: var(--muted-text-color);
       letter-spacing: 0.5px;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.35rem;
     }
 
     .card-count {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 500;
-      color: #1a1a1a;
-      margin-bottom: 0.25rem;
+      color: var(--text-color);
+      margin-bottom: 0.15rem;
     }
 
     .card-amount {
-      font-size: 1.3rem;
+      font-size: 1.15rem;
       font-weight: 600;
       color: #1976d2;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.3rem;
 
       &.large {
-        font-size: 1.6rem;
+        font-size: 1.35rem;
         color: #1976d2;
         margin-bottom: 0;
       }
     }
 
     .card-action {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #1976d2;
       font-weight: 500;
       cursor: pointer;
@@ -135,7 +135,7 @@
 
 /* Invoices Section */
 .invoices-section {
-  background: white;
+  background: var(--surface-color);
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -143,7 +143,7 @@
   h2 {
     font-size: 1.3rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--text-color);
     margin: 0 0 1.5rem 0;
     letter-spacing: 0.5px;
   }
@@ -184,16 +184,17 @@
   .mat-mdc-header-cell {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #666;
+    color: var(--text-color);
     letter-spacing: 0.5px;
     padding: 1rem 0.8rem;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--border-color);
   }
 
   .mat-mdc-cell {
     padding: 1rem 0.8rem;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.9rem;
+    color: var(--text-color);
 
     &.clickable {
       cursor: pointer;
@@ -221,7 +222,7 @@
 .supplier-cell {
   .supplier-name {
     font-weight: 500;
-    color: #1a1a1a;
+    color: var(--text-color);
   }
 }
 
@@ -233,19 +234,19 @@
 
   .status-reason {
     font-size: 0.8rem;
-    color: #666;
+    color: var(--muted-text-color);
   }
 }
 
 .assigned-cell {
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--text-color);
 }
 
 .amount-cell {
   font-weight: 600;
   text-align: right;
-  color: #1a1a1a;
+  color: var(--text-color);
   font-family: monospace;
 }
 
@@ -333,6 +334,12 @@
   p {
     margin: 0;
     font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 1400px) {
+  .overview-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

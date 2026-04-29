@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from './core/services/auth.service';
@@ -16,6 +17,9 @@ import { Observable, map, take } from 'rxjs';
 import { NotificationService } from './core/services/notification.service';
 import { EditUserDialogComponent } from './features/master-data/tabs/users-tab/dialogs/edit-user-dialog/edit-user-dialog.component';
 import { RoleDto } from './core/models/user.models';
+import { DomTranslationService } from './core/services/dom-translation.service';
+import { LanguageService } from './core/services/language.service';
+import { LanguageCode, LanguageOption } from './core/i18n/translations';
 
 @Component({
   selector: 'app-root',
@@ -28,7 +32,8 @@ import { RoleDto } from './core/models/user.models';
     MatIconModule,
     MatMenuModule,
     MatDividerModule,
-    MatBadgeModule
+    MatBadgeModule,
+    MatTooltipModule
 ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -40,6 +45,9 @@ export class AppComponent implements OnInit {
   currentRole$: Observable<string>;
   currentRoleTitle$: Observable<string>;
   unreadCount$: Observable<number>;
+  isDarkMode = false;
+  currentLanguage: LanguageCode;
+  languageOptions: LanguageOption[];
 
   constructor(
     private authService: AuthService,
@@ -48,7 +56,9 @@ export class AppComponent implements OnInit {
     private notificationService: NotificationService,
     private dialog: MatDialog,
     private userService: UserService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private domTranslationService: DomTranslationService,
+    private languageService: LanguageService
   ) {
     this.authState$ = this.authService.authState$;
     this.availableRoutes$ = this.roleService.getAvailableNavigationRoutes();
@@ -58,10 +68,45 @@ export class AppComponent implements OnInit {
     this.currentRoleTitle$ = this.roleService.getCurrentDashboardTitle();
     // Use real-time polling unreadCount$ which refreshes every 30 seconds
     this.unreadCount$ = this.notificationService.unreadCount$;
+    this.currentLanguage = this.languageService.currentLanguage;
+    this.languageOptions = this.languageService.languageOptions;
   }
 
   ngOnInit(): void {
+    this.initializeTheme();
+    this.languageService.currentLanguage$.subscribe((language) => {
+      this.currentLanguage = language;
+    });
+    this.domTranslationService.start();
     // Navigation will be handled by auth guard and routing
+  }
+
+  setLanguage(language: LanguageCode): void {
+    this.languageService.setLanguage(language);
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
+  }
+
+  toggleDarkMode(): void {
+    this.isDarkMode = !this.isDarkMode;
+    localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
+    this.applyTheme();
+  }
+
+  private initializeTheme(): void {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      this.isDarkMode = savedTheme === 'dark';
+    } else {
+      this.isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    this.applyTheme();
+  }
+
+  private applyTheme(): void {
+    document.body.classList.toggle('dark-theme', this.isDarkMode);
   }
 
   editCurrentUser(): void {

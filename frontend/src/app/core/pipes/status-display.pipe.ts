@@ -1,6 +1,7 @@
 import { Pipe, PipeTransform, OnInit } from '@angular/core';
 import { StatusService } from '../services/status.service';
 import { StatusTranslatorService } from '../services/status-translator.service';
+import { LanguageService } from '../services/language.service';
 
 @Pipe({
   name: 'statusDisplay',
@@ -11,13 +12,14 @@ export class StatusDisplayPipe implements PipeTransform {
 
   constructor(
     private statusService: StatusService,
-    private statusTranslator: StatusTranslatorService
+    private statusTranslator: StatusTranslatorService,
+    private languageService: LanguageService
   ) {}
 
   transform(statusCode: string, entityType: string = 'Invoice'): string {
     if (!statusCode) return '';
 
-    const cacheKey = `${entityType}:${statusCode}`;
+    const cacheKey = `${this.languageService.currentLanguage}:${entityType}:${statusCode}`;
 
     // Return cached value if available
     if (this.statusCache.has(cacheKey)) {
