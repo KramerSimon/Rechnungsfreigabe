@@ -5,7 +5,8 @@ import { LanguageService } from '../services/language.service';
 
 @Pipe({
   name: 'statusDisplay',
-  standalone: true
+  standalone: true,
+  pure: false
 })
 export class StatusDisplayPipe implements PipeTransform {
   private statusCache: Map<string, string> = new Map();
@@ -26,13 +27,19 @@ export class StatusDisplayPipe implements PipeTransform {
       return this.statusCache.get(cacheKey) || statusCode;
     }
 
-    // Get from service (this will be synchronous after initial load)
+    // Get from service (synchronous after initial load)
     const displayName = this.statusService.getStatusDisplayName(statusCode, entityType);
 
-    // Translate to German
-    const germanName = this.statusTranslator.translateDisplayName(displayName, entityType);
-    this.statusCache.set(cacheKey, germanName);
+    // If status metadata is not loaded yet, fall back to translating the code directly.
+    const translated = displayName === statusCode
+      ? this.statusTranslator.translate(statusCode, entityType)
+      : this.statusTranslator.translateDisplayName(displayName, entityType);
 
-    return germanName || statusCode;
+    // Avoid caching unresolved raw values so async metadata can update later.
+    if (translated && translated !== statusCode) {
+      this.statusCache.set(cacheKey, translated);
+    }
+
+    return translated || statusCode;
   }
 }

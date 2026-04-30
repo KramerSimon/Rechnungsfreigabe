@@ -46,7 +46,9 @@ export class LanguageService {
   translatePhrase(text: string): string {
     const normalized = this.normalize(text);
     const lang = this.currentLanguage;
-    const translated = PHRASE_TRANSLATIONS[lang]?.[normalized];
+    const translated =
+      PHRASE_TRANSLATIONS[lang]?.[normalized] ??
+      PHRASE_TRANSLATIONS[lang]?.[normalized.toLowerCase()];
     return translated ?? text;
   }
 
@@ -56,7 +58,9 @@ export class LanguageService {
 
   private normalize(value: string): string {
     return value
+      .replace(/\u00a0/g, ' ')
       .trim()
+      .replace(/\s+/g, ' ')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
   }

@@ -31,6 +31,10 @@ export class DomTranslationService {
         }
 
         for (const mutation of mutations) {
+          if (mutation.type === 'characterData' && mutation.target instanceof Text) {
+            this.translateTextNode(mutation.target);
+          }
+
           mutation.addedNodes.forEach((node) => {
             this.translateNode(node);
           });
@@ -39,7 +43,8 @@ export class DomTranslationService {
 
       this.observer.observe(document.body, {
         childList: true,
-        subtree: true
+        subtree: true,
+        characterData: true
       });
     });
 
@@ -135,6 +140,11 @@ export class DomTranslationService {
 
   private isExcluded(element: Element): boolean {
     const tag = element.tagName;
-    return tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE' || tag === 'PRE' || tag === 'TEXTAREA';
+    return tag === 'SCRIPT'
+      || tag === 'STYLE'
+      || tag === 'CODE'
+      || tag === 'PRE'
+      || tag === 'TEXTAREA'
+      || tag === 'MAT-ICON';
   }
 }
