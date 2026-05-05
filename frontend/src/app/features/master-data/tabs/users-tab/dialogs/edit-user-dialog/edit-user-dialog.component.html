@@ -1,56 +1,56 @@
 <div class="dialog-container">
-      <h2 mat-dialog-title>Benutzer bearbeiten</h2>
+  <h2 mat-dialog-title>{{ t('md.dialog.user.editTitle') }}</h2>
 
       <form [formGroup]="userForm" mat-dialog-content>
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Benutzername *</mat-label>
+            <mat-label>{{ t('md.users.username') }} *</mat-label>
             <input matInput formControlName="username" readonly>
-            <mat-hint>Benutzername kann nicht geändert werden</mat-hint>
+            <mat-hint>{{ t('md.dialog.user.usernameReadonly') }}</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>E-Mail *</mat-label>
+            <mat-label>{{ t('md.users.email') }} *</mat-label>
             <input matInput type="email" formControlName="email" placeholder="max@firma.de">
             <mat-error *ngIf="userForm.get('email')?.hasError('required')">
-              E-Mail ist erforderlich
+              {{ t('md.dialog.user.emailRequired') }}
             </mat-error>
             <mat-error *ngIf="userForm.get('email')?.hasError('email')">
-              Ungültige E-Mail-Adresse
+              {{ t('md.dialog.common.error.invalidEmail') }}
             </mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Vorname *</mat-label>
+            <mat-label>{{ t('md.users.firstName') }} *</mat-label>
             <input matInput formControlName="firstName" placeholder="Max">
             <mat-error *ngIf="userForm.get('firstName')?.hasError('required')">
-              Vorname ist erforderlich
+              {{ t('md.dialog.user.firstNameRequired') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Nachname *</mat-label>
+            <mat-label>{{ t('md.users.lastName') }} *</mat-label>
             <input matInput formControlName="lastName" placeholder="Mustermann">
             <mat-error *ngIf="userForm.get('lastName')?.hasError('required')">
-              Nachname ist erforderlich
+              {{ t('md.dialog.user.lastNameRequired') }}
             </mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Active Directory SID</mat-label>
+                 <mat-label>{{ t('md.dialog.user.adSid') }}</mat-label>
             <input matInput formControlName="activeDirectorySid"
-                   placeholder="Optional - für AD-Integration">
-            <mat-hint *ngIf="!canEditUserDetails">Keine Berechtigung zum Ändern der AD-SID</mat-hint>
+                   [placeholder]="t('md.dialog.user.adSidPlaceholder')">
+                 <mat-hint *ngIf="!canEditUserDetails">{{ t('md.dialog.user.noAdSidPermission') }}</mat-hint>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Rollen</mat-label>
+            <mat-label>{{ t('md.users.role') }}</mat-label>
             <mat-select formControlName="roleIds" multiple>
               <mat-select-trigger>
                 <span class="tag-list">
@@ -68,44 +68,44 @@
                 </span>
               </mat-option>
             </mat-select>
-            <mat-hint *ngIf="canManageRoles">Wählen Sie eine oder mehrere Rollen aus</mat-hint>
-            <mat-hint *ngIf="!canManageRoles">Keine Berechtigung zum Ändern der Rollen</mat-hint>
+            <mat-hint *ngIf="canManageRoles">{{ t('md.dialog.role.multiSelectHint') }}</mat-hint>
+            <mat-hint *ngIf="!canManageRoles">{{ t('md.dialog.user.noRoleEditPermission') }}</mat-hint>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Status</mat-label>
+            <mat-label>{{ t('md.common.status') }}</mat-label>
             <mat-select formControlName="isActive">
               <mat-select-trigger>
                 <span
                   class="status-tag"
                   [style.backgroundColor]="userForm.get('isActive')?.value ? '#4CAF50' : '#F44336'">
-                  {{userForm.get('isActive')?.value ? 'Aktiv' : 'Inaktiv'}}
+                  {{userForm.get('isActive')?.value ? t('md.common.active') : t('md.common.inactive')}}
                 </span>
               </mat-select-trigger>
               <mat-option [value]="true">
                 <span class="status-tag" style="background-color: #4CAF50;">
-                  Aktiv
+                  {{ t('md.common.active') }}
                 </span>
               </mat-option>
               <mat-option [value]="false">
                 <span class="status-tag" style="background-color: #F44336;">
-                  Inaktiv
+                  {{ t('md.common.inactive') }}
                 </span>
               </mat-option>
             </mat-select>
-            <mat-hint *ngIf="!canEditUserDetails">Keine Berechtigung zum Ändern des Status</mat-hint>
+            <mat-hint *ngIf="!canEditUserDetails">{{ t('md.dialog.user.noStatusPermission') }}</mat-hint>
           </mat-form-field>
         </div>
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary"
                 (click)="onSave()"
                 [disabled]="userForm.invalid">
-          Speichern
+          {{ t('md.dialog.common.save') }}
         </button>
       </div>
     </div>

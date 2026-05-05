@@ -2,9 +2,9 @@
   <div class="header-actions">
     <button mat-raised-button color="primary" (click)="createPurchaseOrder()">
       <mat-icon>add</mat-icon>
-      Neue Bestellung
+      {{ t('md.purchaseOrders.create') }}
     </button>
-    <button mat-icon-button (click)="loadPurchaseOrders()" matTooltip="Aktualisieren">
+    <button mat-icon-button (click)="loadPurchaseOrders()" [matTooltip]="t('md.common.refresh')">
       <mat-icon>refresh</mat-icon>
     </button>
   </div>
@@ -17,27 +17,27 @@
       </ng-container>
 
       <ng-container matColumnDef="title">
-        <th mat-header-cell *matHeaderCellDef>Titel</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.purchaseOrders.title') }}</th>
         <td mat-cell *matCellDef="let element">{{element.title}}</td>
       </ng-container>
 
       <ng-container matColumnDef="costCenter">
-        <th mat-header-cell *matHeaderCellDef>Kostenstelle</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.purchaseOrders.costCenter') }}</th>
         <td mat-cell *matCellDef="let element">{{getCostCenterName(element.costCenterId)}}</td>
       </ng-container>
 
       <ng-container matColumnDef="project">
-        <th mat-header-cell *matHeaderCellDef>Projekt</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.purchaseOrders.project') }}</th>
         <td mat-cell *matCellDef="let element">{{getProjectName(element.projectId)}}</td>
       </ng-container>
 
       <ng-container matColumnDef="totalAmount">
-        <th mat-header-cell *matHeaderCellDef>Betrag</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.purchaseOrders.amount') }}</th>
         <td mat-cell *matCellDef="let element">{{formatCurrency(element.totalAmount)}}</td>
       </ng-container>
 
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.common.status') }}</th>
         <td mat-cell *matCellDef="let element">
           <span [class]="'status-badge status-' + element.status">
             {{element.status}}
@@ -46,14 +46,14 @@
       </ng-container>
 
       <ng-container matColumnDef="createdAt">
-        <th mat-header-cell *matHeaderCellDef>Erstellt am</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.purchaseOrders.createdAt') }}</th>
         <td mat-cell *matCellDef="let element">{{formatDate(element.createdAt)}}</td>
       </ng-container>
 
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.common.actions') }}</th>
         <td mat-cell *matCellDef="let element">
-          <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deletePurchaseOrder(element.id)">
+          <button mat-icon-button color="warn" [matTooltip]="t('md.common.delete')" (click)="deletePurchaseOrder(element.id)">
             <mat-icon>delete</mat-icon>
           </button>
         </td>
@@ -65,12 +65,12 @@
 
     <div *ngIf="loadingPurchaseOrders" class="loading-overlay">
       <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
-      <p>Lade Bestellungen...</p>
+      <p>{{ t('md.purchaseOrders.loading') }}</p>
     </div>
 
     <div *ngIf="!loadingPurchaseOrders && purchaseOrders.length === 0" class="empty-state">
       <mat-icon>shopping_cart</mat-icon>
-      <p>Keine Bestellungen vorhanden</p>
+      <p>{{ t('md.purchaseOrders.empty') }}</p>
     </div>
   </mat-card>
 </div>

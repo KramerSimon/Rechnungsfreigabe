@@ -1,57 +1,57 @@
-<h2 mat-dialog-title>Neue Genehmigungsregel</h2>
+<h2 mat-dialog-title>{{ t('md.dialog.rule.createTitle') }}</h2>
 
 <mat-dialog-content class="dialog-content">
   <!-- Section 1: Basic Info & Description -->
   <div class="section section-primary">
-    <h3>Regelinformation</h3>
+    <h3>{{ t('md.dialog.rule.ruleInformation') }}</h3>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Regelname</mat-label>
+      <mat-label>{{ t('md.dialog.rule.ruleName') }}</mat-label>
       <input matInput [(ngModel)]="rule.name" placeholder="z.B. Kleinstbeträge Auto-Freigabe" required>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Beschreibung</mat-label>
+      <mat-label>{{ t('md.common.description') }}</mat-label>
       <textarea matInput [(ngModel)]="rule.description" rows="2"
-        placeholder="Kurze Beschreibung: Wann greift diese Regel? Was ist das Ziel?"></textarea>
+        [placeholder]="t('md.dialog.rule.descriptionPlaceholder')"></textarea>
     </mat-form-field>
 
     <div class="form-row">
       <mat-form-field appearance="outline" class="flex-grow">
-        <mat-label>Regeltyp</mat-label>
+        <mat-label>{{ t('md.dialog.rule.ruleType') }}</mat-label>
         <mat-select [(ngModel)]="rule.ruleType" required (ngModelChange)="onRuleTypeChange($event)">
-          <mat-option value="automatic">Automatische Freigabe</mat-option>
-          <mat-option value="manual">Manuelle Freigabe</mat-option>
+          <mat-option value="automatic">{{ t('md.dialog.rule.type.automatic') }}</mat-option>
+          <mat-option value="manual">{{ t('md.dialog.rule.type.manual') }}</mat-option>
         </mat-select>
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="flex-grow">
-        <mat-label>Priorität</mat-label>
+        <mat-label>{{ t('md.common.priority') }}</mat-label>
         <input matInput type="number" [(ngModel)]="rule.priority" min="1" max="999">
       </mat-form-field>
 
-      <mat-checkbox [(ngModel)]="rule.isActive" class="checkbox-inline">Aktiv</mat-checkbox>
+      <mat-checkbox [(ngModel)]="rule.isActive" class="checkbox-inline">{{ t('md.common.active') }}</mat-checkbox>
     </div>
   </div>
 
   <!-- Section 2: Conditions -->
   <div class="section">
-    <h3>Bedingungen (WENN)</h3>
-    <p class="section-description">Definieren Sie die Bedingungen, unter denen diese Regel greift.</p>
+    <h3>{{ t('md.dialog.rule.conditionsTitle') }}</h3>
+    <p class="section-description">{{ t('md.dialog.rule.conditionsDescription') }}</p>
 
     <div class="conditions-list">
       <div *ngFor="let condition of rule.conditions; let i = index" class="condition-item">
         <div class="condition-row">
           <mat-form-field appearance="outline" *ngIf="i > 0" class="logical-op">
-            <mat-label>Verknüpfung</mat-label>
+            <mat-label>{{ t('md.dialog.rule.logicalOperator') }}</mat-label>
             <mat-select [(ngModel)]="condition.logicalOperator">
-              <mat-option value="AND">UND</mat-option>
-              <mat-option value="OR">ODER</mat-option>
+              <mat-option value="AND">{{ t('md.dialog.rule.logical.and') }}</mat-option>
+              <mat-option value="OR">{{ t('md.dialog.rule.logical.or') }}</mat-option>
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow">
-            <mat-label>Feld</mat-label>
+            <mat-label>{{ t('md.dialog.rule.fieldLabel') }}</mat-label>
             <mat-select [(ngModel)]="condition.field" required>
               <mat-option *ngFor="let field of availableFields" [value]="field.value">
                 {{ field.label }}
@@ -60,7 +60,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow">
-            <mat-label>Operator</mat-label>
+            <mat-label>{{ t('md.dialog.rule.operatorLabel') }}</mat-label>
             <mat-select [(ngModel)]="condition.operator" required>
               <mat-option *ngFor="let op of getAvailableOperators(condition.field)" [value]="op.value">
                 {{ op.label }}
@@ -69,7 +69,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow" *ngIf="isDropdownField(condition.field)">
-            <mat-label>Wert</mat-label>
+            <mat-label>{{ t('md.dialog.rule.value') }}</mat-label>
             <mat-select [(ngModel)]="condition.value" required>
               <mat-option *ngFor="let option of getDropdownOptions(condition.field)" [value]="option.value">
                 {{ option.label }}
@@ -78,17 +78,17 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow" *ngIf="isDateField(condition.field)">
-            <mat-label>Datum</mat-label>
+            <mat-label>{{ t('md.dialog.rule.date') }}</mat-label>
             <input matInput type="date" [(ngModel)]="condition.value" required>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow" *ngIf="isAmountField(condition.field)">
-            <mat-label>Wert</mat-label>
+            <mat-label>{{ t('md.dialog.rule.value') }}</mat-label>
             <input matInput type="number" [(ngModel)]="condition.value" required>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow" *ngIf="!isDropdownField(condition.field) && !isDateField(condition.field) && !isAmountField(condition.field)">
-            <mat-label>Wert</mat-label>
+            <mat-label>{{ t('md.dialog.rule.value') }}</mat-label>
             <input matInput [(ngModel)]="condition.value" required>
           </mat-form-field>
 
@@ -101,20 +101,20 @@
 
     <button mat-stroked-button color="primary" (click)="addCondition()" class="add-btn">
       <mat-icon>add</mat-icon>
-      Bedingung hinzufügen
+      {{ t('md.dialog.rule.addCondition') }}
     </button>
   </div>
 
   <!-- Section 3: Actions -->
   <div class="section">
-    <h3>Aktionen (DANN)</h3>
-    <p class="section-description">Definieren Sie, was passiert, wenn die Bedingungen erfüllt sind.</p>
+    <h3>{{ t('md.dialog.rule.actionsTitle') }}</h3>
+    <p class="section-description">{{ t('md.dialog.rule.actionsDescription') }}</p>
 
     <div class="actions-list">
       <div *ngFor="let action of rule.actions; let i = index" class="action-item">
         <div class="action-row">
           <mat-form-field appearance="outline" class="flex-grow">
-            <mat-label>Aktionstyp</mat-label>
+            <mat-label>{{ t('md.dialog.rule.actionType') }}</mat-label>
             <mat-select [(ngModel)]="action.type" required (ngModelChange)="onActionTypeChange(action, $event)">
               <mat-option *ngFor="let actionType of getActionOptions()" [value]="actionType.value"
                           [disabled]="isActionTypeDisabled(action, actionType.value)">
@@ -124,7 +124,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow" *ngIf="action.type === 'set_status'">
-            <mat-label>Status</mat-label>
+            <mat-label>{{ t('md.common.status') }}</mat-label>
             <mat-select [(ngModel)]="action.value" required>
               <mat-select-trigger>
                 <ng-container *ngIf="getStatusByCode(action.value) as selectedStatus">
@@ -142,7 +142,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="flex-grow" *ngIf="action.type === 'assign_to'">
-            <mat-label>Benutzer</mat-label>
+            <mat-label>{{ t('md.dialog.rule.user') }}</mat-label>
             <mat-select [(ngModel)]="action.value" required>
               <mat-option *ngFor="let u of users" [value]="u.id">
                 {{ u.firstName }} {{ u.lastName }} ({{ u.username }})
@@ -157,7 +157,7 @@
 
         <!-- Stages Timeline for require_approval -->
         <div class="stages-timeline" *ngIf="action.type === 'require_approval'">
-          <div class="timeline-title">Freigabestufen</div>
+          <div class="timeline-title">{{ t('md.dialog.rule.approvalStages') }}</div>
 
           <div class="stages-container">
             <div *ngFor="let stage of action.stages; let si = index" class="stage-card">
@@ -167,7 +167,7 @@
 
               <div class="stage-content">
                 <div class="stage-header">
-                  <h4>Stufe {{ si + 1 }}</h4>
+                  <h4>{{ t('md.dialog.rule.stage') }} {{ si + 1 }}</h4>
                   <button mat-icon-button color="warn" (click)="removeStage(action, si)"
                           [disabled]="(action.stages?.length || 0) <= 1" class="delete-stage-btn">
                     <mat-icon>delete</mat-icon>
@@ -176,7 +176,7 @@
 
                 <div class="stage-fields">
                   <mat-form-field appearance="outline" class="flex-grow">
-                    <mat-label>Rolle</mat-label>
+                    <mat-label>{{ t('md.dialog.rule.role') }}</mat-label>
                     <mat-select [(ngModel)]="stage.roleId">
                       <mat-select-trigger>
                         <ng-container *ngIf="getRoleById(stage.roleId) as selectedRole">
@@ -195,7 +195,7 @@
                   </mat-form-field>
 
                   <mat-form-field appearance="outline" class="flex-grow">
-                    <mat-label>Benutzer (optional)</mat-label>
+                    <mat-label>{{ t('md.dialog.rule.userOptional') }}</mat-label>
                     <mat-select [(ngModel)]="stage.userId">
                       <mat-option [value]="undefined">—</mat-option>
                       <mat-option *ngFor="let u of users" [value]="u.id">
@@ -212,12 +212,12 @@
 
           <button mat-stroked-button color="primary" (click)="addStage(action)" class="add-stage-btn">
             <mat-icon>add_circle</mat-icon>
-            Neue Freigabestufe
+            {{ t('md.dialog.rule.newApprovalStage') }}
           </button>
         </div>
 
         <mat-form-field appearance="outline" class="full-width" *ngIf="action.type !== 'require_approval'">
-          <mat-label>Beschreibung</mat-label>
+          <mat-label>{{ t('md.common.description') }}</mat-label>
           <input matInput [(ngModel)]="action.description" required>
         </mat-form-field>
       </div>
@@ -225,25 +225,25 @@
 
     <button mat-stroked-button color="primary" (click)="addAction()" class="add-btn">
       <mat-icon>add</mat-icon>
-      Aktion hinzufügen
+      {{ t('md.dialog.rule.addAction') }}
     </button>
   </div>
 
   <!-- Section 4: Summary Preview -->
   <div class="section section-summary">
-    <h3>Zusammenfassung</h3>
+    <h3>{{ t('md.dialog.rule.summary') }}</h3>
     <div class="summary-content">
       <div class="summary-item" *ngIf="rule.description">
-        <strong>Ziel:</strong> {{ rule.description }}
+        <strong>{{ t('md.dialog.rule.summaryTarget') }}:</strong> {{ rule.description }}
       </div>
       <div class="summary-item">
-        <strong>Regeltyp:</strong> {{ rule.ruleType === 'automatic' ? 'Automatische Freigabe' : 'Manuelle Freigabe' }}
+        <strong>{{ t('md.dialog.rule.summaryRuleType') }}:</strong> {{ rule.ruleType === 'automatic' ? t('md.dialog.rule.type.automatic') : t('md.dialog.rule.type.manual') }}
       </div>
       <div class="summary-item" *ngIf="rule.actions.length > 0 && rule.actions[0].type === 'require_approval'">
-        <strong>Freigabeablauf:</strong>
+        <strong>{{ t('md.dialog.rule.summaryFlow') }}:</strong>
         <div class="flow-preview">
           <span *ngFor="let stage of rule.actions[0].stages; let i = index; let last = last">
-            Stufe {{ i + 1 }} • {{ getRoleById(stage.roleId)?.name || 'Keine Rolle' }}<span *ngIf="!last"> → </span>
+            {{ t('md.dialog.rule.stage') }} {{ i + 1 }} • {{ getRoleById(stage.roleId)?.name || t('md.dialog.rule.noRole') }}<span *ngIf="!last"> → </span>
           </span>
         </div>
       </div>
@@ -252,8 +252,8 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Abbrechen</button>
+  <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
   <button mat-raised-button color="primary" (click)="onSave()" [disabled]="!isValid()">
-    Erstellen
+    {{ t('md.dialog.common.create') }}
   </button>
 </mat-dialog-actions>

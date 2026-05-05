@@ -1,16 +1,16 @@
 <div class="dialog-container">
-      <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Neue Eskalationsregel' : 'Eskalationsregel bearbeiten' }}</h2>
+  <h2 mat-dialog-title>{{ data.mode === 'create' ? t('md.dialog.escalation.createTitle') : t('md.dialog.escalation.editTitle') }}</h2>
 
       <form [formGroup]="form" mat-dialog-content>
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Name *</mat-label>
+            <mat-label>{{ t('md.common.name') }} *</mat-label>
             <input matInput formControlName="name" placeholder="z.B. Eskalation nach 48h">
-            <mat-error *ngIf="form.get('name')?.hasError('required')">Name ist erforderlich</mat-error>
+            <mat-error *ngIf="form.get('name')?.hasError('required')">{{ t('md.dialog.common.error.nameRequired') }}</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Status-Auslöser (mehrfach möglich) *</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.triggerStatuses') }} *</mat-label>
             <mat-select formControlName="triggerStatusIds" multiple>
               <mat-select-trigger>
                 <span class="tag-list">
@@ -28,46 +28,46 @@
                 </span>
               </mat-option>
             </mat-select>
-            <mat-error *ngIf="form.get('triggerStatusIds')?.hasError('required')">Mindestens ein Status ist erforderlich</mat-error>
+            <mat-error *ngIf="form.get('triggerStatusIds')?.hasError('required')">{{ t('md.dialog.escalation.atLeastOneStatus') }}</mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="time-field">
-            <mat-label>Tage</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.days') }}</mat-label>
             <input matInput type="number" formControlName="triggerDays" min="0" max="10">
-            <mat-hint>Eskalation nach X Tagen</mat-hint>
+            <mat-hint>{{ t('md.dialog.escalation.daysHint') }}</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="time-field">
-            <mat-label>Stunden</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.hours') }}</mat-label>
             <input matInput type="number" formControlName="triggerHours" min="0" max="23">
-            <mat-hint>zusätzliche Stunden</mat-hint>
+            <mat-hint>{{ t('md.dialog.escalation.hoursHint') }}</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="time-field">
-            <mat-label>Minuten</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.minutes') }}</mat-label>
             <input matInput type="number" formControlName="triggerMinutes" min="0" max="59">
-            <mat-hint>zusätzliche Minuten</mat-hint>
+            <mat-hint>{{ t('md.dialog.escalation.minutesHint') }}</mat-hint>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Wiederholung alle (Stunden)</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.repeatEveryHours') }}</mat-label>
             <input matInput type="number" formControlName="repeatIntervalHours" min="1">
-            <mat-hint>Optional. Wenn leer, wird nicht wiederholt.</mat-hint>
+            <mat-hint>{{ t('md.dialog.escalation.repeatHint') }}</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Max. Eskalationen</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.maxEscalations') }}</mat-label>
             <input matInput type="number" formControlName="maxEscalations" min="0">
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Benachrichtigte Rollen (mehrfach möglich)</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.notifyRoles') }}</mat-label>
             <mat-select formControlName="notifyRoleIds" multiple>
               <mat-select-trigger>
                 <span class="tag-list">
@@ -88,7 +88,7 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Benutzer (mehrfach möglich)</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.notifyUsers') }}</mat-label>
             <mat-select formControlName="notifyUserIds" multiple>
               <mat-option *ngFor="let user of data.users" [value]="user.id">{{user.firstName}} {{user.lastName}} ({{user.username}})</mat-option>
             </mat-select>
@@ -97,29 +97,29 @@
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nachrichtenvorlage</mat-label>
+            <mat-label>{{ t('md.dialog.escalation.messageTemplate') }}</mat-label>
             <textarea matInput formControlName="messageTemplate" rows="4"
-              placeholder="Die Standard-Vorlage enthält bereits Rechnungs- und Workflow-Informationen. Geben Sie hier zusätzlichen Text ein, falls gewünscht."></textarea>
-            <mat-hint>Verfügbare Platzhalter: {{dQ}}InvoiceNumber{{dQ}}, {{dQ}}SupplierName{{dQ}}, {{dQ}}Amount{{dQ}}, {{dQ}}Status{{dQ}}, {{dQ}}RuleName{{dQ}}</mat-hint>
+              [placeholder]="t('md.dialog.escalation.messageTemplatePlaceholder')"></textarea>
+            <mat-hint>{{ t('md.dialog.escalation.availablePlaceholders') }}: {{dQ}}InvoiceNumber{{dQ}}, {{dQ}}SupplierName{{dQ}}, {{dQ}}Amount{{dQ}}, {{dQ}}Status{{dQ}}, {{dQ}}RuleName{{dQ}}</mat-hint>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Beschreibung</mat-label>
+            <mat-label>{{ t('md.common.description') }}</mat-label>
             <textarea matInput formControlName="description" rows="2"></textarea>
           </mat-form-field>
         </div>
 
         <div class="form-row">
-          <mat-checkbox formControlName="isActive">Regel aktiv</mat-checkbox>
+          <mat-checkbox formControlName="isActive">{{ t('md.dialog.escalation.ruleActive') }}</mat-checkbox>
         </div>
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary" (click)="onSave()" [disabled]="form.invalid">
-          {{ data.mode === 'create' ? 'Erstellen' : 'Speichern' }}
+          {{ data.mode === 'create' ? t('md.dialog.common.create') : t('md.dialog.common.save') }}
         </button>
       </div>
     </div>

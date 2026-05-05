@@ -11,6 +11,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { RoleService } from '../../../../core/services/role.service';
 import { RoleDto } from '../../../../core/models/user.models';
 import { RoleDialogComponent } from './dialogs/role-dialog.component';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-roles-tab',
@@ -37,7 +38,8 @@ export class RolesTabComponent implements OnInit {
   constructor(
     private roleService: RoleService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -53,7 +55,7 @@ export class RolesTabComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading roles:', error);
-        this.snackBar.open('Failed to load roles', 'Close', { duration: 3000 });
+        this.snackBar.open(this.t('md.roles.error.load'), this.t('common.close'), { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -69,12 +71,12 @@ export class RolesTabComponent implements OnInit {
       if (result) {
         this.roleService.createRole(result).subscribe({
           next: () => {
-            this.snackBar.open('Role created successfully', 'Close', { duration: 3000 });
+            this.snackBar.open(this.t('md.roles.success.created'), this.t('common.close'), { duration: 3000 });
             this.loadRoles();
           },
           error: (error: any) => {
             console.error('Error creating role:', error);
-            this.snackBar.open('Failed to create role', 'Close', { duration: 3000 });
+            this.snackBar.open(this.t('md.roles.error.create'), this.t('common.close'), { duration: 3000 });
           }
         });
       }
@@ -91,12 +93,12 @@ export class RolesTabComponent implements OnInit {
       if (result) {
         this.roleService.updateRole(role.id, result).subscribe({
           next: () => {
-            this.snackBar.open('Role updated successfully', 'Close', { duration: 3000 });
+            this.snackBar.open(this.t('md.roles.success.updated'), this.t('common.close'), { duration: 3000 });
             this.loadRoles();
           },
           error: (error: any) => {
             console.error('Error updating role:', error);
-            this.snackBar.open('Failed to update role', 'Close', { duration: 3000 });
+            this.snackBar.open(this.t('md.roles.error.update'), this.t('common.close'), { duration: 3000 });
           }
         });
       }
@@ -105,21 +107,25 @@ export class RolesTabComponent implements OnInit {
 
   deleteRole(role: RoleDto): void {
     if (role.isSystemRole) {
-      this.snackBar.open('System roles cannot be deleted', 'Close', { duration: 3000 });
+      this.snackBar.open(this.t('md.roles.cannotDeleteSystem'), this.t('common.close'), { duration: 3000 });
       return;
     }
 
-    if (confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
+    if (confirm(this.t('md.roles.confirm.delete').replace('{name}', role.name))) {
       this.roleService.deleteRole(role.id).subscribe({
         next: () => {
-          this.snackBar.open('Role deleted successfully', 'Close', { duration: 3000 });
+          this.snackBar.open(this.t('md.roles.success.deleted'), this.t('common.close'), { duration: 3000 });
           this.loadRoles();
         },
         error: (error: any) => {
           console.error('Error deleting role:', error);
-          this.snackBar.open('Failed to delete role', 'Close', { duration: 3000 });
+          this.snackBar.open(this.t('md.roles.error.delete'), this.t('common.close'), { duration: 3000 });
         }
       });
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

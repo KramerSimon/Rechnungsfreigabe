@@ -13,7 +13,8 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { AuthState } from '../../../../core/models/auth.models';
 import { InvoiceService, PagedResult } from '../../../../core/services/invoice.service';
 import { Invoice } from '../../../../core/models';
-import { catchError, finalize, of, filter, Subscription } from 'rxjs';
+import { catchError, finalize, of, filter, Subscription, skip } from 'rxjs';
+import { LanguageService } from '../../../../core/services/language.service';
 
 interface UserTask {
   id: number;
@@ -57,6 +58,7 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
 
   currentFilter = 'all';
 
+  private sourceInvoices: Invoice[] = [];
   tasks: UserTask[] = [];
   filteredTasks: UserTask[] = [];
 
@@ -65,7 +67,8 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private invoiceService: InvoiceService,
-    private router: Router
+    private router: Router,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -75,6 +78,10 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     });
 
     this.loadUserTasks();
+
+    this.languageService.currentLanguage$.pipe(skip(1)).subscribe(() => {
+      this.processTasksData(this.sourceInvoices);
+    });
 
     // Listen for navigation events to refresh data when returning to dashboard
     this.navigationSubscription = this.router.events.pipe(
@@ -104,6 +111,7 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
   }
 
   private processTasksData(invoices: Invoice[]): void {
+    this.sourceInvoices = [...invoices];
     // All returned invoices require approval from the current user
     this.tasks = invoices.map(invoice => this.mapInvoiceToTask(invoice));
     this.calculateCounts();
@@ -126,23 +134,25 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     if (isOverdue || isEscalated) {
       status = 'urgent';
       statusIcon = 'warning';
-      statusText = 'EILT';
+      statusText = this.t('dashboard.user.status.urgent');
       statusClass = 'status-urgent';
       actionText = this.getActionButtonText();
       actionClass = 'action-urgent';
-      reason = isEscalated ? 'Eskaliert' : 'Überfällig';
+      reason = isEscalated
+        ? this.t('dashboard.user.reason.escalated')
+        : this.t('dashboard.user.reason.overdue');
     } else if (isIncomplete) {
       status = 'incomplete';
       statusIcon = 'help_outline';
-      statusText = 'Daten fehlen';
+      statusText = this.t('dashboard.user.status.incomplete');
       statusClass = 'status-incomplete';
-      actionText = 'Ergänzen';
+      actionText = this.t('dashboard.user.action.complete');
       actionClass = 'action-incomplete';
-      reason = 'Projekt fehlt';
+      reason = this.t('dashboard.user.reason.projectMissing');
     } else {
       status = 'normal';
       statusIcon = 'radio_button_unchecked';
-      statusText = 'Offen';
+      statusText = this.t('dashboard.user.status.open');
       statusClass = 'status-normal';
       actionText = this.getActionButtonText();
       actionClass = 'action-normal';
@@ -215,42 +225,52 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     const firstName = this.currentUser?.firstName || 'User';
 
     if (hour < 12) {
-      return `Guten Morgen, ${firstName}!`;
+      return this.t('dashboard.user.greeting.morning').replace('{name}', firstName);
     } else if (hour < 18) {
-      return `Guten Tag, ${firstName}!`;
+      return this.t('dashboard.user.greeting.day').replace('{name}', firstName);
     } else {
-      return `Guten Abend, ${firstName}!`;
+      return this.t('dashboard.user.greeting.evening').replace('{name}', firstName);
     }
   }
 
   getActionVerb(): string {
     // Admin und Freigeber sehen "freizugeben"
     if (this.userPermissions.includes('invoices.approve')) {
-      return 'freizugeben';
+      return this.t('dashboard.user.verb.approve');
     }
     // Manager sehen "zu genehmigen"
     if (this.userPermissions.includes('invoices.approve_cost_center')) {
-      return 'zu genehmigen';
+      return this.t('dashboard.user.verb.authorize');
     }
     // Buchhaltung und andere sehen "zu bearbeiten"
     if (this.userPermissions.includes('invoices.edit')) {
-      return 'zu bearbeiten';
+      return this.t('dashboard.user.verb.edit');
     }
     // Fallback für normale Benutzer
-    return 'zu prüfen';
+    return this.t('dashboard.user.verb.review');
   }
 
   getActionButtonText(): string {
     // Admin und Freigeber sehen "Freigeben"
     if (this.userPermissions.includes('invoices.approve')) {
-      return 'Freigeben';
+      return this.t('dashboard.user.button.approve');
     }
     // Manager sehen "Genehmigen"
     if (this.userPermissions.includes('invoices.approve_cost_center')) {
-      return 'Genehmigen';
+      return this.t('dashboard.user.button.authorize');
     }
     // Buchhaltung und andere sehen "Bearbeiten"
-    return 'Bearbeiten';
+    return this.t('dashboard.user.button.edit');
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
+  }
+
+  getInvoiceLabel(): string {
+    return this.totalTasks === 1
+      ? this.t('dashboard.user.invoice.single')
+      : this.t('dashboard.user.invoice.plural');
   }
 
   ngOnDestroy(): void {

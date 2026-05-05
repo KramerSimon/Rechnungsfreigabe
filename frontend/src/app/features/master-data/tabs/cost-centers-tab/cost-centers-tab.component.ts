@@ -14,6 +14,7 @@ import { UserService } from '../../../../core/services/user.service';
 import { CreateCostCenterDialogComponent } from './dialogs/create-cost-center-dialog.component';
 import { EditCostCenterDialogComponent } from './dialogs/edit-cost-center-dialog/edit-cost-center-dialog.component';
 import { forkJoin } from 'rxjs';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-cost-centers-tab',
@@ -41,7 +42,8 @@ export class CostCentersTabComponent implements OnInit {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private costCenterService: CostCenterService,
-    private userService: UserService
+    private userService: UserService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -62,7 +64,7 @@ export class CostCentersTabComponent implements OnInit {
       error: (error: any) => {
         console.error('Error loading cost centers:', error);
         this.loadingCostCenters = false;
-        this.snackBar.open('Fehler beim Laden der Kostenstellen', 'Schließen', {
+        this.snackBar.open(this.t('md.costCenters.error.load'), this.t('common.close'), {
           duration: 3000,
         });
       },
@@ -92,7 +94,7 @@ export class CostCentersTabComponent implements OnInit {
       if (result) {
         this.costCenterService.addCostCenter(result).subscribe({
           next: () => {
-            this.snackBar.open('Kostenstelle erfolgreich erstellt', 'Schließen', {
+            this.snackBar.open(this.t('md.costCenters.success.created'), this.t('common.close'), {
               duration: 3000,
             });
             this.loadCostCenters();
@@ -100,8 +102,8 @@ export class CostCentersTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error creating cost center:', error);
             this.snackBar.open(
-              'Fehler beim Erstellen der Kostenstelle',
-              'Schließen',
+              this.t('md.costCenters.error.create'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -127,8 +129,8 @@ export class CostCentersTabComponent implements OnInit {
         this.costCenterService.updateCostCenter(costCenter.id, result).subscribe({
           next: () => {
             this.snackBar.open(
-              'Kostenstelle erfolgreich aktualisiert',
-              'Schließen',
+              this.t('md.costCenters.success.updated'),
+              this.t('common.close'),
               { duration: 3000 }
             );
             this.loadCostCenters();
@@ -136,8 +138,8 @@ export class CostCentersTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error updating cost center:', error);
             this.snackBar.open(
-              'Fehler beim Aktualisieren der Kostenstelle',
-              'Schließen',
+              this.t('md.costCenters.error.update'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -147,10 +149,10 @@ export class CostCentersTabComponent implements OnInit {
   }
 
   deleteCostCenter(id: string): void {
-    if (confirm('Möchten Sie diese Kostenstelle wirklich löschen?')) {
+    if (confirm(this.t('md.costCenters.confirm.delete'))) {
       this.costCenterService.deleteCostCenter(id).subscribe({
         next: () => {
-          this.snackBar.open('Kostenstelle erfolgreich gelöscht', 'Schließen', {
+          this.snackBar.open(this.t('md.costCenters.success.deleted'), this.t('common.close'), {
             duration: 3000,
           });
           this.loadCostCenters();
@@ -158,8 +160,8 @@ export class CostCentersTabComponent implements OnInit {
         error: (error: any) => {
           console.error('Error deleting cost center:', error);
           this.snackBar.open(
-            'Fehler beim Löschen der Kostenstelle',
-            'Schließen',
+            this.t('md.costCenters.error.delete'),
+            this.t('common.close'),
             { duration: 3000 }
           );
         },
@@ -180,5 +182,9 @@ export class CostCentersTabComponent implements OnInit {
   isUserAManager(user: User): boolean {
     const role = user.role?.toLowerCase();
     return role === 'manager' || role === 'admin' || role === 'administrator';
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

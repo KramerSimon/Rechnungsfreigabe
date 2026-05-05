@@ -1,60 +1,60 @@
 <div class="dialog-container">
-      <h2 mat-dialog-title>Neuer Benutzer</h2>
+  <h2 mat-dialog-title>{{ t('md.dialog.user.createTitle') }}</h2>
 
       <form [formGroup]="userForm" mat-dialog-content>
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Benutzername *</mat-label>
+            <mat-label>{{ t('md.users.username') }} *</mat-label>
             <input matInput formControlName="username" placeholder="max.mustermann">
             <mat-error *ngIf="userForm.get('username')?.hasError('required')">
-              Benutzername ist erforderlich
+              {{ t('md.dialog.user.usernameRequired') }}
             </mat-error>
             <mat-error *ngIf="userForm.get('username')?.hasError('maxlength')">
-              Benutzername darf maximal 50 Zeichen haben
+              {{ t('md.dialog.user.usernameMaxLength') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>E-Mail *</mat-label>
+            <mat-label>{{ t('md.users.email') }} *</mat-label>
             <input matInput type="email" formControlName="email" placeholder="max@firma.de">
             <mat-error *ngIf="userForm.get('email')?.hasError('required')">
-              E-Mail ist erforderlich
+              {{ t('md.dialog.user.emailRequired') }}
             </mat-error>
             <mat-error *ngIf="userForm.get('email')?.hasError('email')">
-              Ungültige E-Mail-Adresse
+              {{ t('md.dialog.common.error.invalidEmail') }}
             </mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Vorname *</mat-label>
+            <mat-label>{{ t('md.users.firstName') }} *</mat-label>
             <input matInput formControlName="firstName" placeholder="Max">
             <mat-error *ngIf="userForm.get('firstName')?.hasError('required')">
-              Vorname ist erforderlich
+              {{ t('md.dialog.user.firstNameRequired') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Nachname *</mat-label>
+            <mat-label>{{ t('md.users.lastName') }} *</mat-label>
             <input matInput formControlName="lastName" placeholder="Mustermann">
             <mat-error *ngIf="userForm.get('lastName')?.hasError('required')">
-              Nachname ist erforderlich
+              {{ t('md.dialog.user.lastNameRequired') }}
             </mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Active Directory SID</mat-label>
+                 <mat-label>{{ t('md.dialog.user.adSid') }}</mat-label>
             <input matInput formControlName="activeDirectorySid"
-                   placeholder="Optional - für AD-Integration">
+                   [placeholder]="t('md.dialog.user.adSidPlaceholder')">
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Rollen</mat-label>
+            <mat-label>{{ t('md.users.role') }}</mat-label>
             <mat-select formControlName="roleIds" multiple>
               <mat-select-trigger>
                 <span class="tag-list">
@@ -72,45 +72,45 @@
                 </span>
               </mat-option>
             </mat-select>
-            <mat-hint *ngIf="canManageRoles">Wählen Sie eine oder mehrere Rollen aus</mat-hint>
-            <mat-hint *ngIf="!canManageRoles">Keine Berechtigung zum Zuweisen von Rollen</mat-hint>
+            <mat-hint *ngIf="canManageRoles">{{ t('md.dialog.role.multiSelectHint') }}</mat-hint>
+            <mat-hint *ngIf="!canManageRoles">{{ t('md.dialog.user.noRoleAssignmentPermission') }}</mat-hint>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Passwort *</mat-label>
+            <mat-label>{{ t('md.dialog.user.password') }} *</mat-label>
             <input matInput type="password" formControlName="password" placeholder="••••••••">
             <mat-error *ngIf="userForm.get('password')?.hasError('required')">
-              Passwort ist erforderlich
+              {{ t('md.dialog.user.passwordRequired') }}
             </mat-error>
             <mat-error *ngIf="userForm.get('password')?.hasError('minlength')">
-              Passwort muss mindestens 8 Zeichen lang sein
+              {{ t('md.dialog.user.passwordMinLength') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Passwort wiederholen *</mat-label>
+            <mat-label>{{ t('md.dialog.user.passwordConfirm') }} *</mat-label>
             <input matInput type="password" formControlName="passwordConfirm" placeholder="••••••••">
             <mat-error *ngIf="userForm.get('passwordConfirm')?.hasError('required')">
-              Passwortbestätigung ist erforderlich
+              {{ t('md.dialog.user.passwordConfirmRequired') }}
             </mat-error>
             <mat-error *ngIf="userForm.get('passwordConfirm')?.hasError('minlength')">
-              Passwort muss mindestens 8 Zeichen lang sein
+              {{ t('md.dialog.user.passwordMinLength') }}
             </mat-error>
             <mat-error *ngIf="userForm.get('passwordConfirm')?.touched && userForm.hasError('passwordMismatch')">
-              Passwörter stimmen nicht überein
+              {{ t('md.dialog.user.passwordMismatch') }}
             </mat-error>
           </mat-form-field>
         </div>
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary"
                 (click)="onSave()"
                 [disabled]="userForm.invalid">
-          Erstellen
+          {{ t('md.dialog.common.create') }}
         </button>
       </div>
     </div>

@@ -1,388 +1,366 @@
 <div class="pdf-upload-dashboard">
-      <mat-card class="upload-section">
-        <mat-card-header>
-          <mat-card-title>Rechnungs-PDF/XML Hochladen</mat-card-title>
-          <mat-card-subtitle>Laden Sie Rechnungs-PDFs oder XMLs hoch, um diese automatisch in die Datenbank zu speichern</mat-card-subtitle>
-        </mat-card-header>
+  <mat-card class="upload-section">
+    <mat-card-header>
+      <mat-card-title>{{ t('dashboard.pdf.invoice.title') }}</mat-card-title>
+      <mat-card-subtitle>{{ t('dashboard.pdf.invoice.subtitle') }}</mat-card-subtitle>
+    </mat-card-header>
 
-        <mat-card-content>
-          <form [formGroup]="uploadForm">
-            <div class="form-row">
-              <mat-form-field appearance="fill" class="form-field">
-                <mat-label>Lieferant (optional)</mat-label>
-                <mat-select formControlName="supplierId">
-                  <mat-option value="">-- Automatisch aus PDF/XML extrahieren --</mat-option>
-                  <mat-option *ngFor="let supplier of suppliers" [value]="supplier.id">
-                    {{ supplier.name }}
-                  </mat-option>
-                </mat-select>
-                <mat-hint>Leer lassen, um Lieferant automatisch aus PDF/XML zu erkennen</mat-hint>
-              </mat-form-field>
+    <mat-card-content>
+      <form [formGroup]="uploadForm">
+        <div class="form-row">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>{{ t('dashboard.pdf.field.supplierOptional') }}</mat-label>
+            <mat-select formControlName="supplierId">
+              <mat-option value="">{{ t('dashboard.pdf.option.extractSupplier') }}</mat-option>
+              <mat-option *ngFor="let supplier of suppliers" [value]="supplier.id">
+                {{ supplier.name }}
+              </mat-option>
+            </mat-select>
+            <mat-hint>{{ t('dashboard.pdf.hint.supplierAuto') }}</mat-hint>
+          </mat-form-field>
 
-              <mat-form-field appearance="fill" class="form-field">
-                <mat-label>Kostenstelle (optional)</mat-label>
-                <mat-select formControlName="costCenterId">
-                  <mat-option value="">-- Kostenstelle wählen --</mat-option>
-                  <mat-option *ngFor="let cc of costCenters" [value]="cc.id">
-                    {{ cc.name }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>{{ t('dashboard.pdf.field.costCenterOptional') }}</mat-label>
+            <mat-select formControlName="costCenterId">
+              <mat-option value="">{{ t('dashboard.pdf.option.chooseCostCenter') }}</mat-option>
+              <mat-option *ngFor="let cc of costCenters" [value]="cc.id">
+                {{ cc.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
 
-            <div class="form-row">
-              <mat-form-field appearance="fill" class="form-field">
-                <mat-label>Projekt (optional)</mat-label>
-                <mat-select formControlName="projectId">
-                  <mat-option value="">-- Projekt wählen --</mat-option>
-                  <mat-option *ngFor="let project of filteredProjectsForInvoice" [value]="project.id">
-                    {{ project.name }}
-                  </mat-option>
-                </mat-select>
-                <mat-hint *ngIf="uploadForm.get('costCenterId')?.value">Projekte für diese Kostenstelle</mat-hint>
-                <mat-hint *ngIf="!uploadForm.get('costCenterId')?.value">Wählen Sie erst eine Kostenstelle</mat-hint>
-              </mat-form-field>
+        <div class="form-row">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>{{ t('dashboard.pdf.field.projectOptional') }}</mat-label>
+            <mat-select formControlName="projectId">
+              <mat-option value="">{{ t('dashboard.pdf.option.chooseProject') }}</mat-option>
+              <mat-option *ngFor="let project of filteredProjectsForInvoice" [value]="project.id">
+                {{ project.name }}
+              </mat-option>
+            </mat-select>
+            <mat-hint *ngIf="uploadForm.get('costCenterId')?.value">{{ t('dashboard.pdf.hint.projectsForCostCenter') }}</mat-hint>
+            <mat-hint *ngIf="!uploadForm.get('costCenterId')?.value">{{ t('dashboard.pdf.hint.selectCostCenterFirst') }}</mat-hint>
+          </mat-form-field>
 
-              <mat-form-field appearance="fill" class="form-field">
-                <mat-label>Bestellung (optional)</mat-label>
-                <mat-select formControlName="purchaseOrderId">
-                  <mat-option value="">-- Bestellung wählen --</mat-option>
-                  <mat-option *ngFor="let po of filteredPurchaseOrders" [value]="po.id">
-                    {{ po.title }} ({{ po.id }})
-                  </mat-option>
-                </mat-select>
-                <mat-hint *ngIf="uploadForm.get('projectId')?.value">Bestellungen für dieses Projekt</mat-hint>
-                <mat-hint *ngIf="!uploadForm.get('projectId')?.value && uploadForm.get('costCenterId')?.value">Wählen Sie ein Projekt</mat-hint>
-                <mat-hint *ngIf="!uploadForm.get('costCenterId')?.value">Wählen Sie erst eine Kostenstelle</mat-hint>
-              </mat-form-field>
-            </div>
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>{{ t('dashboard.pdf.field.orderOptional') }}</mat-label>
+            <mat-select formControlName="purchaseOrderId">
+              <mat-option value="">{{ t('dashboard.pdf.option.chooseOrder') }}</mat-option>
+              <mat-option *ngFor="let po of filteredPurchaseOrders" [value]="po.id">
+                {{ po.title }} ({{ po.id }})
+              </mat-option>
+            </mat-select>
+            <mat-hint *ngIf="uploadForm.get('projectId')?.value">{{ t('dashboard.pdf.hint.ordersForProject') }}</mat-hint>
+            <mat-hint *ngIf="!uploadForm.get('projectId')?.value && uploadForm.get('costCenterId')?.value">{{ t('dashboard.pdf.hint.selectProject') }}</mat-hint>
+            <mat-hint *ngIf="!uploadForm.get('costCenterId')?.value">{{ t('dashboard.pdf.hint.selectCostCenterFirst') }}</mat-hint>
+          </mat-form-field>
+        </div>
 
-            <div class="file-input-section">
-              <div class="file-drop-zone"
-                   (dragover)="onDragOver($event)"
-                   (dragleave)="onDragLeave($event)"
-                   (drop)="onFileDropped($event)"
-                   [class.drag-over]="isDragOver">
-                <mat-icon class="upload-icon">cloud_upload</mat-icon>
-                <p class="drag-text">
-                  Dateien hier ablegen oder
-                  <a href="javascript:void(0)" (click)="fileInput.click()">durchsuchen</a>
-                </p>
-                <p class="file-info">Erlaubte Formate: PDF, XML | Max. Größe: 50 MB</p>
+        <div class="file-input-section">
+          <div class="file-drop-zone"
+               (dragover)="onDragOver($event)"
+               (dragleave)="onDragLeave($event)"
+               (drop)="onFileDropped($event)"
+               [class.drag-over]="isDragOver">
+            <mat-icon class="upload-icon">cloud_upload</mat-icon>
+            <p class="drag-text">
+              {{ t('dashboard.pdf.drop.files') }}
+              <a href="javascript:void(0)" (click)="fileInput.click()">{{ t('dashboard.pdf.drop.browse') }}</a>
+            </p>
+            <p class="file-info">{{ t('dashboard.pdf.drop.allowedFormats') }}</p>
+          </div>
+          <input #fileInput type="file" multiple accept=".pdf,.xml" hidden
+                 (change)="onFileSelected($event)">
+
+          <div class="selected-files" *ngIf="selectedFiles.length > 0">
+            <h3>{{ t('dashboard.pdf.selectedFiles') }} ({{ selectedFiles.length }})</h3>
+            <div *ngFor="let file of selectedFiles" class="file-item">
+              <mat-icon>description</mat-icon>
+              <div class="file-info">
+                <span class="file-name">{{ file.name }}</span>
+                <span class="file-size">({{ formatFileSize(file.size) }})</span>
               </div>
-              <input #fileInput type="file" multiple accept=".pdf,.xml" hidden
-                     (change)="onFileSelected($event)">
-
-              <div class="selected-files" *ngIf="selectedFiles.length > 0">
-                <h3>Ausgewählte Dateien ({{ selectedFiles.length }})</h3>
-                <div *ngFor="let file of selectedFiles" class="file-item">
-                  <mat-icon>description</mat-icon>
-                  <div class="file-info">
-                    <span class="file-name">{{ file.name }}</span>
-                    <span class="file-size">({{ formatFileSize(file.size) }})</span>
-                  </div>
-                  <button mat-icon-button (click)="removeFile(file)">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="upload-actions">
-              <button mat-raised-button color="primary"
-                      (click)="uploadFiles()"
-                      [disabled]="isUploading || selectedFiles.length === 0">
-                <mat-icon *ngIf="!isUploading">cloud_upload</mat-icon>
-                <mat-spinner *ngIf="isUploading" diameter="20"></mat-spinner>
-                {{ isUploading ? 'Wird hochgeladen...' : 'Dateien hochladen (' + selectedFiles.length + ')' }}
-              </button>
-              <button mat-stroked-button (click)="clearSelection()"
-                      [disabled]="selectedFiles.length === 0">
-                Auswahl löschen
+              <button mat-icon-button (click)="removeFile(file)">
+                <mat-icon>close</mat-icon>
               </button>
             </div>
+          </div>
+        </div>
 
-            <!-- Progress Bar Section -->
-            <div *ngIf="isUploading" class="progress-section">
-              <div class="progress-header">
-                <div class="progress-info">
-                  <h4>Upload-Fortschritt</h4>
-                  <p class="phase-label">
-                    <span *ngIf="uploadPhase === 'uploading'">📤 Dateien werden hochgeladen...</span>
-                    <span *ngIf="uploadPhase === 'processing'">🔍 OCR-Texterkennung läuft...</span>
-                    <span *ngIf="uploadPhase === 'saving'">💾 Rechnungsdaten werden gespeichert...</span>
-                    <span *ngIf="uploadPhase === 'complete'">✅ Upload abgeschlossen!</span>
-                  </p>
+        <div class="upload-actions">
+          <button mat-raised-button color="primary"
+                  (click)="uploadFiles()"
+                  [disabled]="isUploading || selectedFiles.length === 0">
+            <mat-icon *ngIf="!isUploading">cloud_upload</mat-icon>
+            <mat-spinner *ngIf="isUploading" diameter="20"></mat-spinner>
+            {{ getUploadButtonLabel() }}
+          </button>
+          <button mat-stroked-button (click)="clearSelection()"
+                  [disabled]="selectedFiles.length === 0">
+            {{ t('dashboard.pdf.clearSelection') }}
+          </button>
+        </div>
+
+        <div *ngIf="isUploading" class="progress-section">
+          <div class="progress-header">
+            <div class="progress-info">
+              <h4>{{ t('dashboard.pdf.progress.title') }}</h4>
+              <p class="phase-label">{{ getUploadPhaseLabel() }}</p>
+            </div>
+            <div class="progress-percentage">{{ uploadProgress | number:'1.0-0' }}%</div>
+          </div>
+
+          <mat-progress-bar
+            mode="determinate"
+            [value]="uploadProgress"
+            class="main-progress-bar">
+          </mat-progress-bar>
+
+          <div class="file-progress-list" *ngIf="fileProgressDetails.length > 0">
+            <div class="file-progress-item" *ngFor="let file of fileProgressDetails; let i = index">
+              <div class="file-progress-header">
+                <mat-icon
+                  [ngSwitch]="file.status"
+                  [class.status-pending]="file.status === 'pending'"
+                  [class.status-uploading]="file.status === 'uploading'"
+                  [class.status-processing]="file.status === 'processing'"
+                  [class.status-complete]="file.status === 'complete'">
+                  <span *ngSwitchCase="'pending'">schedule</span>
+                  <span *ngSwitchCase="'uploading'">cloud_upload</span>
+                  <span *ngSwitchCase="'processing'">scanner</span>
+                  <span *ngSwitchCase="'complete'">check_circle</span>
+                  <span *ngSwitchDefault>schedule</span>
+                </mat-icon>
+                <div class="file-info-detail">
+                  <span class="file-name">{{ file.name }}</span>
+                  <span class="file-status-text">{{ getFileStatusLabel(file.status) }}</span>
                 </div>
-                <div class="progress-percentage">{{ uploadProgress | number:'1.0-0' }}%</div>
+                <span class="file-percentage">{{ file.progress | number:'1.0-0' }}%</span>
               </div>
-
-              <!-- Main Progress Bar -->
               <mat-progress-bar
                 mode="determinate"
-                [value]="uploadProgress"
-                class="main-progress-bar">
-              </mat-progress-bar>
-
-              <!-- Detailed File Progress -->
-              <div class="file-progress-list" *ngIf="fileProgressDetails.length > 0">
-                <div class="file-progress-item" *ngFor="let file of fileProgressDetails; let i = index">
-                  <div class="file-progress-header">
-                    <mat-icon
-                      [ngSwitch]="file.status"
-                      [class.status-pending]="file.status === 'pending'"
-                      [class.status-uploading]="file.status === 'uploading'"
-                      [class.status-processing]="file.status === 'processing'"
-                      [class.status-complete]="file.status === 'complete'">
-                      <span *ngSwitchCase="'pending'">schedule</span>
-                      <span *ngSwitchCase="'uploading'">cloud_upload</span>
-                      <span *ngSwitchCase="'processing'">scanner</span>
-                      <span *ngSwitchCase="'complete'">check_circle</span>
-                      <span *ngSwitchDefault>schedule</span>
-                    </mat-icon>
-                    <div class="file-info-detail">
-                      <span class="file-name">{{ file.name }}</span>
-                      <span class="file-status-text" *ngIf="file.status === 'uploading'">Upload läuft...</span>
-                      <span class="file-status-text" *ngIf="file.status === 'processing'">OCR-Texterkennung...</span>
-                      <span class="file-status-text" *ngIf="file.status === 'complete'">Abgeschlossen</span>
-                      <span class="file-status-text" *ngIf="file.status === 'pending'">Warten...</span>
-                    </div>
-                    <span class="file-percentage">{{ file.progress | number:'1.0-0' }}%</span>
-                  </div>
-                  <mat-progress-bar
-                    mode="determinate"
-                    [value]="file.progress"
-                    [ngClass]="'status-' + file.status"
-                    class="file-progress-bar">
-                  </mat-progress-bar>
-                </div>
-              </div>
-            </div>
-          </form>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Purchase Order Upload Section -->
-      <mat-card class="upload-section">
-        <mat-card-header>
-          <mat-card-title>Bestellungs-PDF/XML Hochladen</mat-card-title>
-          <mat-card-subtitle>Laden Sie Bestellungs-PDFs oder XMLs hoch (ohne Freigabe-Workflow)</mat-card-subtitle>
-        </mat-card-header>
-
-        <mat-card-content>
-          <form [formGroup]="poUploadForm">
-            <div class="form-row">
-              <mat-form-field appearance="fill" class="form-field">
-                <mat-label>Lieferant (optional)</mat-label>
-                <mat-select formControlName="supplierId">
-                  <mat-option value="">-- Automatisch aus PDF/XML extrahieren oder neu erstellen --</mat-option>
-                  <mat-option *ngFor="let supplier of suppliers" [value]="supplier.id">
-                    {{ supplier.name }}
-                  </mat-option>
-                </mat-select>
-                <mat-hint>Leer lassen, um Lieferant automatisch zu erkennen oder neu zu erstellen</mat-hint>
-              </mat-form-field>
-
-              <mat-form-field appearance="fill" class="form-field">
-                <mat-label>Kostenstelle</mat-label>
-                <mat-select formControlName="costCenterId" required>
-                  <mat-option value="">-- Bitte Kostenstelle wählen (erforderlich) --</mat-option>
-                  <mat-option *ngFor="let cc of costCenters" [value]="cc.id">
-                    {{ cc.name }}
-                  </mat-option>
-                </mat-select>
-                <mat-error *ngIf="poUploadForm.get('costCenterId')?.hasError('required')">
-                  Kostenstelle ist erforderlich
-                </mat-error>
-              </mat-form-field>
-
-              <mat-form-field appearance="fill" class="form-field">
-                <mat-label>Projekt</mat-label>
-                <mat-select formControlName="projectId" required>
-                  <mat-option value="">-- Bitte Projekt wählen (erforderlich) --</mat-option>
-                  <mat-option *ngFor="let project of filteredProjects" [value]="project.id">
-                    {{ project.name }}
-                  </mat-option>
-                </mat-select>
-                <mat-error *ngIf="poUploadForm.get('projectId')?.hasError('required')">
-                  Projekt ist erforderlich
-                </mat-error>
-              </mat-form-field>
-            </div>
-
-            <div class="file-input-section">
-              <div class="file-drop-zone"
-                   (dragover)="onPoDragOver($event)"
-                   (dragleave)="onPoDragLeave($event)"
-                   (drop)="onPoFileDropped($event)"
-                   [class.drag-over]="isPoDropZoneActive">
-                <mat-icon class="upload-icon">cloud_upload</mat-icon>
-                <p class="drag-text">
-                  Bestellungs-PDF/XML hier ablegen oder
-                  <a href="javascript:void(0)" (click)="poFileInput.click()">durchsuchen</a>
-                </p>
-                <p class="file-info">Erlaubte Formate: PDF, XML | Max. Größe: 50 MB</p>
-              </div>
-              <input #poFileInput type="file" accept=".pdf,.xml" hidden
-                     (change)="onPoFileSelected($event)">
-
-              <div class="selected-files" *ngIf="selectedPoFile">
-                <h3>Ausgewählte Datei</h3>
-                <div class="file-item">
-                  <mat-icon>description</mat-icon>
-                  <div class="file-info">
-                    <span class="file-name">{{ selectedPoFile.name }}</span>
-                    <span class="file-size">({{ formatFileSize(selectedPoFile.size) }})</span>
-                  </div>
-                  <button mat-icon-button (click)="removePoFile()">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="upload-actions">
-              <button mat-raised-button color="accent"
-                      (click)="uploadPurchaseOrder()"
-                      [disabled]="isPoUploading || !selectedPoFile || !poUploadForm.valid">
-                <mat-icon *ngIf="!isPoUploading">cloud_upload</mat-icon>
-                <mat-spinner *ngIf="isPoUploading" diameter="20"></mat-spinner>
-                {{ isPoUploading ? 'Wird hochgeladen...' : 'Bestellung hochladen' }}
-              </button>
-              <button mat-stroked-button (click)="clearPoSelection()"
-                      [disabled]="!selectedPoFile">
-                Auswahl löschen
-              </button>
-            </div>
-
-            <!-- Progress Section for PO Upload -->
-            <div *ngIf="isPoUploading" class="progress-section">
-              <div class="progress-header">
-                <div class="progress-info">
-                  <h4>Upload-Fortschritt</h4>
-                  <p class="phase-label">
-                    <span *ngIf="poUploadPhase === 'uploading'">📤 Datei wird hochgeladen...</span>
-                    <span *ngIf="poUploadPhase === 'processing'">🔍 OCR-Texterkennung läuft...</span>
-                    <span *ngIf="poUploadPhase === 'saving'">💾 Bestelldaten werden gespeichert...</span>
-                    <span *ngIf="poUploadPhase === 'complete'">✅ Upload abgeschlossen!</span>
-                  </p>
-                </div>
-                <div class="progress-percentage">{{ poUploadProgress | number:'1.0-0' }}%</div>
-              </div>
-
-              <mat-progress-bar
-                mode="determinate"
-                [value]="poUploadProgress"
-                class="main-progress-bar">
+                [value]="file.progress"
+                [ngClass]="'status-' + file.status"
+                class="file-progress-bar">
               </mat-progress-bar>
             </div>
-          </form>
-        </mat-card-content>
-      </mat-card>
+          </div>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
 
-      <!-- Upload Results -->
-      <mat-card class="results-section" *ngIf="uploadResults">
-        <mat-card-header>
-          <mat-card-title>Upload-Ergebnisse</mat-card-title>
-        </mat-card-header>
+  <mat-card class="upload-section">
+    <mat-card-header>
+      <mat-card-title>{{ t('dashboard.pdf.po.title') }}</mat-card-title>
+      <mat-card-subtitle>{{ t('dashboard.pdf.po.subtitle') }}</mat-card-subtitle>
+    </mat-card-header>
 
-        <mat-card-content>
-          <div class="result-summary">
-            <div class="result-stat success" *ngIf="uploadResults.successfulUploads.length > 0">
-              <mat-icon>check_circle</mat-icon>
-              <div>
-                <div class="stat-number">{{ uploadResults.successfulUploads.length }}</div>
-                <div class="stat-label">Erfolgreich hochgeladen</div>
+    <mat-card-content>
+      <form [formGroup]="poUploadForm">
+        <div class="form-row">
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>{{ t('dashboard.pdf.field.supplierOptional') }}</mat-label>
+            <mat-select formControlName="supplierId">
+              <mat-option value="">{{ t('dashboard.pdf.po.option.extractOrCreateSupplier') }}</mat-option>
+              <mat-option *ngFor="let supplier of suppliers" [value]="supplier.id">
+                {{ supplier.name }}
+              </mat-option>
+            </mat-select>
+            <mat-hint>{{ t('dashboard.pdf.po.hint.supplierAutoOrCreate') }}</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>{{ t('dashboard.pdf.field.costCenter') }}</mat-label>
+            <mat-select formControlName="costCenterId" required>
+              <mat-option value="">{{ t('dashboard.pdf.po.option.chooseCostCenterRequired') }}</mat-option>
+              <mat-option *ngFor="let cc of costCenters" [value]="cc.id">
+                {{ cc.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="poUploadForm.get('costCenterId')?.hasError('required')">
+              {{ t('dashboard.pdf.error.costCenterRequired') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="fill" class="form-field">
+            <mat-label>{{ t('dashboard.pdf.field.project') }}</mat-label>
+            <mat-select formControlName="projectId" required>
+              <mat-option value="">{{ t('dashboard.pdf.po.option.chooseProjectRequired') }}</mat-option>
+              <mat-option *ngFor="let project of filteredProjects" [value]="project.id">
+                {{ project.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="poUploadForm.get('projectId')?.hasError('required')">
+              {{ t('dashboard.pdf.error.projectRequired') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="file-input-section">
+          <div class="file-drop-zone"
+               (dragover)="onPoDragOver($event)"
+               (dragleave)="onPoDragLeave($event)"
+               (drop)="onPoFileDropped($event)"
+               [class.drag-over]="isPoDropZoneActive">
+            <mat-icon class="upload-icon">cloud_upload</mat-icon>
+            <p class="drag-text">
+              {{ t('dashboard.pdf.po.drop.file') }}
+              <a href="javascript:void(0)" (click)="poFileInput.click()">{{ t('dashboard.pdf.drop.browse') }}</a>
+            </p>
+            <p class="file-info">{{ t('dashboard.pdf.drop.allowedFormats') }}</p>
+          </div>
+          <input #poFileInput type="file" accept=".pdf,.xml" hidden
+                 (change)="onPoFileSelected($event)">
+
+          <div class="selected-files" *ngIf="selectedPoFile">
+            <h3>{{ t('dashboard.pdf.po.selectedFile') }}</h3>
+            <div class="file-item">
+              <mat-icon>description</mat-icon>
+              <div class="file-info">
+                <span class="file-name">{{ selectedPoFile.name }}</span>
+                <span class="file-size">({{ formatFileSize(selectedPoFile.size) }})</span>
               </div>
-            </div>
-
-            <div class="result-stat error" *ngIf="uploadResults.failedUploads.length > 0">
-              <mat-icon>error</mat-icon>
-              <div>
-                <div class="stat-number">{{ uploadResults.failedUploads.length }}</div>
-                <div class="stat-label">Fehler beim Upload</div>
-              </div>
+              <button mat-icon-button (click)="removePoFile()">
+                <mat-icon>close</mat-icon>
+              </button>
             </div>
           </div>
+        </div>
 
-          <!-- Successful Uploads -->
-          <div *ngIf="uploadResults.successfulUploads.length > 0" class="upload-results">
-            <h3><mat-icon>check</mat-icon> Erfolgreich hochgeladen</h3>
-            <table mat-table [dataSource]="uploadResults.successfulUploads" class="results-table">
-              <ng-container matColumnDef="fileName">
-                <th mat-header-cell *matHeaderCellDef>Dateiname</th>
-                <td mat-cell *matCellDef="let element">{{ element.fileName }}</td>
-              </ng-container>
+        <div class="upload-actions">
+          <button mat-raised-button color="accent"
+                  (click)="uploadPurchaseOrder()"
+                  [disabled]="isPoUploading || !selectedPoFile || !poUploadForm.valid">
+            <mat-icon *ngIf="!isPoUploading">cloud_upload</mat-icon>
+            <mat-spinner *ngIf="isPoUploading" diameter="20"></mat-spinner>
+            {{ getPoUploadButtonLabel() }}
+          </button>
+          <button mat-stroked-button (click)="clearPoSelection()"
+                  [disabled]="!selectedPoFile">
+            {{ t('dashboard.pdf.clearSelection') }}
+          </button>
+        </div>
 
-              <ng-container matColumnDef="invoiceNumber">
-                <th mat-header-cell *matHeaderCellDef>Rechnungsnummer</th>
-                <td mat-cell *matCellDef="let element">{{ element.invoiceNumber }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="invoiceId">
-                <th mat-header-cell *matHeaderCellDef>Rechnungs-ID</th>
-                <td mat-cell *matCellDef="let element">{{ element.invoiceId }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="size">
-                <th mat-header-cell *matHeaderCellDef>Größe</th>
-                <td mat-cell *matCellDef="let element">{{ formatFileSize(element.size) }}</td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="displayedSuccessColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedSuccessColumns;"></tr>
-            </table>
+        <div *ngIf="isPoUploading" class="progress-section">
+          <div class="progress-header">
+            <div class="progress-info">
+              <h4>{{ t('dashboard.pdf.progress.title') }}</h4>
+              <p class="phase-label">{{ getPoUploadPhaseLabel() }}</p>
+            </div>
+            <div class="progress-percentage">{{ poUploadProgress | number:'1.0-0' }}%</div>
           </div>
 
-          <!-- Failed Uploads -->
-          <div *ngIf="uploadResults.failedUploads.length > 0" class="upload-results">
-            <h3><mat-icon>error</mat-icon> Fehlerhafte Uploads</h3>
-            <table mat-table [dataSource]="uploadResults.failedUploads" class="results-table error">
-              <ng-container matColumnDef="fileName">
-                <th mat-header-cell *matHeaderCellDef>Dateiname</th>
-                <td mat-cell *matCellDef="let element">{{ element.fileName }}</td>
-              </ng-container>
+          <mat-progress-bar
+            mode="determinate"
+            [value]="poUploadProgress"
+            class="main-progress-bar">
+          </mat-progress-bar>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
 
-              <ng-container matColumnDef="errorMessage">
-                <th mat-header-cell *matHeaderCellDef>Fehlermeldung</th>
-                <td mat-cell *matCellDef="let element">{{ element.errorMessage }}</td>
-              </ng-container>
+  <mat-card class="results-section" *ngIf="uploadResults">
+    <mat-card-header>
+      <mat-card-title>{{ t('dashboard.pdf.results.title') }}</mat-card-title>
+    </mat-card-header>
 
-              <tr mat-header-row *matHeaderRowDef="displayedErrorColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedErrorColumns;"></tr>
-            </table>
+    <mat-card-content>
+      <div class="result-summary">
+        <div class="result-stat success" *ngIf="uploadResults.successfulUploads.length > 0">
+          <mat-icon>check_circle</mat-icon>
+          <div>
+            <div class="stat-number">{{ uploadResults.successfulUploads.length }}</div>
+            <div class="stat-label">{{ t('dashboard.pdf.results.successCount') }}</div>
           </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
 
-      <!-- Upload Status Statistics -->
-      <mat-card class="status-section" *ngIf="uploadStatus">
-        <mat-card-header>
-          <mat-card-title>Upload-Statistiken</mat-card-title>
-        </mat-card-header>
-
-        <mat-card-content>
-          <div class="statistics">
-            <div class="stat-card">
-              <div class="stat-value">{{ uploadStatus.totalInvoices }}</div>
-              <div class="stat-title">Gesamtrechnungen</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">{{ uploadStatus.invoicesWithPdf }}</div>
-              <div class="stat-title">Mit PDF</div>
-              <div class="stat-percentage">
-                ({{ getPercentage(uploadStatus.invoicesWithPdf, uploadStatus.totalInvoices) }}%)
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">{{ formatFileSize(uploadStatus.totalPdfSize) }}</div>
-              <div class="stat-title">Gesamte PDF-Größe</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">{{ formatFileSize(uploadStatus.diskUsageBytes) }}</div>
-              <div class="stat-title">Speichernutzung</div>
-            </div>
+        <div class="result-stat error" *ngIf="uploadResults.failedUploads.length > 0">
+          <mat-icon>error</mat-icon>
+          <div>
+            <div class="stat-number">{{ uploadResults.failedUploads.length }}</div>
+            <div class="stat-label">{{ t('dashboard.pdf.results.errorCount') }}</div>
           </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
+        </div>
+      </div>
+
+      <div *ngIf="uploadResults.successfulUploads.length > 0" class="upload-results">
+        <h3><mat-icon>check</mat-icon> {{ t('dashboard.pdf.results.successTitle') }}</h3>
+        <table mat-table [dataSource]="uploadResults.successfulUploads" class="results-table">
+          <ng-container matColumnDef="fileName">
+            <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.pdf.table.fileName') }}</th>
+            <td mat-cell *matCellDef="let element">{{ element.fileName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="invoiceNumber">
+            <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.pdf.table.invoiceNumber') }}</th>
+            <td mat-cell *matCellDef="let element">{{ element.invoiceNumber }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="invoiceId">
+            <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.pdf.table.invoiceId') }}</th>
+            <td mat-cell *matCellDef="let element">{{ element.invoiceId }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="size">
+            <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.pdf.table.size') }}</th>
+            <td mat-cell *matCellDef="let element">{{ formatFileSize(element.size) }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedSuccessColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedSuccessColumns;"></tr>
+        </table>
+      </div>
+
+      <div *ngIf="uploadResults.failedUploads.length > 0" class="upload-results">
+        <h3><mat-icon>error</mat-icon> {{ t('dashboard.pdf.results.failedTitle') }}</h3>
+        <table mat-table [dataSource]="uploadResults.failedUploads" class="results-table error">
+          <ng-container matColumnDef="fileName">
+            <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.pdf.table.fileName') }}</th>
+            <td mat-cell *matCellDef="let element">{{ element.fileName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="errorMessage">
+            <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.pdf.table.errorMessage') }}</th>
+            <td mat-cell *matCellDef="let element">{{ element.errorMessage }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedErrorColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedErrorColumns;"></tr>
+        </table>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="status-section" *ngIf="uploadStatus">
+    <mat-card-header>
+      <mat-card-title>{{ t('dashboard.pdf.stats.title') }}</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="statistics">
+        <div class="stat-card">
+          <div class="stat-value">{{ uploadStatus.totalInvoices }}</div>
+          <div class="stat-title">{{ t('dashboard.pdf.stats.totalInvoices') }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ uploadStatus.invoicesWithPdf }}</div>
+          <div class="stat-title">{{ t('dashboard.pdf.stats.withPdf') }}</div>
+          <div class="stat-percentage">
+            ({{ getPercentage(uploadStatus.invoicesWithPdf, uploadStatus.totalInvoices) }}%)
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ formatFileSize(uploadStatus.totalPdfSize) }}</div>
+          <div class="stat-title">{{ t('dashboard.pdf.stats.totalSize') }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ formatFileSize(uploadStatus.diskUsageBytes) }}</div>
+          <div class="stat-title">{{ t('dashboard.pdf.stats.diskUsage') }}</div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

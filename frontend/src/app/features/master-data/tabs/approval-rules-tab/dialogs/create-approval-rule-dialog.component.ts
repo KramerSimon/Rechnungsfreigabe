@@ -20,6 +20,7 @@ import { CostCenter } from '../../../../../core/models/cost-center.model';
 import { Project } from '../../../../../core/models/project.model';
 import { Status } from '../../../../../core/models/status.model';
 import { RoleDto, User } from '../../../../../core/models/user.models';
+import { LanguageService } from '../../../../../core/services/language.service';
 
 @Component({
   selector: 'app-create-approval-rule-dialog',
@@ -48,40 +49,48 @@ export class CreateApprovalRuleDialogComponent implements OnInit {
   statusOptions: Status[] = [];
   roles: RoleDto[] = [];
 
-  availableFields = [
-    { value: 'amount', label: 'Betrag' },
-    { value: 'supplier', label: 'Lieferant' },
-    { value: 'costCenter', label: 'Kostenstelle' },
-    { value: 'project', label: 'Projekt' },
-    { value: 'invoiceDate', label: 'Rechnungsdatum' },
-    { value: 'dueDate', label: 'Fälligkeitsdatum' }
-  ];
+  get availableFields() {
+    return [
+      { value: 'amount', label: this.t('md.dialog.rule.field.amount') },
+      { value: 'supplier', label: this.t('md.dialog.rule.field.supplier') },
+      { value: 'costCenter', label: this.t('md.dialog.rule.field.costCenter') },
+      { value: 'project', label: this.t('md.dialog.rule.field.project') },
+      { value: 'invoiceDate', label: this.t('md.dialog.rule.field.invoiceDate') },
+      { value: 'dueDate', label: this.t('md.dialog.rule.field.dueDate') }
+    ];
+  }
 
-  availableOperators = [
-    { value: '=', label: 'gleich' },
-    { value: '!=', label: 'ungleich' },
-    { value: '>', label: 'größer als' },
-    { value: '<', label: 'kleiner als' },
-    { value: '>=', label: 'größer oder gleich' },
-    { value: '<=', label: 'kleiner oder gleich' },
-    { value: 'contains', label: 'enthält' }
-  ];
+  get availableOperators() {
+    return [
+      { value: '=', label: this.t('md.dialog.rule.operator.equals') },
+      { value: '!=', label: this.t('md.dialog.rule.operator.notEquals') },
+      { value: '>', label: this.t('md.dialog.rule.operator.greaterThan') },
+      { value: '<', label: this.t('md.dialog.rule.operator.lessThan') },
+      { value: '>=', label: this.t('md.dialog.rule.operator.greaterOrEqual') },
+      { value: '<=', label: this.t('md.dialog.rule.operator.lessOrEqual') },
+      { value: 'contains', label: this.t('md.dialog.rule.operator.contains') }
+    ];
+  }
 
-  dateOperators = [
-    { value: '<', label: 'vor' },
-    { value: '<=', label: 'vor oder am' },
-    { value: '=', label: 'am' },
-    { value: '>=', label: 'am oder nach' },
-    { value: '>', label: 'nach' },
-    { value: '!=', label: 'ungleich' }
-  ];
+  get dateOperators() {
+    return [
+      { value: '<', label: this.t('md.dialog.rule.operator.before') },
+      { value: '<=', label: this.t('md.dialog.rule.operator.beforeOrOn') },
+      { value: '=', label: this.t('md.dialog.rule.operator.on') },
+      { value: '>=', label: this.t('md.dialog.rule.operator.onOrAfter') },
+      { value: '>', label: this.t('md.dialog.rule.operator.after') },
+      { value: '!=', label: this.t('md.dialog.rule.operator.notEquals') }
+    ];
+  }
 
-  availableActions = [
-    { value: 'auto_approve', label: 'Automatisch freigeben' },
-    { value: 'require_approval', label: 'Mehrstufige Freigabe' },
-    { value: 'set_status', label: 'Status setzen' },
-    { value: 'assign_to', label: 'Zuweisen an' }
-  ];
+  get availableActions() {
+    return [
+      { value: 'auto_approve', label: this.t('md.dialog.rule.action.autoApprove') },
+      { value: 'require_approval', label: this.t('md.dialog.rule.action.requireApproval') },
+      { value: 'set_status', label: this.t('md.dialog.rule.action.setStatus') },
+      { value: 'assign_to', label: this.t('md.dialog.rule.action.assignTo') }
+    ];
+  }
 
   constructor(
     public dialogRef: MatDialogRef<CreateApprovalRuleDialogComponent>,
@@ -90,7 +99,8 @@ export class CreateApprovalRuleDialogComponent implements OnInit {
     private costCenterService: CostCenterService,
     private projectService: ProjectService,
     private statusService: StatusService,
-    private roleService: RoleService
+    private roleService: RoleService,
+    private languageService: LanguageService
   ) {
     this.rule = this.createEmptyRule();
   }
@@ -217,7 +227,7 @@ export class CreateApprovalRuleDialogComponent implements OnInit {
     this.rule.actions.push({
       type: (isAutomatic ? 'auto_approve' : 'assign_to') as any,
       value: '',
-      description: isAutomatic ? 'Automatisch freigeben' : 'Zuweisen an Benutzer'
+      description: isAutomatic ? this.t('md.dialog.rule.action.autoApprove') : this.t('md.dialog.rule.action.assignUserDescription')
     });
   }
 
@@ -229,21 +239,21 @@ export class CreateApprovalRuleDialogComponent implements OnInit {
     action.type = type as any;
     switch (type) {
       case 'auto_approve':
-        action.description = 'Automatisch freigeben';
+        action.description = this.t('md.dialog.rule.action.autoApprove');
         action.value = 'approved';
         break;
       case 'require_approval':
-        action.description = 'Mehrstufige Freigabe';
+        action.description = this.t('md.dialog.rule.action.requireApproval');
         action.value = '';
         action.stages = action.stages && action.stages.length ? action.stages : [this.createDefaultStage()];
         break;
       case 'set_status':
-        action.description = 'Status setzen auf';
+        action.description = this.t('md.dialog.rule.action.setStatusTo');
         action.value = '';
         action.stages = undefined;
         break;
       case 'assign_to':
-        action.description = 'Zuweisen an Benutzer';
+        action.description = this.t('md.dialog.rule.action.assignUserDescription');
         action.value = '';
         action.stages = undefined;
         break;
@@ -394,6 +404,10 @@ export class CreateApprovalRuleDialogComponent implements OnInit {
   getRoleById(id?: number | null): RoleDto | undefined {
     if (!id) return undefined;
     return this.roles.find(r => r.id === id);
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 
   getRoleBadgeStyles(role?: RoleDto): { [key: string]: string | null } {

@@ -1,37 +1,37 @@
 <div class="dialog-container">
-      <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Neue Rolle' : 'Rolle bearbeiten' }}</h2>
+  <h2 mat-dialog-title>{{ data.mode === 'create' ? t('md.dialog.role.createTitle') : t('md.dialog.role.editTitle') }}</h2>
 
       <form [formGroup]="form" mat-dialog-content>
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Name *</mat-label>
+          <mat-label>{{ t('md.common.name') }} *</mat-label>
           <input matInput formControlName="name" [readonly]="data.role?.isSystemRole" />
-          <mat-error *ngIf="form.get('name')?.hasError('required')">Name ist erforderlich</mat-error>
+          <mat-error *ngIf="form.get('name')?.hasError('required')">{{ t('md.dialog.common.error.nameRequired') }}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Beschreibung</mat-label>
+          <mat-label>{{ t('md.common.description') }}</mat-label>
           <textarea matInput rows="2" formControlName="description"></textarea>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Berechtigungen</mat-label>
+          <mat-label>{{ t('md.roles.permissions') }}</mat-label>
           <mat-select formControlName="permissionIds" multiple>
             <mat-option *ngFor="let perm of availablePermissions" [value]="perm.id">
               {{perm.name}} ({{perm.code}})
             </mat-option>
           </mat-select>
-          <mat-hint>Wählen Sie eine oder mehrere Berechtigungen aus</mat-hint>
+          <mat-hint>{{ t('md.dialog.role.multiSelectHint') }}</mat-hint>
         </mat-form-field>
 
         <div class="color-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Farbe</mat-label>
+            <mat-label>{{ t('md.roles.color') }}</mat-label>
             <input matInput type="color" formControlName="color" />
           </mat-form-field>
           <div class="color-preview" [style.backgroundColor]="form.value.color"></div>
         </div>
 
-        <div class="color-swatches" aria-label="Farbvorschläge">
+        <div class="color-swatches" [attr.aria-label]="t('md.dialog.role.colorSuggestions')">
           <button
             type="button"
             class="color-swatch"
@@ -39,19 +39,19 @@
             [style.backgroundColor]="color"
             [class.selected]="form.value.color === color"
             (click)="setColor(color)"
-            [attr.aria-label]="'Farbe ' + color">
+            [attr.aria-label]="t('md.roles.color') + ' ' + color">
           </button>
         </div>
 
         <div class="system-role-note" *ngIf="data.role?.isSystemRole">
-          Systemrolle: Nur die Farbe kann geändert werden
+          {{ t('md.dialog.role.systemRoleNote') }}
         </div>
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary" (click)="onSave()" [disabled]="form.invalid">
-          {{ data.mode === 'create' ? 'Erstellen' : 'Speichern' }}
+          {{ data.mode === 'create' ? t('md.dialog.common.create') : t('md.dialog.common.save') }}
         </button>
       </div>
     </div>

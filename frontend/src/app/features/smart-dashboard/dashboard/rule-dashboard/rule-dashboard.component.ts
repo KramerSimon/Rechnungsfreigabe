@@ -29,6 +29,7 @@ import { RoleDto, User } from '../../../../core/models/user.models';
 import { RoleService } from '../../../../core/services/role.service';
 import { CreateApprovalRuleDialogComponent } from '../../../master-data/tabs/approval-rules-tab/dialogs/create-approval-rule-dialog.component';
 import { EditApprovalRuleDialogComponent } from '../../../master-data/tabs/approval-rules-tab/dialogs/edit-approval-rule-dialog/edit-approval-rule-dialog.component';
+import { LanguageService } from '../../../../core/services/language.service';
 
 export type { ApprovalRule, RuleCondition, RuleAction };
 
@@ -138,7 +139,8 @@ export class RuleDashboardComponent implements OnInit {
     private approvalService: ApprovalService,
     private snackBar: MatSnackBar,
     private userService: UserService,
-    private roleService: RoleService
+    private roleService: RoleService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit() {
@@ -182,7 +184,7 @@ export class RuleDashboardComponent implements OnInit {
       },
       error: (error) => {
         console.error('Fehler beim Laden der Regeln:', error);
-        this.snackBar.open('Fehler beim Laden der Freigaberegeln', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.rules.error.load'), this.t('common.close'), { duration: 3000 });
         this.loading = false;
       }
     });
@@ -245,18 +247,18 @@ export class RuleDashboardComponent implements OnInit {
 
         this.approvalService.createApprovalRule(createDto).subscribe({
           next: () => {
-            this.snackBar.open('Regel erfolgreich erstellt', 'Schließen', { duration: 3000 });
+            this.snackBar.open(this.t('dashboard.rules.success.created'), this.t('common.close'), { duration: 3000 });
             this.loadApprovalRules();
           },
           error: (error) => {
             console.error('Fehler beim Erstellen der Regel:', error);
-            let errorMessage = 'Fehler beim Erstellen der Regel';
+            let errorMessage = this.t('dashboard.rules.error.create');
             if (error.status === 401) {
-              errorMessage = 'Nicht berechtigt. Bitte melden Sie sich als Administrator an.';
+              errorMessage = this.t('dashboard.rules.error.unauthorized');
             } else if (error.status === 400 && error.error?.message) {
               errorMessage = error.error.message;
             }
-            this.snackBar.open(errorMessage, 'Schließen', { duration: 5000 });
+            this.snackBar.open(errorMessage, this.t('common.close'), { duration: 5000 });
           }
         });
       }
@@ -280,12 +282,12 @@ export class RuleDashboardComponent implements OnInit {
             const updateDto = this.buildUpdateRuleDto(result);
             this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
               next: () => {
-                this.snackBar.open('Regel erfolgreich aktualisiert', 'Schließen', { duration: 3000 });
+                this.snackBar.open(this.t('dashboard.rules.success.updated'), this.t('common.close'), { duration: 3000 });
                 this.loadApprovalRules();
               },
               error: (error) => {
                 console.error('Fehler beim Aktualisieren der Regel:', error);
-                this.snackBar.open('Fehler beim Aktualisieren der Regel', 'Schließen', { duration: 3000 });
+                this.snackBar.open(this.t('dashboard.rules.error.update'), this.t('common.close'), { duration: 3000 });
               }
             });
           }
@@ -306,12 +308,12 @@ export class RuleDashboardComponent implements OnInit {
             const updateDto = this.buildUpdateRuleDto(result);
             this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
               next: () => {
-                this.snackBar.open('Regel erfolgreich aktualisiert', 'Schließen', { duration: 3000 });
+                this.snackBar.open(this.t('dashboard.rules.success.updated'), this.t('common.close'), { duration: 3000 });
                 this.loadApprovalRules();
               },
               error: (error) => {
                 console.error('Fehler beim Aktualisieren der Regel:', error);
-                this.snackBar.open('Fehler beim Aktualisieren der Regel', 'Schließen', { duration: 3000 });
+                this.snackBar.open(this.t('dashboard.rules.error.update'), this.t('common.close'), { duration: 3000 });
               }
             });
           }
@@ -342,15 +344,15 @@ export class RuleDashboardComponent implements OnInit {
   }
 
   onDeleteRule(ruleId: number) {
-    if (confirm('Regel wirklich löschen?')) {
+    if (confirm(this.t('dashboard.rules.confirm.delete'))) {
       this.approvalService.deleteApprovalRule(ruleId).subscribe({
         next: () => {
-          this.snackBar.open('Regel erfolgreich gelöscht', 'Schließen', { duration: 3000 });
+          this.snackBar.open(this.t('dashboard.rules.success.deleted'), this.t('common.close'), { duration: 3000 });
           this.loadApprovalRules();
         },
         error: (error) => {
           console.error('Fehler beim Löschen der Regel:', error);
-          this.snackBar.open('Fehler beim Löschen der Regel', 'Schließen', { duration: 3000 });
+          this.snackBar.open(this.t('dashboard.rules.error.delete'), this.t('common.close'), { duration: 3000 });
         }
       });
     }
@@ -364,14 +366,14 @@ export class RuleDashboardComponent implements OnInit {
       next: () => {
         rule.isActive = newIsActive;
         this.snackBar.open(
-          rule.isActive ? 'Regel aktiviert' : 'Regel deaktiviert',
-          'Schließen',
+          rule.isActive ? this.t('dashboard.rules.success.activated') : this.t('dashboard.rules.success.deactivated'),
+          this.t('common.close'),
           { duration: 2000 }
         );
       },
       error: (error) => {
         console.error('Fehler beim Umschalten der Regel:', error);
-        this.snackBar.open('Fehler beim Umschalten der Regel', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.rules.error.toggle'), this.t('common.close'), { duration: 3000 });
       }
     });
   }
@@ -394,12 +396,16 @@ export class RuleDashboardComponent implements OnInit {
     this.approvalService.updateApprovalRule(rule.id, dto).subscribe({
       next: () => {
         rule.isActive = event.checked;
-        this.snackBar.open(`Regel ${event.checked ? 'aktiviert' : 'deaktiviert'}`, 'Schließen', { duration: 2000 });
+        this.snackBar.open(
+          this.tp('dashboard.rules.success.toggled', { state: event.checked ? this.t('dashboard.rules.active') : this.t('dashboard.rules.inactive') }),
+          this.t('common.close'),
+          { duration: 2000 }
+        );
       },
       error: (error) => {
         console.error('Fehler beim Aktualisieren der Regel:', error);
         event.source.checked = !event.checked;
-        this.snackBar.open('Fehler beim Aktualisieren der Regel', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.rules.error.update'), this.t('common.close'), { duration: 3000 });
       }
     });
   }
@@ -418,40 +424,40 @@ export class RuleDashboardComponent implements OnInit {
       if (action.type === 'assign_to') {
         const user = this.users.find(u => String(u.id) === String(action.value));
         const name = user ? `${user.firstName} ${user.lastName}` : action.value;
-        return `Zuweisen an ${name}`;
+        return this.tp('dashboard.rules.action.assignTo', { name });
       }
       if (action.type === 'require_approval') {
         const count = action.stages?.length || 0;
-        return `Mehrstufige Freigabe (${count} Stufen)`;
+        return this.tp('dashboard.rules.action.multiStageWithCount', { count });
       }
       return action.description;
     }).join(', ');
   }
 
   getConditionFieldLabel(field: string): string {
-    const fieldLabels: { [key: string]: string } = {
-      'amount': 'Betrag',
-      'supplier': 'Lieferant',
-      'costCenter': 'Kostenstelle',
-      'project': 'Projekt',
-      'invoiceDate': 'Rechnungsdatum',
-      'dueDate': 'Fälligkeitsdatum'
+    const fieldLabels: Record<string, string> = {
+      amount: 'dashboard.rules.field.amount',
+      supplier: 'dashboard.rules.field.supplier',
+      costCenter: 'dashboard.rules.field.costCenter',
+      project: 'dashboard.rules.field.project',
+      invoiceDate: 'dashboard.rules.field.invoiceDate',
+      dueDate: 'dashboard.rules.field.dueDate'
     };
-    return fieldLabels[field] || field;
+    return fieldLabels[field] ? this.t(fieldLabels[field]) : field;
   }
 
   getOperatorLabel(operator: string): string {
-    const operatorLabels: { [key: string]: string } = {
-      'equals': 'gleich',
-      'notEquals': 'ungleich',
-      'greaterThan': 'größer als',
-      'lessThan': 'kleiner als',
-      'greaterOrEqual': 'größer oder gleich',
-      'lessOrEqual': 'kleiner oder gleich',
-      'contains': 'enthält',
-      'notContains': 'enthält nicht'
+    const operatorLabels: Record<string, string> = {
+      equals: 'dashboard.rules.operator.equals',
+      notEquals: 'dashboard.rules.operator.notEquals',
+      greaterThan: 'dashboard.rules.operator.greaterThan',
+      lessThan: 'dashboard.rules.operator.lessThan',
+      greaterOrEqual: 'dashboard.rules.operator.greaterOrEqual',
+      lessOrEqual: 'dashboard.rules.operator.lessOrEqual',
+      contains: 'dashboard.rules.operator.contains',
+      notContains: 'dashboard.rules.operator.notContains'
     };
-    return operatorLabels[operator] || operator;
+    return operatorLabels[operator] ? this.t(operatorLabels[operator]) : operator;
   }
 
   getActionDescription(action: any): string {
@@ -460,18 +466,18 @@ export class RuleDashboardComponent implements OnInit {
 
     switch (actionType) {
       case 'require_approval':
-        return 'Mehrstufige Freigabe';
+        return this.t('dashboard.rules.action.multiStage');
       case 'set_status':
-        return `Status setzen: ${actionValue}`;
+        return this.tp('dashboard.rules.action.setStatus', { value: actionValue });
       case 'assign_to': {
         const user = this.users.find(u => String(u.id) === String(actionValue));
         const name = user ? `${user.firstName} ${user.lastName}` : actionValue;
-        return `Zuweisen an: ${name}`;
+        return this.tp('dashboard.rules.action.assignToWithColon', { name });
       }
       case 'notify':
-        return 'Benachrichtigung senden';
+        return this.t('dashboard.rules.action.notify');
       default:
-        return action?.description || actionType || 'Aktion';
+        return action?.description || actionType || this.t('dashboard.rules.action.default');
     }
   }
 
@@ -485,26 +491,38 @@ export class RuleDashboardComponent implements OnInit {
         return match.name;
       }
     }
-    return 'Rolle nicht definiert';
+    return this.t('dashboard.rules.roleNotDefined');
   }
 
   private getRoleName(role: any): string {
-    if (!role) return 'Rolle nicht definiert';
+    if (!role) return this.t('dashboard.rules.roleNotDefined');
     if (typeof role === 'object' && role.name) {
       return role.name;
     }
     if (typeof role === 'string') {
       return role;
     }
-    return 'Rolle nicht definiert';
+    return this.t('dashboard.rules.roleNotDefined');
   }
 
   getRuleTypeLabel(ruleType: any): string {
     if (ruleType === 0) {
-      return 'Automatische Freigabe';
+      return this.t('dashboard.rules.type.automatic');
     }
     const normalized = String(ruleType ?? '').toLowerCase();
-    return normalized === 'automatic' ? 'Automatische Freigabe' : 'Manuelle Freigabe';
+    return normalized === 'automatic' ? this.t('dashboard.rules.type.automatic') : this.t('dashboard.rules.type.manual');
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
+  }
+
+  tp(key: string, params: Record<string, string | number>): string {
+    let translated = this.t(key);
+    for (const [name, value] of Object.entries(params)) {
+      translated = translated.replace(`{${name}}`, String(value));
+    }
+    return translated;
   }
 
   getCostCenterName(costCenterId: string): string {

@@ -16,6 +16,7 @@ import { StatusService } from '../../../../core/services/status.service';
 import { RoleService } from '../../../../core/services/role.service';
 import { UserService } from '../../../../core/services/user.service';
 import { forkJoin } from 'rxjs';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-escalation-tab',
@@ -57,7 +58,8 @@ export class EscalationTabComponent implements OnInit {
     private roleService: RoleService,
     private userService: UserService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -73,7 +75,7 @@ export class EscalationTabComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading escalation rules:', error);
-        this.snackBar.open('Failed to load escalation rules', 'Close', { duration: 3000 });
+        this.snackBar.open(this.t('md.escalation.error.load'), this.t('common.close'), { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -100,12 +102,12 @@ export class EscalationTabComponent implements OnInit {
           if (dialogResult) {
             this.escalationRuleService.createRule(dialogResult).subscribe({
               next: () => {
-                this.snackBar.open('Escalation rule created successfully', 'Close', { duration: 3000 });
+                this.snackBar.open(this.t('md.escalation.success.created'), this.t('common.close'), { duration: 3000 });
                 this.loadEscalationRules();
               },
               error: (error: any) => {
                 console.error('Error creating escalation rule:', error);
-                this.snackBar.open('Failed to create escalation rule', 'Close', { duration: 3000 });
+                this.snackBar.open(this.t('md.escalation.error.create'), this.t('common.close'), { duration: 3000 });
               }
             });
           }
@@ -113,7 +115,7 @@ export class EscalationTabComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading dialog data:', error);
-        this.snackBar.open('Failed to load required data', 'Close', { duration: 3000 });
+        this.snackBar.open(this.t('md.common.error.loadRequiredData'), this.t('common.close'), { duration: 3000 });
       }
     });
   }
@@ -140,12 +142,12 @@ export class EscalationTabComponent implements OnInit {
           if (dialogResult) {
             this.escalationRuleService.updateRule(rule.id, dialogResult).subscribe({
               next: () => {
-                this.snackBar.open('Escalation rule updated successfully', 'Close', { duration: 3000 });
+                this.snackBar.open(this.t('md.escalation.success.updated'), this.t('common.close'), { duration: 3000 });
                 this.loadEscalationRules();
               },
               error: (error: any) => {
                 console.error('Error updating escalation rule:', error);
-                this.snackBar.open('Failed to update escalation rule', 'Close', { duration: 3000 });
+                this.snackBar.open(this.t('md.escalation.error.update'), this.t('common.close'), { duration: 3000 });
               }
             });
           }
@@ -153,21 +155,21 @@ export class EscalationTabComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading dialog data:', error);
-        this.snackBar.open('Failed to load required data', 'Close', { duration: 3000 });
+        this.snackBar.open(this.t('md.common.error.loadRequiredData'), this.t('common.close'), { duration: 3000 });
       }
     });
   }
 
   deleteEscalationRule(rule: EscalationRule): void {
-    if (confirm(`Are you sure you want to delete the escalation rule "${rule.name}"?`)) {
+    if (confirm(this.t('md.escalation.confirm.delete').replace('{name}', rule.name))) {
       this.escalationRuleService.deleteRule(rule.id).subscribe({
         next: () => {
-          this.snackBar.open('Escalation rule deleted successfully', 'Close', { duration: 3000 });
+          this.snackBar.open(this.t('md.escalation.success.deleted'), this.t('common.close'), { duration: 3000 });
           this.loadEscalationRules();
         },
         error: (error: any) => {
           console.error('Error deleting escalation rule:', error);
-          this.snackBar.open('Failed to delete escalation rule', 'Close', { duration: 3000 });
+          this.snackBar.open(this.t('md.escalation.error.delete'), this.t('common.close'), { duration: 3000 });
         }
       });
     }
@@ -183,5 +185,9 @@ export class EscalationTabComponent implements OnInit {
     } else {
       return `${mins}m`;
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

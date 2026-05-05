@@ -1,116 +1,116 @@
 <div class="dialog-container">
-      <h2 mat-dialog-title>Neuer Lieferant</h2>
+  <h2 mat-dialog-title>{{ t('md.dialog.supplier.createTitle') }}</h2>
 
       <form [formGroup]="supplierForm" mat-dialog-content>
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Name *</mat-label>
+            <mat-label>{{ t('md.common.name') }} *</mat-label>
             <input matInput formControlName="name" required>
             <mat-error *ngIf="supplierForm.get('name')?.hasError('required')">
-              Name ist erforderlich
+              {{ t('md.dialog.common.error.nameRequired') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Firmenname</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.legalName') }}</mat-label>
             <input matInput formControlName="legalName">
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Steuernummer</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.taxNumber') }}</mat-label>
             <input matInput formControlName="taxNumber">
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>USt-IdNr.</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.vatNumber') }}</mat-label>
             <input matInput formControlName="vatNumber">
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Adresse</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.address1') }}</mat-label>
             <input matInput formControlName="addressLine1">
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Adresse 2</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.address2') }}</mat-label>
             <input matInput formControlName="addressLine2">
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>PLZ</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.postalCode') }}</mat-label>
             <input matInput formControlName="postalCode">
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Stadt</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.city') }}</mat-label>
             <input matInput formControlName="city">
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Land</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.country') }}</mat-label>
             <mat-select formControlName="country">
-              <mat-option value="Deutschland">Deutschland</mat-option>
-              <mat-option value="Österreich">Österreich</mat-option>
-              <mat-option value="Schweiz">Schweiz</mat-option>
-              <mat-option value="Italien">Italien</mat-option>
+              <mat-option value="Deutschland">{{ t('md.dialog.country.germany') }}</mat-option>
+              <mat-option value="Österreich">{{ t('md.dialog.country.austria') }}</mat-option>
+              <mat-option value="Schweiz">{{ t('md.dialog.country.switzerland') }}</mat-option>
+              <mat-option value="Italien">{{ t('md.dialog.country.italy') }}</mat-option>
             </mat-select>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>E-Mail</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.email') }}</mat-label>
             <input matInput type="email" formControlName="email">
             <mat-error *ngIf="supplierForm.get('email')?.hasError('email')">
-              Ungültige E-Mail-Adresse
+              {{ t('md.dialog.common.error.invalidEmail') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Telefon</mat-label>
+            <mat-label>{{ t('md.suppliers.phone') }}</mat-label>
             <input matInput formControlName="phone">
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Bankname</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.bankName') }}</mat-label>
             <input matInput formControlName="bankName">
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>IBAN</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.iban') }}</mat-label>
             <input matInput formControlName="iban">
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>BIC</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.bic') }}</mat-label>
             <input matInput formControlName="bic">
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Zahlungsziel (Tage)</mat-label>
+            <mat-label>{{ t('md.dialog.supplier.paymentTermsDays') }}</mat-label>
             <input matInput type="number" formControlName="paymentTermsDays">
           </mat-form-field>
         </div>
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary"
                 (click)="onSave()"
                 [disabled]="supplierForm.invalid">
-          Erstellen
+          {{ t('md.dialog.common.create') }}
         </button>
       </div>
     </div>

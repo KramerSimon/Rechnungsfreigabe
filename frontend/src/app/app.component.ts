@@ -17,7 +17,6 @@ import { Observable, map, take } from 'rxjs';
 import { NotificationService } from './core/services/notification.service';
 import { EditUserDialogComponent } from './features/master-data/tabs/users-tab/dialogs/edit-user-dialog/edit-user-dialog.component';
 import { RoleDto } from './core/models/user.models';
-import { DomTranslationService } from './core/services/dom-translation.service';
 import { LanguageService } from './core/services/language.service';
 import { LanguageCode, LanguageOption } from './core/i18n/translations';
 
@@ -57,7 +56,6 @@ export class AppComponent implements OnInit {
     private dialog: MatDialog,
     private userService: UserService,
     private snackBar: MatSnackBar,
-    private domTranslationService: DomTranslationService,
     private languageService: LanguageService
   ) {
     this.authState$ = this.authService.authState$;
@@ -77,7 +75,6 @@ export class AppComponent implements OnInit {
     this.languageService.currentLanguage$.subscribe((language) => {
       this.currentLanguage = language;
     });
-    this.domTranslationService.start();
     // Navigation will be handled by auth guard and routing
   }
 
@@ -87,6 +84,10 @@ export class AppComponent implements OnInit {
 
   t(key: string): string {
     return this.languageService.translateKey(key);
+  }
+
+  getLanguageLabel(code: LanguageCode): string {
+    return this.t(`language.${code}`);
   }
 
   toggleDarkMode(): void {

@@ -15,6 +15,7 @@ import { RoleService } from '../../../../core/services/role.service';
 import { RoleDto } from '../../../../core/models/user.models';
 import { CreateApprovalRuleDialogComponent } from './dialogs/create-approval-rule-dialog.component';
 import { EditApprovalRuleDialogComponent } from './dialogs/edit-approval-rule-dialog/edit-approval-rule-dialog.component';
+import { LanguageService } from '../../../../core/services/language.service';
 
 // AdminRule interface for dialog compatibility
 interface AdminRule {
@@ -59,7 +60,8 @@ export class ApprovalRulesTabComponent implements OnInit {
     private approvalService: ApprovalService,
     private roleService: RoleService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -88,7 +90,7 @@ export class ApprovalRulesTabComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading approval rules:', error);
-        this.snackBar.open('Failed to load approval rules', 'Close', { duration: 3000 });
+        this.snackBar.open(this.t('md.rules.error.load'), this.t('common.close'), { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -105,12 +107,12 @@ export class ApprovalRulesTabComponent implements OnInit {
         const createDto = this.mapToCreateDto(result);
         this.approvalService.createApprovalRule(createDto).subscribe({
           next: () => {
-            this.snackBar.open('Approval rule created successfully', 'Close', { duration: 3000 });
+            this.snackBar.open(this.t('md.rules.success.created'), this.t('common.close'), { duration: 3000 });
             this.loadApprovalRules();
           },
           error: (error: any) => {
             console.error('Error creating approval rule:', error);
-            this.snackBar.open('Failed to create approval rule', 'Close', { duration: 3000 });
+            this.snackBar.open(this.t('md.rules.error.create'), this.t('common.close'), { duration: 3000 });
           }
         });
       }
@@ -145,12 +147,12 @@ export class ApprovalRulesTabComponent implements OnInit {
         const updateDto = this.mapToUpdateDto(result);
         this.approvalService.updateApprovalRule(ruleId, updateDto).subscribe({
           next: () => {
-            this.snackBar.open('Approval rule updated successfully', 'Close', { duration: 3000 });
+            this.snackBar.open(this.t('md.rules.success.updated'), this.t('common.close'), { duration: 3000 });
             this.loadApprovalRules();
           },
           error: (error: any) => {
             console.error('Error updating approval rule:', error);
-            this.snackBar.open('Failed to update approval rule', 'Close', { duration: 3000 });
+            this.snackBar.open(this.t('md.rules.error.update'), this.t('common.close'), { duration: 3000 });
           }
         });
       }
@@ -158,15 +160,15 @@ export class ApprovalRulesTabComponent implements OnInit {
   }
 
   deleteApprovalRule(rule: ApprovalRule): void {
-    if (confirm(`Are you sure you want to delete the approval rule "${rule.name}"?`)) {
+    if (confirm(this.t('md.rules.confirm.delete').replace('{name}', rule.name))) {
       this.approvalService.deleteApprovalRule(rule.id).subscribe({
         next: () => {
-          this.snackBar.open('Approval rule deleted successfully', 'Close', { duration: 3000 });
+          this.snackBar.open(this.t('md.rules.success.deleted'), this.t('common.close'), { duration: 3000 });
           this.loadApprovalRules();
         },
         error: (error: any) => {
           console.error('Error deleting approval rule:', error);
-          this.snackBar.open('Failed to delete approval rule', 'Close', { duration: 3000 });
+          this.snackBar.open(this.t('md.rules.error.delete'), this.t('common.close'), { duration: 3000 });
         }
       });
     }
@@ -322,12 +324,12 @@ export class ApprovalRulesTabComponent implements OnInit {
     this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
       next: () => {
         rule.isActive = event.checked;
-        this.snackBar.open(`Regel ${event.checked ? 'aktiviert' : 'deaktiviert'}`, 'Schließen', { duration: 2000 });
+        this.snackBar.open(this.t(event.checked ? 'md.rules.success.activated' : 'md.rules.success.deactivated'), this.t('common.close'), { duration: 2000 });
       },
       error: (error: any) => {
         console.error('Error updating rule status:', error);
         event.source.checked = !event.checked;
-        this.snackBar.open('Fehler beim Aktualisieren der Regel', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('md.rules.error.update'), this.t('common.close'), { duration: 3000 });
       }
     });
   }
@@ -345,55 +347,55 @@ export class ApprovalRulesTabComponent implements OnInit {
   }
 
   getConditionFieldLabel(field: string): string {
-    const fieldLabels: { [key: string]: string } = {
-      'amount': 'Betrag',
-      'supplier': 'Lieferant',
-      'costCenter': 'Kostenstelle',
-      'project': 'Projekt',
-      'invoiceDate': 'Rechnungsdatum',
-      'dueDate': 'Fälligkeitsdatum'
+    const fieldLabels: Record<string, string> = {
+      amount: 'md.rules.field.amount',
+      supplier: 'md.rules.field.supplier',
+      costCenter: 'md.rules.field.costCenter',
+      project: 'md.rules.field.project',
+      invoiceDate: 'md.rules.field.invoiceDate',
+      dueDate: 'md.rules.field.dueDate'
     };
-    return fieldLabels[field] || field;
+    return fieldLabels[field] ? this.t(fieldLabels[field]) : field;
   }
 
   getOperatorLabel(operator: string): string {
-    const operatorLabels: { [key: string]: string } = {
-      'equals': 'gleich',
-      'notEquals': 'ungleich',
-      'greaterThan': 'größer als',
-      'lessThan': 'kleiner als',
-      'greaterOrEqual': 'größer oder gleich',
-      'lessOrEqual': 'kleiner oder gleich',
-      'contains': 'enthält',
-      'notContains': 'enthält nicht'
+    const operatorLabels: Record<string, string> = {
+      equals: 'md.rules.operator.equals',
+      notEquals: 'md.rules.operator.notEquals',
+      greaterThan: 'md.rules.operator.greaterThan',
+      lessThan: 'md.rules.operator.lessThan',
+      greaterOrEqual: 'md.rules.operator.greaterOrEqual',
+      lessOrEqual: 'md.rules.operator.lessOrEqual',
+      contains: 'md.rules.operator.contains',
+      notContains: 'md.rules.operator.notContains'
     };
-    return operatorLabels[operator] || operator;
+    return operatorLabels[operator] ? this.t(operatorLabels[operator]) : operator;
   }
 
   getActionDescription(action: ApprovalRuleActionDto): string {
     switch (action.actionType?.toLowerCase()) {
       case 'require_approval':
-        return 'Mehrstufige Freigabe';
+        return this.t('md.rules.action.multiStage');
       case 'set_status':
-        return `Status setzen: ${action.actionValue}`;
+        return `${this.t('md.rules.action.setStatus')}: ${action.actionValue}`;
       case 'assign_to':
-        return `Zuweisen an: ${action.actionValue}`;
+        return `${this.t('md.rules.action.assignTo')}: ${action.actionValue}`;
       case 'notify':
-        return 'Benachrichtigung senden';
+        return this.t('md.rules.action.notify');
       default:
-        return action.description || action.actionType || 'Aktion';
+        return action.description || action.actionType || this.t('md.rules.action.default');
     }
   }
 
   getRoleName(role: any): string {
-    if (!role) return 'Rolle nicht definiert';
+    if (!role) return this.t('md.rules.roleNotDefined');
     if (typeof role === 'object' && role.name) {
       return role.name;
     }
     if (typeof role === 'string') {
       return role;
     }
-    return 'Rolle nicht definiert';
+    return this.t('md.rules.roleNotDefined');
   }
 
   getRoleNameFromStage(stage: { role?: any; roleId?: number | null }): string {
@@ -406,6 +408,10 @@ export class ApprovalRulesTabComponent implements OnInit {
         return match.name;
       }
     }
-    return 'Rolle nicht definiert';
+    return this.t('md.rules.roleNotDefined');
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

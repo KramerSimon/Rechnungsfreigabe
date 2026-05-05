@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { LanguageService } from '../../../../../../core/services/language.service';
 
 interface Supplier {
   id: number;
@@ -48,7 +49,8 @@ export class EditSupplierDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<EditSupplierDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: Supplier,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private languageService: LanguageService
   ) {
     this.supplierForm = this.fb.group({
       name: [data.name || '', [Validators.required, Validators.maxLength(100)]],
@@ -83,10 +85,14 @@ export class EditSupplierDialogComponent {
       // Show an alert with missing required fields
       const missingFields = [];
       if (this.supplierForm.get('name')?.invalid) missingFields.push('Name');
-      if (this.supplierForm.get('country')?.invalid) missingFields.push('Land');
+      if (this.supplierForm.get('country')?.invalid) missingFields.push(this.t('md.dialog.supplier.country'));
       if (missingFields.length > 0) {
-        alert('Bitte füllen Sie die folgenden Pflichtfelder aus: ' + missingFields.join(', '));
+        alert(this.t('md.dialog.common.validation.requiredFields') + ' ' + missingFields.join(', '));
       }
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

@@ -1,12 +1,12 @@
 <div class="dialog-container">
       <h2 mat-dialog-title>
-        {{ data.mode === 'create' ? 'Neuen Genehmigungsworkflow anlegen' : 'Genehmigungsworkflow bearbeiten' }}
+        {{ data.mode === 'create' ? t('md.dialog.workflow.createTitle') : t('md.dialog.workflow.editTitle') }}
       </h2>
 
       <form [formGroup]="form" mat-dialog-content>
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Rechnungs-ID *</mat-label>
+            <mat-label>{{ t('md.workflow.invoice') }} *</mat-label>
             <mat-select formControlName="invoiceId" required>
               <mat-option *ngFor="let i of invoices" [value]="i.id">
                 {{ i.invoiceNumber }}
@@ -15,14 +15,14 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Schritt *</mat-label>
+            <mat-label>{{ t('md.workflow.step') }} *</mat-label>
             <input matInput type="number" formControlName="stepNumber" required>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Genehmiger *</mat-label>
+            <mat-label>{{ t('md.workflow.approver') }} *</mat-label>
             <mat-select formControlName="approverId" required>
               <mat-option *ngFor="let u of users" [value]="u.id">
                 {{u.firstName}} {{u.lastName}} ({{u.username}})
@@ -33,12 +33,12 @@
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Genehmigungsstufe *</mat-label>
+            <mat-label>{{ t('md.workflow.level') }} *</mat-label>
             <input matInput type="number" formControlName="approvalLevel" required>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Status</mat-label>
+            <mat-label>{{ t('md.common.status') }}</mat-label>
             <mat-select formControlName="status">
               <mat-select-trigger>
                 <span class="status-tag" [style.backgroundColor]="getStatusMeta(form.get('status')?.value).color">
@@ -47,27 +47,27 @@
               </mat-select-trigger>
               <mat-option value="Pending">
                 <span class="status-tag" style="background-color: #FFA500;">
-                  Ausstehend
+                  {{ t('md.dialog.workflow.status.pending') }}
                 </span>
               </mat-option>
               <mat-option value="Waiting">
                 <span class="status-tag" style="background-color: #2196F3;">
-                  Wartend
+                  {{ t('md.dialog.workflow.status.waiting') }}
                 </span>
               </mat-option>
               <mat-option value="Approved">
                 <span class="status-tag" style="background-color: #4CAF50;">
-                  Genehmigt
+                  {{ t('md.dialog.workflow.status.approved') }}
                 </span>
               </mat-option>
               <mat-option value="Rejected">
                 <span class="status-tag" style="background-color: #F44336;">
-                  Abgelehnt
+                  {{ t('md.dialog.workflow.status.rejected') }}
                 </span>
               </mat-option>
               <mat-option value="Skipped">
                 <span class="status-tag" style="background-color: #9E9E9E;">
-                  Übersprungen
+                  {{ t('md.dialog.workflow.status.skipped') }}
                 </span>
               </mat-option>
             </mat-select>
@@ -76,16 +76,16 @@
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Kommentare</mat-label>
+            <mat-label>{{ t('md.common.comment') }}</mat-label>
             <textarea matInput formControlName="comments" rows="3"></textarea>
           </mat-form-field>
         </div>
       </form>
 
       <div mat-dialog-actions align="end">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary" [disabled]="!form.valid" (click)="onSave()">
-          {{ data.mode === 'create' ? 'Erstellen' : 'Speichern' }}
+          {{ data.mode === 'create' ? t('md.dialog.common.create') : t('md.dialog.common.save') }}
         </button>
       </div>
     </div>

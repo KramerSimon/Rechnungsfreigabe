@@ -13,9 +13,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
 import { InvoiceService, PagedResult } from '../../../../core/services/invoice.service';
 import { Invoice } from '../../../../core/models';
-import { catchError, finalize, of, forkJoin } from 'rxjs';
+import { catchError, finalize, of, forkJoin, skip } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { LanguageService } from '../../../../core/services/language.service';
 
 interface AccountingOverview {
   rejectedCount: number;
@@ -75,28 +76,28 @@ export class AccountingDashboardComponent implements OnInit {
   searchTerm = '';
   selectedStatus = 'all';
 
+  private sourceInvoices: Invoice[] = [];
   invoices: AccountingInvoice[] = [];
   filteredInvoices: AccountingInvoice[] = [];
 
   displayedColumns: string[] = ['id', 'supplier', 'status', 'assignedTo', 'amount'];
 
-  statusOptions = [
-    { value: 'all', label: 'Alle' },
-    { value: 'rejected', label: 'Abgelehnt' },
-    { value: 'approved', label: 'Freigegeben' },
-    { value: 'paid', label: 'Bezahlt' },
-    { value: 'auto_approved', label: 'Automatisch freigegeben' },
-    { value: 'in_approval', label: 'Genehmigung erforderlich' }
-  ];
+  statusOptions: Array<{ value: string; label: string }> = [];
 
   constructor(
     private invoiceService: InvoiceService,
     private router: Router,
     private authService: AuthService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
+    this.statusOptions = this.buildStatusOptions();
+    this.languageService.currentLanguage$.pipe(skip(1)).subscribe(() => {
+      this.statusOptions = this.buildStatusOptions();
+      this.processAccountingData(this.sourceInvoices);
+    });
     this.loadAccountingData();
   }
 
@@ -115,6 +116,7 @@ export class AccountingDashboardComponent implements OnInit {
   }
 
   private processAccountingData(invoices: Invoice[]): void {
+    this.sourceInvoices = [...invoices];
     this.invoices = invoices.map(invoice => this.mapInvoiceToAccountingView(invoice));
     this.calculateOverview();
     this.applyFilters();
@@ -130,49 +132,48 @@ export class AccountingDashboardComponent implements OnInit {
 
     switch (status) {
       case 'rejected':
-        statusDisplay = 'Abgelehnt (KO)';
+        statusDisplay = this.t('dashboard.accounting.status.rejectedKo');
         statusClass = 'status-rejected';
         assignedTo = this.getPendingApproverName(invoice) ?? '--';
-        reason = 'Falsche KST';
+        reason = this.t('dashboard.accounting.reason.wrongCostCenter');
         break;
       case 'approved':
-        statusDisplay = 'Freigegeben';
+        statusDisplay = this.t('dashboard.accounting.status.approved');
         statusClass = 'status-approved';
-        assignedTo = 'Buchhaltung';
-        reason = 'Wartet auf Zahlung';
+        assignedTo = this.t('dashboard.accounting.assigned.accounting');
         break;
       case 'paid':
-        statusDisplay = 'Bezahlt';
+        statusDisplay = this.t('dashboard.accounting.status.paid');
         statusClass = 'status-paid';
-        assignedTo = 'Erledigt';
+        assignedTo = this.t('dashboard.accounting.assigned.done');
         break;
       case 'approval_required':
         if (invoice.autoApproved) {
-          statusDisplay = 'Automatisch freigegeben';
+          statusDisplay = this.t('dashboard.accounting.status.autoApproved');
           statusClass = 'status-auto';
-          assignedTo = 'System';
-          reason = 'Regel: Kleinestbetr.';
+          assignedTo = this.t('dashboard.accounting.assigned.system');
+          reason = this.t('dashboard.accounting.reason.smallAmountRule');
         } else {
-          statusDisplay = 'Genehmigung erforderlich';
+          statusDisplay = this.t('dashboard.accounting.status.approvalRequired');
           statusClass = 'status-pending';
-          assignedTo = this.getPendingApproverName(invoice) ?? 'Unzugewiesen';
+          assignedTo = this.getPendingApproverName(invoice) ?? this.t('dashboard.accounting.assigned.unassigned');
         }
         break;
       case 'received':
-        statusDisplay = 'Eingegangen';
+        statusDisplay = this.t('dashboard.accounting.status.received');
         statusClass = 'status-draft';
-        assignedTo = this.getPendingApproverName(invoice) ?? 'Buchhaltung';
+        assignedTo = this.getPendingApproverName(invoice) ?? this.t('dashboard.accounting.assigned.accounting');
         break;
       case 'overdue':
-        statusDisplay = 'Überfällig';
+        statusDisplay = this.t('dashboard.accounting.status.overdue');
         statusClass = 'status-overdue';
-        assignedTo = this.getPendingApproverName(invoice) ?? 'Unzugewiesen';
-        reason = 'Frist überschritten';
+        assignedTo = this.getPendingApproverName(invoice) ?? this.t('dashboard.accounting.assigned.unassigned');
+        reason = this.t('dashboard.accounting.reason.deadlineExceeded');
         break;
       default:
-        statusDisplay = 'Eingegangen';
+        statusDisplay = this.t('dashboard.accounting.status.received');
         statusClass = 'status-draft';
-        assignedTo = this.getPendingApproverName(invoice) ?? 'Buchhaltung';
+        assignedTo = this.getPendingApproverName(invoice) ?? this.t('dashboard.accounting.assigned.accounting');
         break;
     }
 
@@ -185,10 +186,16 @@ export class AccountingDashboardComponent implements OnInit {
       statusClass,
       statusColor: invoice.statusColor,
       assignedTo,
-      amount: `${invoice.totalAmount.toLocaleString('de-DE')} €`,
+      amount: `${invoice.totalAmount.toLocaleString(this.getLocale())} €`,
       reason,
       originalInvoice: invoice
     };
+  }
+
+  getInvoiceCountLabel(count: number): string {
+    return count === 1
+      ? this.t('dashboard.accounting.invoice.single')
+      : this.t('dashboard.accounting.invoice.plural');
   }
 
   private getPendingApproverName(invoice: Invoice): string | null {
@@ -290,7 +297,7 @@ export class AccountingDashboardComponent implements OnInit {
 
   onInitiatePayment(): void {
     if (!this.authService.hasPermission('payments.process')) {
-      this.snackBar.open('Keine Berechtigung zum Ausführen des Zahlungslaufs.', 'OK', { duration: 3000 });
+      this.snackBar.open(this.t('dashboard.accounting.snack.noPermission'), 'OK', { duration: 3000 });
       return;
     }
 
@@ -299,11 +306,13 @@ export class AccountingDashboardComponent implements OnInit {
       .map(inv => inv.originalInvoice);
 
     if (!readyInvoices.length) {
-      this.snackBar.open('Keine zahlungsbereiten Rechnungen gefunden.', 'OK', { duration: 3000 });
+      this.snackBar.open(this.t('dashboard.accounting.snack.noneReady'), 'OK', { duration: 3000 });
       return;
     }
 
-    if (!confirm(`Zahlungslauf starten und ${readyInvoices.length} Rechnung(en) als bezahlt markieren?`)) {
+    const confirmText = this.t('dashboard.accounting.confirm.runPayments')
+      .replace('{count}', String(readyInvoices.length));
+    if (!confirm(confirmText)) {
       return;
     }
 
@@ -312,12 +321,12 @@ export class AccountingDashboardComponent implements OnInit {
       .pipe(finalize(() => this.loading = false))
       .subscribe({
         next: () => {
-          this.snackBar.open('Rechnungen wurden als bezahlt markiert.', 'OK', { duration: 4000 });
+          this.snackBar.open(this.t('dashboard.accounting.snack.markedPaid'), 'OK', { duration: 4000 });
           this.loadAccountingData();
         },
         error: (error) => {
           console.error('Fehler beim Zahlungslauf:', error);
-          this.snackBar.open('Zahlungslauf fehlgeschlagen.', 'OK', { duration: 4000 });
+          this.snackBar.open(this.t('dashboard.accounting.snack.paymentRunFailed'), 'OK', { duration: 4000 });
         }
       });
   }
@@ -328,14 +337,40 @@ export class AccountingDashboardComponent implements OnInit {
   }
 
   formatAmount(amount: number): string {
-    return `€ ${amount.toLocaleString('de-DE')},-`;
+    return `€ ${amount.toLocaleString(this.getLocale())},-`;
   }
 
   getCurrentMonth(): string {
-    return new Date().toLocaleDateString('de-DE', {
+    return new Date().toLocaleDateString(this.getLocale(), {
       year: 'numeric',
       month: 'long'
     });
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
+  }
+
+  private buildStatusOptions(): Array<{ value: string; label: string }> {
+    return [
+      { value: 'all', label: this.t('dashboard.accounting.filter.all') },
+      { value: 'rejected', label: this.t('dashboard.accounting.filter.rejected') },
+      { value: 'approved', label: this.t('dashboard.accounting.filter.approved') },
+      { value: 'paid', label: this.t('dashboard.accounting.filter.paid') },
+      { value: 'auto_approved', label: this.t('dashboard.accounting.filter.autoApproved') },
+      { value: 'in_approval', label: this.t('dashboard.accounting.filter.inApproval') }
+    ];
+  }
+
+  private getLocale(): string {
+    switch (this.languageService.currentLanguage) {
+      case 'en':
+        return 'en-US';
+      case 'it':
+        return 'it-IT';
+      default:
+        return 'de-DE';
+    }
   }
 
   getContrastColor(hexColor: string | undefined): string {

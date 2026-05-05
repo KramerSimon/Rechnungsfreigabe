@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RoleDto, User } from '../../../../../core/models/user.models';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { LanguageService } from '../../../../../core/services/language.service';
 
 interface CreateUserDialogData {
   user: User;
@@ -38,7 +39,8 @@ export class CreateUserDialogComponent {
     private dialogRef: MatDialogRef<CreateUserDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: CreateUserDialogData,
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    private languageService: LanguageService
   ) {
     this.availableRoles = data?.availableRoles || [];
     const user = data?.user || {} as User;
@@ -92,5 +94,9 @@ export class CreateUserDialogComponent {
       delete formValue.passwordConfirm; // Bestätigung nicht speichern
       this.dialogRef.close(formValue);
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

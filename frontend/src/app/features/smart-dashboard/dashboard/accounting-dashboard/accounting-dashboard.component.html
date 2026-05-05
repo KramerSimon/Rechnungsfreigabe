@@ -2,7 +2,7 @@
 <div class="accounting-dashboard">
   <!-- Header -->
   <div class="header-section">
-    <h1>FINANZÜBERSICHT ({{ getCurrentMonth() }})</h1>
+    <h1>{{ t('dashboard.accounting.header') }} ({{ getCurrentMonth() }})</h1>
   </div>
 
   <!-- Übersichts-Kacheln -->
@@ -10,28 +10,28 @@
     <div class="overview-card rejected" (click)="onResolveRejected()">
       <div class="card-icon">❌</div>
       <div class="card-content">
-        <div class="card-title">ABGELEHNT / KO</div>
-        <div class="card-count">{{ overview.rejectedCount }} Rechnungen</div>
+        <div class="card-title">{{ t('dashboard.accounting.card.rejected.title') }}</div>
+        <div class="card-count">{{ overview.rejectedCount }} {{ getInvoiceCountLabel(overview.rejectedCount) }}</div>
         <div class="card-amount">{{ formatAmount(overview.rejectedAmount) }}</div>
-        <div class="card-action">[Klären >]</div>
+        <div class="card-action">{{ t('dashboard.accounting.card.rejected.action') }}</div>
       </div>
     </div>
 
     <div class="overview-card ready" (click)="onInitiatePayment()">
       <div class="card-icon">✅</div>
       <div class="card-content">
-        <div class="card-title">ZAHLUNGSBEREIT</div>
-        <div class="card-count">{{ overview.readyForPaymentCount }} Rechnungen</div>
+        <div class="card-title">{{ t('dashboard.accounting.card.ready.title') }}</div>
+        <div class="card-count">{{ overview.readyForPaymentCount }} {{ getInvoiceCountLabel(overview.readyForPaymentCount) }}</div>
         <div class="card-amount">{{ formatAmount(overview.readyForPaymentAmount) }}</div>
-        <div class="card-action">[Jetzt zahlen >]</div>
+        <div class="card-action">{{ t('dashboard.accounting.card.ready.action') }}</div>
       </div>
     </div>
 
     <div class="overview-card paid">
       <div class="card-icon">💳</div>
       <div class="card-content">
-        <div class="card-title">BEZAHLT</div>
-        <div class="card-count">{{ overview.paidCount }} Rechnungen</div>
+        <div class="card-title">{{ t('dashboard.accounting.card.paid.title') }}</div>
+        <div class="card-count">{{ overview.paidCount }} {{ getInvoiceCountLabel(overview.paidCount) }}</div>
         <div class="card-amount">{{ formatAmount(overview.paidAmount) }}</div>
       </div>
     </div>
@@ -39,7 +39,7 @@
     <div class="overview-card volume">
       <div class="card-icon">💰</div>
       <div class="card-content">
-        <div class="card-title">OFFENES VOLUMEN</div>
+        <div class="card-title">{{ t('dashboard.accounting.card.volume.title') }}</div>
         <div class="card-amount large">{{ formatAmount(overview.openVolumeAmount) }}</div>
       </div>
     </div>
@@ -47,18 +47,18 @@
 
   <!-- Rechnungsübersicht -->
   <div class="invoices-section">
-    <h2>ALLE RECHNUNGEN IM PROZESS</h2>
+    <h2>{{ t('dashboard.accounting.section.invoicesInProcess') }}</h2>
 
     <!-- Filter und Suche -->
     <div class="controls-section">
       <mat-form-field class="search-field">
-        <mat-label>Suche: R-Nr, Lieferant...</mat-label>
+        <mat-label>{{ t('dashboard.accounting.search') }}</mat-label>
         <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()">
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
 
       <mat-form-field class="status-filter">
-        <mat-label>Status</mat-label>
+        <mat-label>{{ t('dashboard.accounting.filter.status') }}</mat-label>
         <mat-select [(value)]="selectedStatus" (selectionChange)="onStatusChange()">
           <mat-option *ngFor="let status of statusOptions" [value]="status.value">
             {{ status.label }}
@@ -68,7 +68,7 @@
 
       <button mat-button class="export-btn" (click)="onExportData()">
         <mat-icon>download</mat-icon>
-        Exportieren
+        {{ t('dashboard.accounting.export') }}
       </button>
     </div>
 
@@ -87,7 +87,7 @@
 
         <!-- Lieferant Spalte -->
         <ng-container matColumnDef="supplier">
-          <th mat-header-cell *matHeaderCellDef>LIEFERANT</th>
+          <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.accounting.table.supplier') }}</th>
           <td mat-cell *matCellDef="let invoice" (click)="onInvoiceClick(invoice)" class="clickable">
             <div class="supplier-cell">
               <div class="supplier-name">{{ invoice.supplierName }}</div>
@@ -97,7 +97,7 @@
 
         <!-- Status Spalte -->
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>STATUS</th>
+          <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.accounting.table.status') }}</th>
           <td mat-cell *matCellDef="let invoice">
             <div class="status-cell">
               <span class="status-badge"
@@ -115,7 +115,7 @@
 
         <!-- Zuständig Spalte -->
         <ng-container matColumnDef="assignedTo">
-          <th mat-header-cell *matHeaderCellDef>ZUSTÄNDIG</th>
+          <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.accounting.table.assignedTo') }}</th>
           <td mat-cell *matCellDef="let invoice">
             <div class="assigned-cell">{{ invoice.assignedTo }}</div>
           </td>
@@ -123,7 +123,7 @@
 
         <!-- Betrag Spalte -->
         <ng-container matColumnDef="amount">
-          <th mat-header-cell *matHeaderCellDef>BETRAG</th>
+          <th mat-header-cell *matHeaderCellDef>{{ t('dashboard.accounting.table.amount') }}</th>
           <td mat-cell *matCellDef="let invoice" class="amount-cell">
             {{ invoice.amount }}
           </td>
@@ -138,15 +138,15 @@
     <!-- Leer State -->
     <div class="empty-state" *ngIf="!loading && filteredInvoices.length === 0">
       <mat-icon>inbox</mat-icon>
-      <h3>Keine Rechnungen gefunden</h3>
-      <p *ngIf="searchTerm || selectedStatus !== 'all'">Versuche andere Filter oder lösche die Suche.</p>
-      <p *ngIf="!searchTerm && selectedStatus === 'all'">Aktuell sind keine Rechnungen im System.</p>
+      <h3>{{ t('dashboard.accounting.empty.title') }}</h3>
+      <p *ngIf="searchTerm || selectedStatus !== 'all'">{{ t('dashboard.accounting.empty.filtered') }}</p>
+      <p *ngIf="!searchTerm && selectedStatus === 'all'">{{ t('dashboard.accounting.empty.all') }}</p>
     </div>
 
     <!-- Loading State -->
     <div class="loading-state" *ngIf="loading">
       <mat-spinner diameter="50"></mat-spinner>
-      <p>Lade Rechnungsübersicht...</p>
+      <p>{{ t('dashboard.accounting.loading') }}</p>
     </div>
   </div>
 </div>

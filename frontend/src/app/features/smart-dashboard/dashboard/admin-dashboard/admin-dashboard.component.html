@@ -2,7 +2,7 @@
 <div class="admin-dashboard">
   <!-- System Status -->
   <div class="status-section">
-    <h1>SYSTEM STATUS</h1>
+    <h1>{{ t('dashboard.admin.systemStatus') }}</h1>
     <div class="status-indicators">
       <div class="status-item" [ngStyle]="{ color: getStatusColor() }">
         <mat-icon [ngStyle]="{ color: getStatusColor() }">{{ getStatusIcon() }}</mat-icon>
@@ -18,7 +18,7 @@
 
   <!-- Stammdaten Verwaltung -->
   <div class="masterdata-section">
-    <h2>STAMMDATEN VERWALTUNG</h2>
+    <h2>{{ t('dashboard.admin.masterData') }}</h2>
 
     <div class="masterdata-grid">
       <mat-card *ngFor="let section of masterDataSections"
@@ -33,8 +33,8 @@
           </mat-icon>
         </div>
         <div class="card-content">
-          <h3>{{ section.title }}</h3>
-          <p>{{ section.description }}</p>
+          <h3>{{ t(section.title) }}</h3>
+          <p>{{ t(section.description) }}</p>
         </div>
         <div class="card-action">
           <mat-icon>chevron_right</mat-icon>
@@ -143,6 +143,6 @@
   <!-- Loading State -->
   <div class="loading-overlay" *ngIf="loading">
     <mat-spinner diameter="50"></mat-spinner>
-    <p>Lade System-Status...</p>
+    <p>{{ t('dashboard.admin.loading') }}</p>
   </div>
 </div>

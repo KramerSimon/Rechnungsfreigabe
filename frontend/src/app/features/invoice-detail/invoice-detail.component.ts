@@ -28,6 +28,8 @@ import { CostCenter } from '../../core/models/cost-center.model';
 import { Project } from '../../core/models/project.model';
 import { PurchaseOrder } from '../../core/models/purchaseOrder.model';
 import { Supplier } from '../../core/models/supplier.model';
+import { LanguageService } from '../../core/services/language.service';
+import { LanguageCode } from '../../core/i18n/translations';
 
 @Component({
   selector: 'app-invoice-detail',
@@ -113,6 +115,7 @@ export class InvoiceDetailComponent implements OnInit {
   currentUserId: number | null = null;
   userPermissions: string[] = [];
   currentUserIsAdministrator = false;
+  currentLanguage: LanguageCode = 'de';
 
   constructor(
     private route: ActivatedRoute,
@@ -123,7 +126,8 @@ export class InvoiceDetailComponent implements OnInit {
     private purchaseOrderService: PurchaseOrderService,
     private supplierService: SupplierService,
     private sanitizer: DomSanitizer,
-    private authService: AuthService
+    private authService: AuthService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit() {
@@ -136,6 +140,9 @@ export class InvoiceDetailComponent implements OnInit {
       this.currentUserIsAdministrator = roleNames.includes('administrator') ||
         this.userPermissions.includes('dashboards.view_admin') ||
         this.userPermissions.includes('dashboards.view_all');
+    });
+    this.languageService.currentLanguage$.subscribe((language) => {
+      this.currentLanguage = language;
     });
     this.loadCostCenters();
     this.loadSuppliers();
@@ -157,9 +164,9 @@ export class InvoiceDetailComponent implements OnInit {
         this.loading = false;
         this.pdfLoading = false;
         const message = error?.status === 404
-          ? 'Rechnung wurde nicht gefunden. Bitte zurück zur Übersicht und erneut wählen.'
-          : 'Rechnung konnte nicht geladen werden.';
-        this.snackBar.open(message, 'OK', { duration: 4000 });
+          ? this.t('invoice.detail.error.notFound')
+          : this.t('invoice.detail.error.load');
+        this.snackBar.open(message, this.t('common.close'), { duration: 4000 });
         // Auf das Dashboard zurück, damit keine leere Seite bleibt
         this.router.navigate(['/dashboard']);
       }
@@ -196,9 +203,9 @@ export class InvoiceDetailComponent implements OnInit {
           this.pdfBlobUrl = null;
           this.pdfSafeUrl = null;
           this.pdfLoading = false;
-          this.pdfLoadError = 'Datei ist kein gültiges PDF';
+          this.pdfLoadError = this.t('invoice.detail.pdf.error.invalid');
           this.useFallbackViewer = false;
-          this.snackBar.open('PDF konnte nicht geladen werden: Datei ist kein gültiges PDF', 'Schließen', {
+          this.snackBar.open(this.t('invoice.detail.pdf.error.invalidFull'), this.t('common.close'), {
             duration: 5000
           });
           return;
@@ -232,8 +239,8 @@ export class InvoiceDetailComponent implements OnInit {
         this.pdfBlobUrl = null;
         this.pdfSafeUrl = null;
         this.pdfLoading = false;
-        this.pdfLoadError = error?.message || 'Unbekannter Fehler';
-        this.snackBar.open('PDF konnte nicht geladen werden: ' + (error.status || 'Unbekannter Fehler'), 'Schließen', {
+        this.pdfLoadError = error?.message || this.t('common.unknownError');
+        this.snackBar.open(this.tp('invoice.detail.pdf.error.load', { message: error.status || this.t('common.unknownError') }), this.t('common.close'), {
           duration: 5000
         });
       }
@@ -318,7 +325,7 @@ export class InvoiceDetailComponent implements OnInit {
           const currentProjectId = this.invoice.projectId;
           if (currentProjectId && !this.projects.some(p => p.id === currentProjectId)) {
             this.projects = [
-              { id: currentProjectId, name: '(vorhanden)', costCenterId, costCenterName: '', budget: 0, spentAmount: 0, status: 'Aktiv' },
+              { id: currentProjectId, name: this.t('invoice.detail.fallback.existing'), costCenterId, costCenterName: '', budget: 0, spentAmount: 0, status: this.t('invoice.detail.fallback.active') },
               ...this.projects
             ];
           }
@@ -327,7 +334,7 @@ export class InvoiceDetailComponent implements OnInit {
           console.error('Error loading projects for cost center', costCenterId, error);
           // Falls Liste nicht ladbar ist, aber bereits eine Projekt-ID existiert, wenigstens diese anzeigen
           if (this.invoice.projectId) {
-            this.projects = [{ id: this.invoice.projectId, name: '(vorhanden)', costCenterId, costCenterName: '', budget: 0, spentAmount: 0, status: 'Aktiv' }];
+            this.projects = [{ id: this.invoice.projectId, name: this.t('invoice.detail.fallback.existing'), costCenterId, costCenterName: '', budget: 0, spentAmount: 0, status: this.t('invoice.detail.fallback.active') }];
           } else {
             this.projects = [];
           }
@@ -344,7 +351,7 @@ export class InvoiceDetailComponent implements OnInit {
           const currentPurchaseOrderId = this.invoice.purchaseOrderId;
           if (currentPurchaseOrderId && !this.purchaseOrders.some(po => po.id === currentPurchaseOrderId)) {
             this.purchaseOrders = [
-              { id: currentPurchaseOrderId, title: '(vorhanden)', totalAmount: 0, currency: 'EUR', status: 'Offen', createdAt: '' },
+              { id: currentPurchaseOrderId, title: this.t('invoice.detail.fallback.existing'), totalAmount: 0, currency: 'EUR', status: this.t('invoice.detail.fallback.open'), createdAt: '' },
               ...this.purchaseOrders
             ];
           }
@@ -353,7 +360,7 @@ export class InvoiceDetailComponent implements OnInit {
           console.error('Error loading purchase orders', error);
           // Falls API fehlschlägt, aber bereits eine PO-ID existiert, diese anzeigen
           if (this.invoice.purchaseOrderId) {
-            this.purchaseOrders = [{ id: this.invoice.purchaseOrderId, title: '(vorhanden)', totalAmount: 0, currency: 'EUR', status: 'Offen', createdAt: '' }];
+            this.purchaseOrders = [{ id: this.invoice.purchaseOrderId, title: this.t('invoice.detail.fallback.existing'), totalAmount: 0, currency: 'EUR', status: this.t('invoice.detail.fallback.open'), createdAt: '' }];
           } else {
             this.purchaseOrders = [];
           }
@@ -366,15 +373,15 @@ export class InvoiceDetailComponent implements OnInit {
 
     if (!this.invoice.costCenterId) {
       this.saveStatus = 'error';
-      this.saveMessage = 'Bitte Kostenstelle auswählen';
-      this.snackBar.open(this.saveMessage, 'OK', { duration: 3000 });
+      this.saveMessage = this.t('invoice.detail.validation.costCenterRequired');
+      this.snackBar.open(this.saveMessage, this.t('common.close'), { duration: 3000 });
       return;
     }
 
     if (!this.invoice.projectId) {
       this.saveStatus = 'error';
-      this.saveMessage = 'Bitte ein Projekt auswählen';
-      this.snackBar.open(this.saveMessage, 'OK', { duration: 3000 });
+      this.saveMessage = this.t('invoice.detail.validation.projectRequired');
+      this.snackBar.open(this.saveMessage, this.t('common.close'), { duration: 3000 });
       return;
     }
 
@@ -403,8 +410,8 @@ export class InvoiceDetailComponent implements OnInit {
         this.saving = false;
         this.saveStatus = 'success';
         this.lastSavedAt = new Date();
-        this.saveMessage = `Daten gespeichert (Projekt: ${this.invoice.projectId || '—'})`;
-        this.snackBar.open('Daten gespeichert', 'OK', { duration: 3000 });
+        this.saveMessage = this.tp('invoice.detail.save.savedWithProject', { project: this.invoice.projectId || this.t('md.common.notSpecified') });
+        this.snackBar.open(this.t('invoice.detail.save.saved'), this.t('common.close'), { duration: 3000 });
         this.isEditMode = false;
         this.editFormDirty = false;
 
@@ -415,8 +422,8 @@ export class InvoiceDetailComponent implements OnInit {
         console.error('Error saving invoice data:', error);
         this.saving = false;
         this.saveStatus = 'error';
-        this.saveMessage = this.getErrorMessage(error) || 'Speichern fehlgeschlagen';
-        this.snackBar.open(this.saveMessage, 'OK', { duration: 4000 });
+        this.saveMessage = this.getErrorMessage(error) || this.t('invoice.detail.save.failed');
+        this.snackBar.open(this.saveMessage, this.t('common.close'), { duration: 4000 });
       }
     });
   }
@@ -515,36 +522,36 @@ export class InvoiceDetailComponent implements OnInit {
 
   onApprove() {
     if (!this.invoice || !this.canApprove()) {
-      let msg = 'Rechnung kann nicht freigegeben werden';
+      let msg = this.t('invoice.detail.approval.cannotApprove');
 
       if (!this.invoice?.costCenterId || !this.invoice?.projectId) {
-        msg = 'Bitte Kostenstelle und Projekt ergänzen, erst dann freigeben.';
+        msg = this.t('invoice.detail.approval.needCostCenterProject');
       } else if (!this.currentUserIsAdministrator && !this.userPermissions.includes('invoices.approve') &&
         !this.userPermissions.includes('invoices.approve_cost_center')) {
-        msg = 'Keine Berechtigung zur Freigabe.';
+        msg = this.t('invoice.detail.approval.noPermission');
       } else {
-        msg = 'Rechnung ist Ihnen aktuell nicht zugewiesen.';
+        msg = this.t('invoice.detail.approval.notAssigned');
       }
-      this.snackBar.open(msg, 'OK', { duration: 3000 });
+      this.snackBar.open(msg, this.t('common.close'), { duration: 3000 });
       return;
     }
 
-    if (confirm('Möchten Sie diese Rechnung wirklich freigeben?')) {
+    if (confirm(this.t('invoice.detail.approval.confirmApprove'))) {
       this.loading = true;
 
       this.invoiceService.approveInvoice(this.invoice.id, {
         approved: true,
-        comments: this.note || 'Freigabe erteilt'
+        comments: this.note || this.t('invoice.detail.approval.defaultApproveComment')
       }).subscribe({
         next: (response) => {
-          this.snackBar.open('Rechnung wurde erfolgreich freigegeben!', 'OK', { duration: 5000 });
+          this.snackBar.open(this.t('invoice.detail.approval.approvedSuccess'), this.t('common.close'), { duration: 5000 });
           this.loading = false;
           // Zurück zum Dashboard
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
           console.error('Error approving invoice:', error);
-          this.snackBar.open('Fehler bei der Freigabe', 'OK', { duration: 5000 });
+          this.snackBar.open(this.t('invoice.detail.approval.approveError'), this.t('common.close'), { duration: 5000 });
           this.loading = false;
         }
       });
@@ -554,7 +561,7 @@ export class InvoiceDetailComponent implements OnInit {
   onReject() {
     if (!this.invoice) return;
 
-    const reason = prompt('Bitte geben Sie den Grund für die Ablehnung an:');
+    const reason = prompt(this.t('invoice.detail.approval.promptRejectReason'));
 
     if (reason && reason.trim()) {
       this.loading = true;
@@ -564,19 +571,42 @@ export class InvoiceDetailComponent implements OnInit {
         comments: reason.trim()
       }).subscribe({
         next: (response) => {
-          this.snackBar.open('Rechnung wurde abgelehnt', 'OK', { duration: 5000 });
+          this.snackBar.open(this.t('invoice.detail.approval.rejectedSuccess'), this.t('common.close'), { duration: 5000 });
           this.loading = false;
           // Zurück zum Dashboard
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
           console.error('Error rejecting invoice:', error);
-          this.snackBar.open('Fehler bei der Ablehnung', 'OK', { duration: 5000 });
+          this.snackBar.open(this.t('invoice.detail.approval.rejectError'), this.t('common.close'), { duration: 5000 });
           this.loading = false;
         }
       });
     } else if (reason !== null) {
-      this.snackBar.open('Grund für Ablehnung ist ein Pflichtfeld', 'OK', { duration: 3000 });
+      this.snackBar.open(this.t('invoice.detail.approval.rejectReasonRequired'), this.t('common.close'), { duration: 3000 });
+    }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
+  }
+
+  tp(key: string, params: Record<string, string | number>): string {
+    let translated = this.t(key);
+    for (const [name, value] of Object.entries(params)) {
+      translated = translated.replace(`{${name}}`, String(value));
+    }
+    return translated;
+  }
+
+  getLocale(): string {
+    switch (this.currentLanguage) {
+      case 'en':
+        return 'en-US';
+      case 'it':
+        return 'it-IT';
+      default:
+        return 'de-DE';
     }
   }
 }

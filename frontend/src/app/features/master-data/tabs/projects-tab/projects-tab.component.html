@@ -2,9 +2,9 @@
   <div class="header-actions">
     <button mat-raised-button color="primary" (click)="createProject()">
       <mat-icon>add</mat-icon>
-      Neues Projekt
+      {{ t('md.projects.create') }}
     </button>
-    <button mat-icon-button (click)="loadProjects()" matTooltip="Aktualisieren">
+    <button mat-icon-button (click)="loadProjects()" [matTooltip]="t('md.common.refresh')">
       <mat-icon>refresh</mat-icon>
     </button>
   </div>
@@ -17,27 +17,27 @@
       </ng-container>
 
       <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.common.name') }}</th>
         <td mat-cell *matCellDef="let element">{{element.name}}</td>
       </ng-container>
 
       <ng-container matColumnDef="costCenter">
-        <th mat-header-cell *matHeaderCellDef>Kostenstelle</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.projects.costCenter') }}</th>
         <td mat-cell *matCellDef="let element">{{getCostCenterName(element.costCenterId)}}</td>
       </ng-container>
 
       <ng-container matColumnDef="budget">
-        <th mat-header-cell *matHeaderCellDef>Budget</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.projects.budget') }}</th>
         <td mat-cell *matCellDef="let element">{{element.budget | currency:'EUR'}}</td>
       </ng-container>
 
       <ng-container matColumnDef="projectManager">
-        <th mat-header-cell *matHeaderCellDef>Projektleiter</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.projects.projectManager') }}</th>
         <td mat-cell *matCellDef="let element">{{getManagerName(element)}}</td>
       </ng-container>
 
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.common.status') }}</th>
         <td mat-cell *matCellDef="let element">
           <span class="status-badge" [ngClass]="getStatusClass(element.status)">
             {{element.status | statusDisplay: 'Project'}}
@@ -46,12 +46,12 @@
       </ng-container>
 
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.common.actions') }}</th>
         <td mat-cell *matCellDef="let element">
-          <button mat-icon-button matTooltip="Bearbeiten" (click)="editProject(element)">
+          <button mat-icon-button [matTooltip]="t('md.common.edit')" (click)="editProject(element)">
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteProject(element.id)">
+          <button mat-icon-button color="warn" [matTooltip]="t('md.common.delete')" (click)="deleteProject(element.id)">
             <mat-icon>delete</mat-icon>
           </button>
         </td>
@@ -63,12 +63,12 @@
 
     <div *ngIf="loadingProjects" class="loading-overlay">
       <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
-      <p>Lade Projekte...</p>
+      <p>{{ t('md.projects.loading') }}</p>
     </div>
 
     <div *ngIf="!loadingProjects && projects.length === 0" class="empty-state">
       <mat-icon>work</mat-icon>
-      <p>Keine Projekte vorhanden</p>
+      <p>{{ t('md.projects.empty') }}</p>
     </div>
   </mat-card>
 </div>

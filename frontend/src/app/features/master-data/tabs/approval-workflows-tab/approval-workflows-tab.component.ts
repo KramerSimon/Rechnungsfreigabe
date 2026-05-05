@@ -12,6 +12,7 @@ import { ApprovalService } from '../../../../core/services/approval.service';
 import { ApprovalWorkflow, CreateApprovalWorkflowDto, UpdateApprovalWorkflowDto } from '../../../../core/models/approval.model';
 import { ApprovalWorkflowDialogComponent, ApprovalWorkflowDialogData } from './dialogs/approval-workflow-dialog.component';
 import { StatusDisplayPipe } from '../../../../core/pipes/status-display.pipe';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-approval-workflows-tab',
@@ -47,7 +48,8 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
   constructor(
     private approvalService: ApprovalService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -63,7 +65,7 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading approval workflows:', error);
-        this.snackBar.open('Fehler beim Laden der Genehmigungsworkflows', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('md.workflows.error.load'), this.t('common.close'), { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -79,12 +81,12 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
       if (result) {
         this.approvalService.createApprovalWorkflow(result).subscribe({
           next: () => {
-            this.snackBar.open('Genehmigungsworkflow erfolgreich erstellt', 'Schließen', { duration: 3000 });
+            this.snackBar.open(this.t('md.workflows.success.created'), this.t('common.close'), { duration: 3000 });
             this.loadApprovalWorkflows();
           },
           error: (error: any) => {
             console.error('Error creating approval workflow:', error);
-            this.snackBar.open('Fehler beim Erstellen des Genehmigungsworkflows', 'Schließen', { duration: 3000 });
+            this.snackBar.open(this.t('md.workflows.error.create'), this.t('common.close'), { duration: 3000 });
           }
         });
       }
@@ -101,12 +103,12 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
       if (result) {
         this.approvalService.updateApprovalWorkflow(workflow.id, result).subscribe({
           next: () => {
-            this.snackBar.open('Genehmigungsworkflow erfolgreich aktualisiert', 'Schließen', { duration: 3000 });
+            this.snackBar.open(this.t('md.workflows.success.updated'), this.t('common.close'), { duration: 3000 });
             this.loadApprovalWorkflows();
           },
           error: (error: any) => {
             console.error('Error updating approval workflow:', error);
-            this.snackBar.open('Fehler beim Aktualisieren des Genehmigungsworkflows', 'Schließen', { duration: 3000 });
+            this.snackBar.open(this.t('md.workflows.error.update'), this.t('common.close'), { duration: 3000 });
           }
         });
       }
@@ -114,15 +116,15 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
   }
 
   deleteApprovalWorkflow(id: number): void {
-    if (confirm(`Möchten Sie diesen Genehmigungsworkflow wirklich löschen?`)) {
+    if (confirm(this.t('md.workflows.confirm.delete'))) {
       this.approvalService.deleteApprovalWorkflow(id).subscribe({
         next: () => {
-          this.snackBar.open('Genehmigungsworkflow erfolgreich gelöscht', 'Schließen', { duration: 3000 });
+          this.snackBar.open(this.t('md.workflows.success.deleted'), this.t('common.close'), { duration: 3000 });
           this.loadApprovalWorkflows();
         },
         error: (error: any) => {
           console.error('Error deleting approval workflow:', error);
-          this.snackBar.open('Fehler beim Löschen des Genehmigungsworkflows', 'Schließen', { duration: 3000 });
+          this.snackBar.open(this.t('md.workflows.error.delete'), this.t('common.close'), { duration: 3000 });
         }
       });
     }
@@ -143,5 +145,9 @@ export class ApprovalWorkflowsTabComponent implements OnInit {
   adjustBackgroundOpacity(color: string): string {
     // Return color as-is without opacity
     return color || 'transparent';
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

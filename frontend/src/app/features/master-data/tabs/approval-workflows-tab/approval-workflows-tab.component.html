@@ -2,9 +2,9 @@
   <div class="header-actions">
     <button mat-raised-button color="primary" (click)="createApprovalWorkflow()">
       <mat-icon>add</mat-icon>
-      Neuer Genehmigungsworkflow
+      {{ t('md.workflows.create') }}
     </button>
-    <button mat-icon-button (click)="loadApprovalWorkflows()" matTooltip="Aktualisieren">
+    <button mat-icon-button (click)="loadApprovalWorkflows()" [matTooltip]="t('md.common.refresh')">
       <mat-icon>refresh</mat-icon>
     </button>
   </div>
@@ -19,27 +19,27 @@
 
       <!-- Invoice ID Column -->
       <ng-container matColumnDef="invoiceId">
-        <th mat-header-cell *matHeaderCellDef>Rechnung</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.workflows.invoice') }}</th>
         <td mat-cell *matCellDef="let workflow">{{ workflow.invoiceId }}</td>
       </ng-container>
 
       <!-- Approver Column -->
       <ng-container matColumnDef="approverId">
-        <th mat-header-cell *matHeaderCellDef>Genehmiger</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.workflows.approver') }}</th>
         <td mat-cell *matCellDef="let workflow">
-          {{ workflow.approverName || 'Benutzer #' + workflow.approverId }}
+          {{ workflow.approverName || (t('md.workflows.userPrefix') + ' #' + workflow.approverId) }}
         </td>
       </ng-container>
 
       <!-- Approval Level Column -->
       <ng-container matColumnDef="approvalLevel">
-        <th mat-header-cell *matHeaderCellDef>Ebene</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.workflows.level') }}</th>
         <td mat-cell *matCellDef="let workflow">{{ workflow.approvalLevel }}</td>
       </ng-container>
 
       <!-- Status Column -->
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.common.status') }}</th>
         <td mat-cell *matCellDef="let workflow">
           <span class="status-badge"
                 [ngStyle]="workflow.statusColor ? {
@@ -53,7 +53,7 @@
 
       <!-- Created At Column -->
       <ng-container matColumnDef="createdAt">
-        <th mat-header-cell *matHeaderCellDef>Erstellt</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.workflows.createdAt') }}</th>
         <td mat-cell *matCellDef="let workflow">
           {{ formatDateTime(workflow.createdAt) }}
         </td>
@@ -61,12 +61,12 @@
 
       <!-- Actions Column -->
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+        <th mat-header-cell *matHeaderCellDef>{{ t('md.common.actions') }}</th>
         <td mat-cell *matCellDef="let workflow">
-          <button mat-icon-button matTooltip="Bearbeiten" (click)="editApprovalWorkflow(workflow)">
+          <button mat-icon-button [matTooltip]="t('md.common.edit')" (click)="editApprovalWorkflow(workflow)">
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button color="warn" matTooltip="Löschen" (click)="deleteApprovalWorkflow(workflow.id)">
+          <button mat-icon-button color="warn" [matTooltip]="t('md.common.delete')" (click)="deleteApprovalWorkflow(workflow.id)">
             <mat-icon>delete</mat-icon>
           </button>
         </td>
@@ -78,15 +78,15 @@
 
     <div *ngIf="isLoading" class="loading-overlay">
       <mat-icon class="loading-spinner">hourglass_empty</mat-icon>
-      <p>Lade Genehmigungsworkflows...</p>
+      <p>{{ t('md.workflows.loading') }}</p>
     </div>
 
     <div *ngIf="!isLoading && approvalWorkflows.length === 0" class="empty-state">
       <mat-icon>account_tree</mat-icon>
-      <p>Keine Genehmigungsworkflows vorhanden</p>
+      <p>{{ t('md.workflows.empty') }}</p>
       <button mat-raised-button color="primary" (click)="createApprovalWorkflow()">
         <mat-icon>add</mat-icon>
-        Ersten Genehmigungsworkflow hinzufügen
+        {{ t('md.workflows.createFirst') }}
       </button>
     </div>
   </mat-card>

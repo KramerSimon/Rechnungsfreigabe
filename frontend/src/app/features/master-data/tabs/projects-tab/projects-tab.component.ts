@@ -17,6 +17,7 @@ import { CreateProjectDialogComponent } from './dialogs/create-project-dialog.co
 import { EditProjectDialogComponent } from './dialogs/edit-project-dialog/edit-project-dialog.component';
 import { StatusDisplayPipe } from '../../../../core/pipes/status-display.pipe';
 import { forkJoin } from 'rxjs';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-projects-tab',
@@ -47,7 +48,8 @@ export class ProjectsTabComponent implements OnInit {
     private snackBar: MatSnackBar,
     private projectService: ProjectService,
     private costCenterService: CostCenterService,
-    private userService: UserService
+    private userService: UserService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -70,7 +72,7 @@ export class ProjectsTabComponent implements OnInit {
       error: (error: any) => {
         console.error('Error loading projects:', error);
         this.loadingProjects = false;
-        this.snackBar.open('Fehler beim Laden der Projekte', 'Schließen', {
+        this.snackBar.open(this.t('md.projects.error.load'), this.t('common.close'), {
           duration: 3000,
         });
       },
@@ -102,7 +104,7 @@ export class ProjectsTabComponent implements OnInit {
       if (result) {
         this.projectService.addProject(result).subscribe({
           next: () => {
-            this.snackBar.open('Projekt erfolgreich erstellt', 'Schließen', {
+            this.snackBar.open(this.t('md.projects.success.created'), this.t('common.close'), {
               duration: 3000,
             });
             this.loadProjects();
@@ -110,8 +112,8 @@ export class ProjectsTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error creating project:', error);
             this.snackBar.open(
-              'Fehler beim Erstellen des Projekts',
-              'Schließen',
+              this.t('md.projects.error.create'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -138,8 +140,8 @@ export class ProjectsTabComponent implements OnInit {
         this.projectService.updateProject(project.id, result).subscribe({
           next: () => {
             this.snackBar.open(
-              'Projekt erfolgreich aktualisiert',
-              'Schließen',
+              this.t('md.projects.success.updated'),
+              this.t('common.close'),
               { duration: 3000 }
             );
             this.loadProjects();
@@ -147,8 +149,8 @@ export class ProjectsTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error updating project:', error);
             this.snackBar.open(
-              'Fehler beim Aktualisieren des Projekts',
-              'Schließen',
+              this.t('md.projects.error.update'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -158,10 +160,10 @@ export class ProjectsTabComponent implements OnInit {
   }
 
   deleteProject(id: string): void {
-    if (confirm('Möchten Sie dieses Projekt wirklich löschen?')) {
+    if (confirm(this.t('md.projects.confirm.delete'))) {
       this.projectService.deleteProject(id).subscribe({
         next: () => {
-          this.snackBar.open('Projekt erfolgreich gelöscht', 'Schließen', {
+          this.snackBar.open(this.t('md.projects.success.deleted'), this.t('common.close'), {
             duration: 3000,
           });
           this.loadProjects();
@@ -169,8 +171,8 @@ export class ProjectsTabComponent implements OnInit {
         error: (error: any) => {
           console.error('Error deleting project:', error);
           this.snackBar.open(
-            'Fehler beim Löschen des Projekts',
-            'Schließen',
+            this.t('md.projects.error.delete'),
+            this.t('common.close'),
             { duration: 3000 }
           );
         },
@@ -201,5 +203,9 @@ export class ProjectsTabComponent implements OnInit {
   isUserAManager(user: User): boolean {
     const role = user.role?.toLowerCase();
     return role === 'manager' || role === 'admin' || role === 'administrator';
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

@@ -15,6 +15,7 @@ import { CostCenterService } from '../../../../core/services/cost-center.service
 import { ProjectService } from '../../../../core/services/project.service';
 import { CreatePurchaseOrderDialogComponent } from './dialogs/create-purchase-order-dialog.component';
 import { forkJoin } from 'rxjs';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-purchase-orders-tab',
@@ -44,7 +45,8 @@ export class PurchaseOrdersTabComponent implements OnInit {
     private snackBar: MatSnackBar,
     private purchaseOrderService: PurchaseOrderService,
     private costCenterService: CostCenterService,
-    private projectService: ProjectService
+    private projectService: ProjectService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -67,7 +69,7 @@ export class PurchaseOrdersTabComponent implements OnInit {
       error: (error: any) => {
         console.error('Error loading purchase orders:', error);
         this.loadingPurchaseOrders = false;
-        this.snackBar.open('Fehler beim Laden der Bestellungen', 'Schließen', {
+        this.snackBar.open(this.t('md.purchaseOrders.error.load'), this.t('common.close'), {
           duration: 3000,
         });
       },
@@ -90,7 +92,7 @@ export class PurchaseOrdersTabComponent implements OnInit {
       if (result) {
         this.purchaseOrderService.createPurchaseOrder(result).subscribe({
           next: () => {
-            this.snackBar.open('Bestellung erfolgreich erstellt', 'Schließen', {
+            this.snackBar.open(this.t('md.purchaseOrders.success.created'), this.t('common.close'), {
               duration: 3000,
             });
             this.loadPurchaseOrders();
@@ -98,8 +100,8 @@ export class PurchaseOrdersTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error creating purchase order:', error);
             this.snackBar.open(
-              'Fehler beim Erstellen der Bestellung',
-              'Schließen',
+              this.t('md.purchaseOrders.error.create'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -109,10 +111,10 @@ export class PurchaseOrdersTabComponent implements OnInit {
   }
 
   deletePurchaseOrder(id: string): void {
-    if (confirm('Möchten Sie diese Bestellung wirklich löschen?')) {
+    if (confirm(this.t('md.purchaseOrders.confirm.delete'))) {
       this.purchaseOrderService.deletePurchaseOrder(id).subscribe({
         next: () => {
-          this.snackBar.open('Bestellung erfolgreich gelöscht', 'Schließen', {
+          this.snackBar.open(this.t('md.purchaseOrders.success.deleted'), this.t('common.close'), {
             duration: 3000,
           });
           this.loadPurchaseOrders();
@@ -120,8 +122,8 @@ export class PurchaseOrdersTabComponent implements OnInit {
         error: (error: any) => {
           console.error('Error deleting purchase order:', error);
           this.snackBar.open(
-            'Fehler beim Löschen der Bestellung',
-            'Schließen',
+            this.t('md.purchaseOrders.error.delete'),
+            this.t('common.close'),
             { duration: 3000 }
           );
         },
@@ -149,5 +151,9 @@ export class PurchaseOrdersTabComponent implements OnInit {
   formatDate(date: string | Date): string {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('de-DE');
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

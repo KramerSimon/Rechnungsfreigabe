@@ -14,6 +14,7 @@ import { RoleService } from '../../../../core/services/role.service';
 import { CreateUserDialogComponent } from './dialogs/create-user-dialog.component';
 import { EditUserDialogComponent } from './dialogs/edit-user-dialog/edit-user-dialog.component';
 import { forkJoin } from 'rxjs';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-users-tab',
@@ -41,7 +42,8 @@ export class UsersTabComponent implements OnInit {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private userService: UserService,
-    private roleService: RoleService
+    private roleService: RoleService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -62,7 +64,7 @@ export class UsersTabComponent implements OnInit {
       error: (error: any) => {
         console.error('Error loading users:', error);
         this.loadingUsers = false;
-        this.snackBar.open('Fehler beim Laden der Benutzer', 'Schließen', {
+        this.snackBar.open(this.t('md.users.error.load'), this.t('common.close'), {
           duration: 3000,
         });
       },
@@ -93,7 +95,7 @@ export class UsersTabComponent implements OnInit {
       if (result) {
         this.userService.addUser(result).subscribe({
           next: () => {
-            this.snackBar.open('Benutzer erfolgreich erstellt', 'Schließen', {
+            this.snackBar.open(this.t('md.users.success.created'), this.t('common.close'), {
               duration: 3000,
             });
             this.loadUsers();
@@ -101,8 +103,8 @@ export class UsersTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error creating user:', error);
             this.snackBar.open(
-              'Fehler beim Erstellen des Benutzers',
-              'Schließen',
+              this.t('md.users.error.create'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -128,8 +130,8 @@ export class UsersTabComponent implements OnInit {
         this.userService.updateUser(user.id, result).subscribe({
           next: () => {
             this.snackBar.open(
-              'Benutzer erfolgreich aktualisiert',
-              'Schließen',
+              this.t('md.users.success.updated'),
+              this.t('common.close'),
               { duration: 3000 }
             );
             this.loadUsers();
@@ -137,8 +139,8 @@ export class UsersTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error updating user:', error);
             this.snackBar.open(
-              'Fehler beim Aktualisieren des Benutzers',
-              'Schließen',
+              this.t('md.users.error.update'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -148,10 +150,10 @@ export class UsersTabComponent implements OnInit {
   }
 
   deleteUser(id: string): void {
-    if (confirm('Möchten Sie diesen Benutzer wirklich löschen?')) {
+    if (confirm(this.t('md.users.confirm.delete'))) {
       this.userService.deleteUser(id).subscribe({
         next: () => {
-          this.snackBar.open('Benutzer erfolgreich gelöscht', 'Schließen', {
+          this.snackBar.open(this.t('md.users.success.deleted'), this.t('common.close'), {
             duration: 3000,
           });
           this.loadUsers();
@@ -159,8 +161,8 @@ export class UsersTabComponent implements OnInit {
         error: (error: any) => {
           console.error('Error deleting user:', error);
           this.snackBar.open(
-            'Fehler beim Löschen des Benutzers',
-            'Schließen',
+            this.t('md.users.error.delete'),
+            this.t('common.close'),
             { duration: 3000 }
           );
         },
@@ -182,5 +184,9 @@ export class UsersTabComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

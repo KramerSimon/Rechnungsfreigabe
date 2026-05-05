@@ -1,45 +1,45 @@
 <div class="dialog-container">
-      <h2 mat-dialog-title>Kostenstelle bearbeiten</h2>
+  <h2 mat-dialog-title>{{ t('md.dialog.costCenter.editTitle') }}</h2>
 
       <form [formGroup]="costCenterForm" mat-dialog-content>
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Kostenstellen-ID *</mat-label>
+            <mat-label>{{ t('md.costCenters.id') }} *</mat-label>
             <input matInput formControlName="id" readonly>
-            <mat-hint>ID kann nicht geändert werden</mat-hint>
+            <mat-hint>{{ t('md.dialog.common.idNotEditable') }}</mat-hint>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Name *</mat-label>
+            <mat-label>{{ t('md.common.name') }} *</mat-label>
             <input matInput formControlName="name" placeholder="z.B. Marketing">
             <mat-error *ngIf="costCenterForm.get('name')?.hasError('required')">
-              Name ist erforderlich
+              {{ t('md.dialog.common.error.nameRequired') }}
             </mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Beschreibung</mat-label>
+            <mat-label>{{ t('md.common.description') }}</mat-label>
             <textarea matInput formControlName="description" rows="3"
-                      placeholder="Beschreibung der Kostenstelle..."></textarea>
+                      [placeholder]="t('md.dialog.costCenter.descriptionPlaceholder')"></textarea>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Budget (€)</mat-label>
+            <mat-label>{{ t('md.common.budget') }} (€)</mat-label>
             <input matInput type="number" formControlName="budget"
                    placeholder="0.00" step="0.01" min="0">
             <mat-error *ngIf="costCenterForm.get('budget')?.hasError('min')">
-              Budget muss mindestens 0 sein
+              {{ t('md.dialog.common.error.budgetMin0') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Manager</mat-label>
+            <mat-label>{{ t('md.dialog.common.manager') }}</mat-label>
             <mat-select formControlName="managerId">
-              <mat-option value="null">Kein Manager</mat-option>
+              <mat-option value="null">{{ t('md.dialog.common.noManager') }}</mat-option>
               <mat-option *ngFor="let user of managers" [value]="user.id">
                 {{user.firstName}} {{user.lastName}} ({{user.username}})
               </mat-option>
@@ -49,11 +49,11 @@
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary"
                 (click)="onSave()"
                 [disabled]="costCenterForm.invalid">
-          Speichern
+          {{ t('md.dialog.common.save') }}
         </button>
       </div>
     </div>

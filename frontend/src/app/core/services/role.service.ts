@@ -38,31 +38,31 @@ export class RoleService {
       path: '/dashboard/user',
       component: 'UserDashboard',
       requiredPermissions: ['dashboards.view_user'],
-      title: 'Meine Aufgaben'
+      title: 'nav.tasks'
     },
     accounting: {
       path: '/dashboard/accounting',
       component: 'AccountingDashboard',
       requiredPermissions: ['dashboards.view_accounting'],
-      title: 'Cockpit'
+      title: 'nav.cockpit'
     },
     admin: {
       path: '/dashboard/admin',
       component: 'AdminDashboard',
       requiredPermissions: ['dashboards.view_admin'],
-      title: 'Konfiguration'
+      title: 'nav.configuration'
     },
     'pdf-upload': {
       path: '/dashboard/pdf-upload',
       component: 'PdfUploadDashboard',
       requiredPermissions: ['dashboards.view_pdf_upload'],
-      title: 'Upload'
+      title: 'nav.upload'
     },
     rules: {
       path: '/dashboard/rules',
       component: 'RuleDashboard',
       requiredPermissions: ['dashboards.view_rules'],
-      title: 'Regeln'
+      title: 'nav.rules'
     }
   };
 

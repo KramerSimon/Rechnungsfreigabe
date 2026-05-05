@@ -15,6 +15,7 @@ import {
   HistoryActionSource
 } from '../../core/models/history.models';
 import { catchError, finalize, of } from 'rxjs';
+import { LanguageService } from '../../core/services/language.service';
 
 @Component({
   selector: 'app-invoice-history-timeline',
@@ -42,7 +43,8 @@ export class InvoiceHistoryTimelineComponent implements OnInit {
 
   constructor(
     private historyService: InvoiceHistoryService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit() {
@@ -56,7 +58,7 @@ export class InvoiceHistoryTimelineComponent implements OnInit {
     this.historyService.getInvoiceHistoryTimeline(this.invoiceId)
       .pipe(
         catchError(error => {
-          this.error = 'Fehler beim Laden der Rechnungshistorie';
+          this.error = this.t('invoice.history.error.load');
           console.error('Error loading invoice history:', error);
           this.timeline = [];
           return of([]);
@@ -111,8 +113,8 @@ export class InvoiceHistoryTimelineComponent implements OnInit {
 
     return Object.entries(entry.fieldChanges).map(([field, change]: [string, any]) => ({
       field,
-      oldValue: change.OldValue || '(leer)',
-      newValue: change.NewValue || '(leer)',
+      oldValue: change.OldValue || this.t('invoice.history.value.empty'),
+      newValue: change.NewValue || this.t('invoice.history.value.empty'),
       displayName: change.DisplayName || field
     }));
   }
@@ -124,18 +126,18 @@ export class InvoiceHistoryTimelineComponent implements OnInit {
           const url = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `Rechnung_${this.invoiceNumber}_Historie.pdf`;
+          link.download = this.tp('invoice.history.export.fileName', { invoiceNumber: this.invoiceNumber || 'invoice' });
           link.click();
           window.URL.revokeObjectURL(url);
 
-          this.snackBar.open('Historie als PDF exportiert', 'Schließen', {
+          this.snackBar.open(this.t('invoice.history.export.success'), this.t('common.close'), {
             duration: 3000,
             panelClass: ['success-snackbar']
           });
         },
         error: (error) => {
           console.error('Error exporting PDF:', error);
-          this.snackBar.open('Fehler beim PDF-Export', 'Schließen', {
+          this.snackBar.open(this.t('invoice.history.export.error'), this.t('common.close'), {
             duration: 5000,
             panelClass: ['error-snackbar']
           });
@@ -145,5 +147,17 @@ export class InvoiceHistoryTimelineComponent implements OnInit {
 
   refresh() {
     this.loadTimeline();
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
+  }
+
+  tp(key: string, params: Record<string, string | number>): string {
+    let translated = this.t(key);
+    for (const [name, value] of Object.entries(params)) {
+      translated = translated.replace(`{${name}}`, String(value));
+    }
+    return translated;
   }
 }

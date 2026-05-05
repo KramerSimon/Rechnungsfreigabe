@@ -11,6 +11,7 @@ import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angula
 import { MatIconModule } from '@angular/material/icon';
 import { RoleDto } from '../../../../../core/models/user.models';
 import { PermissionsApiService, PermissionDto } from '../../../../../core/services/permissions-api.service';
+import { LanguageService } from '../../../../../core/services/language.service';
 
 interface RoleDialogData {
   mode: 'create' | 'edit';
@@ -45,7 +46,8 @@ export class RoleDialogComponent implements OnInit {
     private dialogRef: MatDialogRef<RoleDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: RoleDialogData,
     private fb: FormBuilder,
-    @Inject(PermissionsApiService) private permissionsApi: PermissionsApiService
+    @Inject(PermissionsApiService) private permissionsApi: PermissionsApiService,
+    private languageService: LanguageService
   ) {
     const role = data.role;
     const isSystemRole = !!role?.isSystemRole;
@@ -100,5 +102,9 @@ export class RoleDialogComponent implements OnInit {
     if (this.form.valid) {
       this.dialogRef.close(this.buildPayload());
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

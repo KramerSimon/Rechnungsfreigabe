@@ -10,6 +10,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CreateEscalationRuleDto, EscalationRule, StatusDto } from '../../../../../core/models/escalation-rule.model';
 import { RoleDto, User } from '../../../../../core/models/user.models';
 import { StatusDisplayPipe } from '../../../../../core/pipes/status-display.pipe';
+import { LanguageService } from '../../../../../core/services/language.service';
 
 export interface EscalationRuleDialogData {
   mode: 'create' | 'edit';
@@ -44,6 +45,7 @@ export class EscalationRuleDialogComponent {
     private dialogRef: MatDialogRef<EscalationRuleDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: EscalationRuleDialogData,
     private fb: FormBuilder,
+    private languageService: LanguageService,
   ) {
     const rule = data.rule;
 
@@ -115,6 +117,10 @@ export class EscalationRuleDialogComponent {
     };
 
     this.dialogRef.close(payload);
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }
 

@@ -16,6 +16,7 @@ import { SupplierService } from '../../../../core/services/supplier.service';
 import { CostCenterService } from '../../../../core/services/cost-center.service';
 import { ProjectService } from '../../../../core/services/project.service';
 import { PurchaseOrderService } from '../../../../core/services/purchase-order.service';
+import { LanguageService } from '../../../../core/services/language.service';
 
 interface UploadedFile {
   fileName: string;
@@ -94,7 +95,8 @@ export class PdfUploadDashboardComponent implements OnInit {
     private costCenterService: CostCenterService,
     private projectService: ProjectService,
     private purchaseOrderService: PurchaseOrderService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private languageService: LanguageService
   ) {
     this.uploadForm = this.fb.group({
       supplierId: [''],  // Optional - wird aus PDF extrahiert wenn nicht angegeben
@@ -138,7 +140,7 @@ export class PdfUploadDashboardComponent implements OnInit {
         this.suppliers = suppliers;
       },
       (error) => {
-        this.snackBar.open('Fehler beim Laden der Lieferanten', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.pdf.error.loadSuppliers'), this.t('common.close'), { duration: 3000 });
       }
     );
   }
@@ -149,7 +151,7 @@ export class PdfUploadDashboardComponent implements OnInit {
         this.costCenters = costCenters;
       },
       (error) => {
-        this.snackBar.open('Fehler beim Laden der Kostenstellen', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.pdf.error.loadCostCenters'), this.t('common.close'), { duration: 3000 });
       }
     );
   }
@@ -162,7 +164,7 @@ export class PdfUploadDashboardComponent implements OnInit {
         this.filteredProjects = this.projects;
       },
       (error) => {
-        this.snackBar.open('Fehler beim Laden der Projekte', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.pdf.error.loadProjects'), this.t('common.close'), { duration: 3000 });
       }
     );
   }
@@ -174,7 +176,7 @@ export class PdfUploadDashboardComponent implements OnInit {
         this.filteredPurchaseOrders = this.purchaseOrders;
       },
       (error) => {
-        this.snackBar.open('Fehler beim Laden der Bestellungen', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.pdf.error.loadOrders'), this.t('common.close'), { duration: 3000 });
       }
     );
   }
@@ -232,7 +234,7 @@ export class PdfUploadDashboardComponent implements OnInit {
       },
       (error) => {
         console.error('Error loading upload status:', error);
-        this.snackBar.open('Fehler beim Laden des Upload-Status', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.pdf.error.loadUploadStatus'), this.t('common.close'), { duration: 3000 });
       }
     );
   }
@@ -275,7 +277,11 @@ export class PdfUploadDashboardComponent implements OnInit {
           this.selectedFiles.push(file);
         }
       } else {
-        this.snackBar.open(`${file.name} ist keine PDF/XML-Datei`, 'Schließen', { duration: 3000 });
+        this.snackBar.open(
+          this.tp('dashboard.pdf.error.invalidType', { file: file.name }),
+          this.t('common.close'),
+          { duration: 3000 }
+        );
       }
     }
   }
@@ -403,18 +409,21 @@ export class PdfUploadDashboardComponent implements OnInit {
         // Check for warnings about missing data extraction
         const hasWarnings = results.successfulUploads.some((upload: any) => upload.warning || upload.requiresManualEntry);
 
-        let message = `${results.successfulUploads.length} Dateien hochgeladen, ${results.failedUploads.length} Fehler`;
+        let message = this.tp('dashboard.pdf.upload.summary', {
+          success: results.successfulUploads.length,
+          failed: results.failedUploads.length
+        });
         if (hasWarnings) {
-          message += ' ⚠️ Einige Dateien enthalten keine extrahierbaren Daten (gescannte Dokumente)';
+          message += ` ${this.t('dashboard.pdf.upload.warningScanned')}`;
         }
 
-        this.snackBar.open(message, 'Schließen', { duration: 8000 });
+        this.snackBar.open(message, this.t('common.close'), { duration: 8000 });
 
         if (hasWarnings) {
           // Show additional warning
           setTimeout(() => {
             this.snackBar.open(
-              'Bitte Rechnungsdaten manuell vervollständigen',
+              this.t('dashboard.pdf.upload.completeInvoiceData'),
               'OK',
               { duration: 10000 }
             );
@@ -438,7 +447,11 @@ export class PdfUploadDashboardComponent implements OnInit {
         clearInterval(progressInterval);
         this.isUploading = false;
         this.uploadPhase = '';
-        this.snackBar.open('Fehler beim Upload: ' + (error.message || 'Unbekannter Fehler'), 'Schließen', { duration: 5000 });
+        this.snackBar.open(
+          this.tp('dashboard.pdf.error.uploadFailed', { message: error.message || this.t('common.unknownError') }),
+          this.t('common.close'),
+          { duration: 5000 }
+        );
       }
     );
   }
@@ -479,7 +492,11 @@ export class PdfUploadDashboardComponent implements OnInit {
       if (this.isPdfOrXml(file)) {
         this.selectedPoFile = file;
       } else {
-        this.snackBar.open(`${file.name} ist keine PDF/XML-Datei`, 'Schließen', { duration: 3000 });
+        this.snackBar.open(
+          this.tp('dashboard.pdf.error.invalidType', { file: file.name }),
+          this.t('common.close'),
+          { duration: 3000 }
+        );
       }
     }
   }
@@ -491,7 +508,11 @@ export class PdfUploadDashboardComponent implements OnInit {
       if (this.isPdfOrXml(file)) {
         this.selectedPoFile = file;
       } else {
-        this.snackBar.open(`${file.name} ist keine PDF/XML-Datei`, 'Schließen', { duration: 3000 });
+        this.snackBar.open(
+          this.tp('dashboard.pdf.error.invalidType', { file: file.name }),
+          this.t('common.close'),
+          { duration: 3000 }
+        );
       }
     }
   }
@@ -517,9 +538,9 @@ export class PdfUploadDashboardComponent implements OnInit {
   uploadPurchaseOrder() {
     if (!this.selectedPoFile || !this.poUploadForm.valid) {
       if (!this.poUploadForm.get('costCenterId')?.value) {
-        this.snackBar.open('Kostenstelle ist erforderlich', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.pdf.error.costCenterRequired'), this.t('common.close'), { duration: 3000 });
       } else if (!this.poUploadForm.get('projectId')?.value) {
-        this.snackBar.open('Projekt ist erforderlich', 'Schließen', { duration: 3000 });
+        this.snackBar.open(this.t('dashboard.pdf.error.projectRequired'), this.t('common.close'), { duration: 3000 });
       }
       return;
     }
@@ -562,12 +583,12 @@ export class PdfUploadDashboardComponent implements OnInit {
         this.isPoUploading = false;
 
         const hasWarning = result.warning || result.requiresManualEntry;
-        let message = 'Bestellung erfolgreich hochgeladen';
+        let message = this.t('dashboard.pdf.po.success');
         if (hasWarning) {
-          message += ' ⚠️ Keine extrahierbaren Daten gefunden. Bitte manuell vervollständigen.';
+          message += ` ${this.t('dashboard.pdf.po.warningScanned')}`;
         }
 
-        this.snackBar.open(message, 'Schließen', { duration: hasWarning ? 10000 : 5000 });
+        this.snackBar.open(message, this.t('common.close'), { duration: hasWarning ? 10000 : 5000 });
 
         // Reset form after success
         setTimeout(() => {
@@ -583,8 +604,79 @@ export class PdfUploadDashboardComponent implements OnInit {
         clearInterval(progressInterval);
         this.isPoUploading = false;
         this.poUploadPhase = '';
-        this.snackBar.open('Fehler beim Upload: ' + (error.message || 'Unbekannter Fehler'), 'Schließen', { duration: 5000 });
+        this.snackBar.open(
+          this.tp('dashboard.pdf.error.uploadFailed', { message: error.message || this.t('common.unknownError') }),
+          this.t('common.close'),
+          { duration: 5000 }
+        );
       }
     );
+  }
+
+  getUploadButtonLabel(): string {
+    return this.isUploading
+      ? this.t('dashboard.pdf.upload.inProgress')
+      : this.tp('dashboard.pdf.upload.startWithCount', { count: this.selectedFiles.length });
+  }
+
+  getPoUploadButtonLabel(): string {
+    return this.isPoUploading
+      ? this.t('dashboard.pdf.upload.inProgress')
+      : this.t('dashboard.pdf.po.uploadButton');
+  }
+
+  getUploadPhaseLabel(): string {
+    switch (this.uploadPhase) {
+      case 'uploading':
+        return this.t('dashboard.pdf.phase.uploading');
+      case 'processing':
+        return this.t('dashboard.pdf.phase.processing');
+      case 'saving':
+        return this.t('dashboard.pdf.phase.savingInvoices');
+      case 'complete':
+        return this.t('dashboard.pdf.phase.complete');
+      default:
+        return '';
+    }
+  }
+
+  getPoUploadPhaseLabel(): string {
+    switch (this.poUploadPhase) {
+      case 'uploading':
+        return this.t('dashboard.pdf.phase.uploadingSingle');
+      case 'processing':
+        return this.t('dashboard.pdf.phase.processing');
+      case 'saving':
+        return this.t('dashboard.pdf.phase.savingOrders');
+      case 'complete':
+        return this.t('dashboard.pdf.phase.complete');
+      default:
+        return '';
+    }
+  }
+
+  getFileStatusLabel(status: string): string {
+    switch (status) {
+      case 'uploading':
+        return this.t('dashboard.pdf.fileStatus.uploading');
+      case 'processing':
+        return this.t('dashboard.pdf.fileStatus.processing');
+      case 'complete':
+        return this.t('dashboard.pdf.fileStatus.complete');
+      default:
+        return this.t('dashboard.pdf.fileStatus.pending');
+    }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
+  }
+
+  tp(key: string, params: Record<string, string | number>): string {
+    let translated = this.t(key);
+    for (const [name, value] of Object.entries(params)) {
+      translated = translated.replace(`{${name}}`, String(value));
+    }
+    return translated;
   }
 }

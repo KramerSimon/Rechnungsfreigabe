@@ -12,6 +12,7 @@ import { ApprovalWorkflow, CreateApprovalWorkflowDto, UpdateApprovalWorkflowDto 
 import { UserService } from '../../../../../core/services/user.service';
 import { User } from '../../../../../core/models/user.models';
 import { Invoice } from '../../../../../core/models/invoice.models';
+import { LanguageService } from '../../../../../core/services/language.service';
 
 export interface ApprovalWorkflowDialogData {
   mode: 'create' | 'edit';
@@ -43,6 +44,7 @@ export class ApprovalWorkflowDialogComponent implements OnInit {
     private fb: FormBuilder,
     private invoiceService: InvoiceService,
     private userService: UserService,
+    private languageService: LanguageService,
     public dialogRef: MatDialogRef<ApprovalWorkflowDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ApprovalWorkflowDialogData
   ) {
@@ -59,17 +61,17 @@ export class ApprovalWorkflowDialogComponent implements OnInit {
   getStatusMeta(status?: string | null): { label: string; color: string } {
     switch (status) {
       case 'Pending':
-        return { label: 'Ausstehend', color: '#FFA500' };
+        return { label: this.t('md.dialog.workflow.status.pending'), color: '#FFA500' };
       case 'Waiting':
-        return { label: 'Wartend', color: '#2196F3' };
+        return { label: this.t('md.dialog.workflow.status.waiting'), color: '#2196F3' };
       case 'Approved':
-        return { label: 'Genehmigt', color: '#4CAF50' };
+        return { label: this.t('md.dialog.workflow.status.approved'), color: '#4CAF50' };
       case 'Rejected':
-        return { label: 'Abgelehnt', color: '#F44336' };
+        return { label: this.t('md.dialog.workflow.status.rejected'), color: '#F44336' };
       case 'Skipped':
-        return { label: 'Übersprungen', color: '#9E9E9E' };
+        return { label: this.t('md.dialog.workflow.status.skipped'), color: '#9E9E9E' };
       default:
-        return { label: '—', color: '#9E9E9E' };
+        return { label: this.t('md.common.notSpecified'), color: '#9E9E9E' };
     }
   }
 
@@ -108,5 +110,9 @@ export class ApprovalWorkflowDialogComponent implements OnInit {
       };
       this.dialogRef.close(payload);
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

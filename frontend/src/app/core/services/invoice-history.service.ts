@@ -7,6 +7,7 @@ import {
   InvoiceHistoryTimelineDto,
   CreateHistoryEntryDto
 } from '../models/history.models';
+import { LanguageService } from './language.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +15,10 @@ import {
 export class InvoiceHistoryService {
   private readonly apiUrl = `${environment.apiUrl}/v1/invoices`;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private languageService: LanguageService
+  ) {}
 
   /**
    * Get invoice history as timeline
@@ -53,21 +57,21 @@ export class InvoiceHistoryService {
    * Get action description in German
    */
   getActionDescription(action: string, actionType: string, actionSource: string): string {
-    const descriptions: { [key: string]: string } = {
-      'Created': 'Rechnung erstellt',
-      'Updated': 'Daten aktualisiert',
-      'StatusChanged': 'Status geändert',
-      'Approved': 'Freigabe erteilt',
-      'Rejected': 'Freigabe abgelehnt',
-      'Escalated': 'Eskalation',
-      'Assigned': 'Zuweisung zur Freigabe',
-      'SystemAction': 'Systemaktion',
-      'DataCompleted': 'Daten vervollständigt',
-      'PaymentInitiated': 'Zahlung angewiesen',
-      'PolicyTriggered': 'Richtlinie ausgelöst'
+    const descriptions: Record<string, string> = {
+      Created: 'invoice.history.action.created',
+      Updated: 'invoice.history.action.updated',
+      StatusChanged: 'invoice.history.action.statusChanged',
+      Approved: 'invoice.history.action.approved',
+      Rejected: 'invoice.history.action.rejected',
+      Escalated: 'invoice.history.action.escalated',
+      Assigned: 'invoice.history.action.assigned',
+      SystemAction: 'invoice.history.action.systemAction',
+      DataCompleted: 'invoice.history.action.dataCompleted',
+      PaymentInitiated: 'invoice.history.action.paymentInitiated',
+      PolicyTriggered: 'invoice.history.action.policyTriggered'
     };
 
-    return descriptions[actionType] || action;
+    return descriptions[actionType] ? this.t(descriptions[actionType]) : action;
   }
 
   /**
@@ -75,7 +79,9 @@ export class InvoiceHistoryService {
    */
   getUserDisplayName(entry: InvoiceHistoryDto): string {
     if (!entry.changedByUser) {
-      return entry.actionSource === 'System' ? 'System' : 'Unbekannt';
+      return entry.actionSource === 'System'
+        ? this.t('invoice.history.user.system')
+        : this.t('invoice.history.user.unknown');
     }
 
     return `${entry.changedByUser.firstName} ${entry.changedByUser.lastName}`;
@@ -88,24 +94,27 @@ export class InvoiceHistoryService {
     const info: string[] = [];
 
     if (entry.actionSource === 'System' && entry.systemReason) {
-      info.push(`System (${entry.systemReason})`);
+      info.push(this.tp('invoice.history.context.systemReason', { reason: entry.systemReason }));
     } else if (entry.actionSource === 'Policy' && entry.policyReference) {
-      info.push(`Grund: Policy "${entry.policyReference}"`);
+      info.push(this.tp('invoice.history.context.policyReason', { policy: entry.policyReference }));
     } else if (entry.actionSource === 'Escalation') {
-      info.push('System (Regel: Standard-Mahnwesen)');
+      info.push(this.t('invoice.history.context.defaultEscalationRule'));
     } else if (entry.importChannel) {
-      info.push(`Kanal: ${entry.importChannel}`);
+      info.push(this.tp('invoice.history.context.channel', { channel: entry.importChannel }));
     }
 
     if (entry.oldStatus && entry.newStatus) {
-      info.push(`Status geändert auf: ${entry.newStatus}`);
+      info.push(this.tp('invoice.history.context.statusChangedTo', { status: entry.newStatus }));
     }
 
     if (entry.fieldChanges) {
       const changes = Object.entries(entry.fieldChanges)
         .map(([field, change]: [string, any]) => {
           if (change.DisplayName && change.OldValue && change.NewValue) {
-            return `+ ${change.DisplayName}: ${change.NewValue}`;
+            return this.tp('invoice.history.context.fieldChange', {
+              field: change.DisplayName,
+              value: change.NewValue
+            });
           }
           return null;
         })
@@ -135,5 +144,17 @@ export class InvoiceHistoryService {
     return this.http.get(`${this.apiUrl}/${invoiceId}/history/export/pdf`, {
       responseType: 'blob'
     });
+  }
+
+  private t(key: string): string {
+    return this.languageService.translateKey(key);
+  }
+
+  private tp(key: string, params: Record<string, string | number>): string {
+    let translated = this.t(key);
+    for (const [name, value] of Object.entries(params)) {
+      translated = translated.replace(`{${name}}`, String(value));
+    }
+    return translated;
   }
 }

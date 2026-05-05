@@ -11,7 +11,7 @@
               [routerLink]="route.path"
               routerLinkActive="active"
               class="nav-link">
-        {{ route.title }}
+        {{ t(route.title) }}
       </button>
     </div>
 
@@ -87,7 +87,7 @@
               *ngFor="let option of languageOptions"
               (click)="setLanguage(option.code)">
         <mat-icon>{{ currentLanguage === option.code ? 'check' : 'language' }}</mat-icon>
-        <span>{{ option.label }}</span>
+        <span>{{ getLanguageLabel(option.code) }}</span>
       </button>
     </mat-menu>
   </nav>

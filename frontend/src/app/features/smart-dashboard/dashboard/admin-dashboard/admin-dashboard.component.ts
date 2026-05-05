@@ -23,6 +23,7 @@ import {
   MasterDataSection,
   SystemConfig
 } from '../../../../core/models';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -65,71 +66,71 @@ export class AdminDashboardComponent implements OnInit {
   masterDataSections: MasterDataSection[] = [
     {
       id: 'suppliers',
-      title: 'Lieferanten',
-      description: 'Stammdaten und Kategorien',
+      title: 'dashboard.admin.card.suppliers.title',
+      description: 'dashboard.admin.card.suppliers.description',
       icon: 'business',
       route: '/admin/suppliers'
     },
     {
       id: 'costcenters',
-      title: 'Kostenstellen',
-      description: 'Auswahllisten pflegen',
+      title: 'dashboard.admin.card.costCenters.title',
+      description: 'dashboard.admin.card.costCenters.description',
       icon: 'account_tree',
       route: '/admin/cost-centers'
     },
     {
       id: 'projects',
-      title: 'Projekte',
-      description: 'Auswahllisten pflegen',
+      title: 'dashboard.admin.card.projects.title',
+      description: 'dashboard.admin.card.projects.description',
       icon: 'account_tree',
       route: '/admin/projects'
     },
     {
       id: 'purchaseorders',
-      title: 'Bestellungen',
-      description: 'Bestellungen verwalten',
+      title: 'dashboard.admin.card.purchaseOrders.title',
+      description: 'dashboard.admin.card.purchaseOrders.description',
       icon: 'shopping_cart',
       route: '/admin/purchase-orders'
     },
     {
       id: 'invoices',
-      title: 'Rechnungen',
-      description: 'Alle Rechnungen verwalten',
+      title: 'dashboard.admin.card.invoices.title',
+      description: 'dashboard.admin.card.invoices.description',
       icon: 'receipt',
       route: '/admin/invoices'
     },
     {
       id: 'users',
-      title: 'Benutzer',
-      description: 'Welche Rollen haben die Nutzer?',
+      title: 'dashboard.admin.card.users.title',
+      description: 'dashboard.admin.card.users.description',
       icon: 'group',
       route: '/admin/users'
     },
     {
       id: 'roles',
-      title: 'Rollen',
-      description: 'Rollen verwalten',
+      title: 'dashboard.admin.card.roles.title',
+      description: 'dashboard.admin.card.roles.description',
       icon: 'security',
       route: '/admin/roles'
     },
     {
       id: 'escalation',
-      title: 'Eskalations-Einstellungen',
-      description: 'Wann gehen E-Mails raus?',
+      title: 'dashboard.admin.card.escalation.title',
+      description: 'dashboard.admin.card.escalation.description',
       icon: 'schedule',
       route: '/admin/escalation'
     },
     {
       id: 'rules',
-      title: 'Genehmigungs-Regeln',
-      description: 'Automatisierungen verwalten',
+      title: 'dashboard.admin.card.rules.title',
+      description: 'dashboard.admin.card.rules.description',
       icon: 'schedule',
       route: '/admin/rules'
     },
     {
       id: 'workflows',
-      title: 'Genehmigungs-Workflows',
-      description: 'Abläufe konfigurieren',
+      title: 'dashboard.admin.card.workflows.title',
+      description: 'dashboard.admin.card.workflows.description',
       icon: 'schedule',
       route: '/admin/workflows'
     }
@@ -140,7 +141,8 @@ export class AdminDashboardComponent implements OnInit {
     private dashboardService: DashboardService,
     private systemConfigService: SystemConfigService,
     private fb: FormBuilder,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private languageService: LanguageService
   ) {
     this.configForm = this.fb.group({
       configKey: [{ value: '', disabled: true }, Validators.required],
@@ -301,12 +303,18 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   getStatusText(): string {
-    return this.systemStatus?.servicesActive ? 'Alle Dienste aktiv' : 'Dienste gestört';
+    return this.systemStatus?.servicesActive
+      ? this.t('dashboard.admin.status.servicesActive')
+      : this.t('dashboard.admin.status.servicesDegraded');
   }
 
   getAutoApprovalText(): string {
     const rate = this.systemStatus?.autoApprovalRate ?? 0;
-    return `Auto-Quote: ${rate}% aller Rechnungen`;
+    return this.t('dashboard.admin.status.autoRate').replace('{rate}', String(rate));
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 
   formatLastUpdate(): string {

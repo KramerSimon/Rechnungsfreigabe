@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RoleDto, User } from '../../../../../../core/models/user.models';
 import { AuthService } from '../../../../../../core/services/auth.service';
+import { LanguageService } from '../../../../../../core/services/language.service';
 
 interface EditUserDialogData {
   user: User;
@@ -39,7 +40,8 @@ export class EditUserDialogComponent {
     private dialogRef: MatDialogRef<EditUserDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: EditUserDialogData,
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    private languageService: LanguageService
   ) {
     this.availableRoles = data?.availableRoles || [];
     const user = data?.user || {} as User;
@@ -80,5 +82,9 @@ export class EditUserDialogComponent {
       delete formValue.username;
       this.dialogRef.close(formValue);
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

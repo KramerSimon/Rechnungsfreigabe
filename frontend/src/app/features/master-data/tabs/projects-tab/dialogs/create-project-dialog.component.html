@@ -1,48 +1,48 @@
 <div class="dialog-container">
-      <h2 mat-dialog-title>Neues Projekt</h2>
+  <h2 mat-dialog-title>{{ t('md.dialog.project.createTitle') }}</h2>
 
       <form [formGroup]="projectForm" mat-dialog-content>
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Projekt-ID *</mat-label>
+            <mat-label>{{ t('md.projects.id') }} *</mat-label>
             <input matInput formControlName="id" placeholder="z.B. PROJ-2024-001">
             <mat-error *ngIf="projectForm.get('id')?.hasError('required')">
-              ID ist erforderlich
+              {{ t('md.dialog.common.error.idRequired') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Projektname *</mat-label>
+            <mat-label>{{ t('md.projects.name') }} *</mat-label>
             <input matInput formControlName="name" placeholder="z.B. Website Relaunch">
             <mat-error *ngIf="projectForm.get('name')?.hasError('required')">
-              Name ist erforderlich
+              {{ t('md.dialog.common.error.nameRequired') }}
             </mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Beschreibung</mat-label>
+            <mat-label>{{ t('md.common.description') }}</mat-label>
             <textarea matInput formControlName="description" rows="3"
-                      placeholder="Projektbeschreibung..."></textarea>
+                      [placeholder]="t('md.dialog.project.descriptionPlaceholder')"></textarea>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Kostenstelle *</mat-label>
+            <mat-label>{{ t('md.projects.costCenter') }} *</mat-label>
             <mat-select formControlName="costCenterId">
               <mat-option *ngFor="let cc of costCenters" [value]="cc.id">
                 {{cc.id}} - {{cc.name}}
               </mat-option>
             </mat-select>
             <mat-error *ngIf="projectForm.get('costCenterId')?.hasError('required')">
-              Kostenstelle ist erforderlich
+              {{ t('md.dialog.project.costCenterRequired') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Status</mat-label>
+            <mat-label>{{ t('md.projects.status') }}</mat-label>
             <mat-select formControlName="status">
               <mat-select-trigger>
                 <span class="status-tag" [style.backgroundColor]="getProjectStatusMeta(projectForm.get('status')?.value).color">
@@ -51,27 +51,27 @@
               </mat-select-trigger>
               <mat-option value="Geplant">
                 <span class="status-tag" style="background-color: #2196F3;">
-                  Geplant
+                  {{ t('md.dialog.project.status.planned') }}
                 </span>
               </mat-option>
               <mat-option value="Aktiv">
                 <span class="status-tag" style="background-color: #4CAF50;">
-                  Aktiv
+                  {{ t('md.dialog.project.status.active') }}
                 </span>
               </mat-option>
               <mat-option value="Pausiert">
                 <span class="status-tag" style="background-color: #FFA500;">
-                  Pausiert
+                  {{ t('md.dialog.project.status.paused') }}
                 </span>
               </mat-option>
               <mat-option value="Abgeschlossen">
                 <span class="status-tag" style="background-color: #9E9E9E;">
-                  Abgeschlossen
+                  {{ t('md.dialog.project.status.completed') }}
                 </span>
               </mat-option>
               <mat-option value="Abgebrochen">
                 <span class="status-tag" style="background-color: #F44336;">
-                  Abgebrochen
+                  {{ t('md.dialog.project.status.cancelled') }}
                 </span>
               </mat-option>
             </mat-select>
@@ -80,18 +80,18 @@
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Budget (€)</mat-label>
+            <mat-label>{{ t('md.common.budget') }} (€)</mat-label>
             <input matInput type="number" formControlName="budget"
                    placeholder="0.00" step="0.01" min="0">
             <mat-error *ngIf="projectForm.get('budget')?.hasError('min')">
-              Budget muss mindestens 0 sein
+              {{ t('md.dialog.common.error.budgetMin0') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Projektmanager</mat-label>
+            <mat-label>{{ t('md.dialog.project.projectManager') }}</mat-label>
             <mat-select formControlName="projectManagerId">
-              <mat-option value="null">Kein Manager</mat-option>
+              <mat-option value="null">{{ t('md.dialog.common.noManager') }}</mat-option>
               <mat-option *ngFor="let user of projectManagers" [value]="user.id">
                 {{user.firstName}} {{user.lastName}} ({{user.username}})
               </mat-option>
@@ -101,17 +101,17 @@
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Startdatum</mat-label>
+            <mat-label>{{ t('md.dialog.project.startDate') }}</mat-label>
             <input matInput [matDatepicker]="startPicker" formControlName="startDate">
-            <mat-hint>MM/TT/JJJJ</mat-hint>
+            <mat-hint>{{ t('md.dialog.common.dateFormatHint') }}</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
             <mat-datepicker #startPicker></mat-datepicker>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Enddatum</mat-label>
+            <mat-label>{{ t('md.dialog.project.endDate') }}</mat-label>
             <input matInput [matDatepicker]="endPicker" formControlName="endDate">
-            <mat-hint>MM/TT/JJJJ</mat-hint>
+            <mat-hint>{{ t('md.dialog.common.dateFormatHint') }}</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
             <mat-datepicker #endPicker></mat-datepicker>
           </mat-form-field>
@@ -119,11 +119,11 @@
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary"
                 (click)="onSave()"
                 [disabled]="projectForm.invalid">
-          Erstellen
+          {{ t('md.dialog.common.create') }}
         </button>
       </div>
     </div>

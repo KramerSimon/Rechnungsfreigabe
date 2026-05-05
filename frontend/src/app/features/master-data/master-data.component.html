@@ -1,54 +1,54 @@
 <div class="master-data-container">
-  <h1>Stammdatenverwaltung</h1>
+  <h1>{{ t('md.page.title') }}</h1>
 
   <mat-tab-group [(selectedIndex)]="activeTab">
     <!-- Lieferanten -->
-    <mat-tab label="Lieferanten">
+    <mat-tab [label]="t('md.tab.suppliers')">
       <app-suppliers-tab></app-suppliers-tab>
     </mat-tab>
 
     <!-- Kostenstellen -->
-    <mat-tab label="Kostenstellen">
+    <mat-tab [label]="t('md.tab.costCenters')">
       <app-cost-centers-tab></app-cost-centers-tab>
     </mat-tab>
 
     <!-- Projekte -->
-    <mat-tab label="Projekte">
+    <mat-tab [label]="t('md.tab.projects')">
       <app-projects-tab></app-projects-tab>
     </mat-tab>
 
     <!-- Bestellungen -->
-    <mat-tab label="Bestellungen">
+    <mat-tab [label]="t('md.tab.purchaseOrders')">
       <app-purchase-orders-tab></app-purchase-orders-tab>
     </mat-tab>
 
     <!-- Rechnungen -->
-    <mat-tab label="Rechnungen">
+    <mat-tab [label]="t('md.tab.invoices')">
       <app-invoices-tab></app-invoices-tab>
     </mat-tab>
 
     <!-- Benutzer -->
-    <mat-tab label="Benutzer">
+    <mat-tab [label]="t('md.tab.users')">
       <app-users-tab></app-users-tab>
     </mat-tab>
 
     <!-- Rollen -->
-    <mat-tab label="Rollen">
+    <mat-tab [label]="t('md.tab.roles')">
       <app-roles-tab></app-roles-tab>
     </mat-tab>
 
     <!-- Eskalations-Einstellungen -->
-    <mat-tab label="Eskalations-Einstellungen">
+    <mat-tab [label]="t('md.tab.escalation')">
       <app-escalation-tab></app-escalation-tab>
     </mat-tab>
 
     <!-- Genehmigungsregeln -->
-    <mat-tab label="Genehmigungsregeln">
+    <mat-tab [label]="t('md.tab.rules')">
       <app-approval-rules-tab></app-approval-rules-tab>
     </mat-tab>
 
     <!-- Genehmigungsworkflows -->
-    <mat-tab label="Genehmigungsworkflows">
+    <mat-tab [label]="t('md.tab.workflows')">
       <app-approval-workflows-tab></app-approval-workflows-tab>
     </mat-tab>
   </mat-tab-group>

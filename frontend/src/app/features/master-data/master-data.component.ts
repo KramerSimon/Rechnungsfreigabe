@@ -13,6 +13,7 @@ import { RolesTabComponent } from './tabs/roles-tab/roles-tab.component';
 import { EscalationTabComponent } from './tabs/escalation-tab/escalation-tab.component';
 import { ApprovalRulesTabComponent } from './tabs/approval-rules-tab/approval-rules-tab.component';
 import { ApprovalWorkflowsTabComponent } from './tabs/approval-workflows-tab/approval-workflows-tab.component';
+import { LanguageService } from '../../core/services/language.service';
 
 @Component({
   selector: 'app-master-data',
@@ -50,7 +51,7 @@ export class MasterDataComponent implements OnInit {
     { id: 'workflows', label: 'Genehmigungsworkflows', index: 9 },
   ];
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(private route: ActivatedRoute, private languageService: LanguageService) {}
 
   ngOnInit(): void {
     // Set active tab based on route parameter
@@ -63,6 +64,10 @@ export class MasterDataComponent implements OnInit {
         this.activeTab = tabIndex;
       }
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }
 

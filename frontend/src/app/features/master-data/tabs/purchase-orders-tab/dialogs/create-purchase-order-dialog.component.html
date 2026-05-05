@@ -1,43 +1,43 @@
 <div class="dialog-container">
-      <h2 mat-dialog-title>Neue Bestellung</h2>
+  <h2 mat-dialog-title>{{ t('md.dialog.purchaseOrder.createTitle') }}</h2>
 
       <form [formGroup]="form" mat-dialog-content>
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Bestell-ID *</mat-label>
+            <mat-label>{{ t('md.purchaseOrders.id') }} *</mat-label>
             <input matInput formControlName="id" placeholder="z.B. PO-2026-001">
             <mat-error *ngIf="form.get('id')?.hasError('required')">
-              ID ist erforderlich
+              {{ t('md.dialog.common.error.idRequired') }}
             </mat-error>
             <mat-error *ngIf="form.get('id')?.hasError('maxlength')">
-              Maximal 20 Zeichen
+              {{ t('md.dialog.common.error.maxLength20') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Titel *</mat-label>
+            <mat-label>{{ t('md.purchaseOrders.title') }} *</mat-label>
             <input matInput formControlName="title" placeholder="z.B. Hardware-Einkauf">
             <mat-error *ngIf="form.get('title')?.hasError('required')">
-              Titel ist erforderlich
+              {{ t('md.dialog.purchaseOrder.titleRequired') }}
             </mat-error>
             <mat-error *ngIf="form.get('title')?.hasError('maxlength')">
-              Maximal 100 Zeichen
+              {{ t('md.dialog.common.error.maxLength100') }}
             </mat-error>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Beschreibung</mat-label>
-            <textarea matInput formControlName="description" rows="3" placeholder="Details zur Bestellung"></textarea>
+            <mat-label>{{ t('md.common.description') }}</mat-label>
+            <textarea matInput formControlName="description" rows="3" [placeholder]="t('md.dialog.purchaseOrder.descriptionPlaceholder')"></textarea>
           </mat-form-field>
         </div>
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Kostenstelle</mat-label>
+            <mat-label>{{ t('md.projects.costCenter') }}</mat-label>
             <mat-select formControlName="costCenterId">
-              <mat-option [value]="''">Keine</mat-option>
+              <mat-option [value]="''">{{ t('md.dialog.common.none') }}</mat-option>
               <mat-option *ngFor="let cc of data.costCenters" [value]="cc.id">
                 {{cc.id}} - {{cc.name}}
               </mat-option>
@@ -45,9 +45,9 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Projekt</mat-label>
+            <mat-label>{{ t('md.purchaseOrders.project') }}</mat-label>
             <mat-select formControlName="projectId">
-              <mat-option [value]="''">Kein Projekt</mat-option>
+              <mat-option [value]="''">{{ t('md.dialog.purchaseOrder.noProject') }}</mat-option>
               <mat-option *ngFor="let project of data.projects" [value]="project.id">
                 {{project.id}} - {{project.name}}
               </mat-option>
@@ -57,30 +57,30 @@
 
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>Betrag *</mat-label>
+            <mat-label>{{ t('md.common.amount') }} *</mat-label>
             <input matInput type="number" formControlName="totalAmount" min="0.01" step="0.01">
             <mat-error *ngIf="form.get('totalAmount')?.hasError('required')">
-              Betrag ist erforderlich
+              {{ t('md.dialog.purchaseOrder.amountRequired') }}
             </mat-error>
             <mat-error *ngIf="form.get('totalAmount')?.hasError('min')">
-              Betrag muss größer als 0 sein
+              {{ t('md.dialog.purchaseOrder.amountMin') }}
             </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Währung</mat-label>
+            <mat-label>{{ t('md.dialog.common.currency') }}</mat-label>
             <input matInput formControlName="currency" maxlength="3" placeholder="EUR">
             <mat-error *ngIf="form.get('currency')?.hasError('maxlength')">
-              Maximal 3 Zeichen
+              {{ t('md.dialog.common.error.maxLength3') }}
             </mat-error>
           </mat-form-field>
         </div>
       </form>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">Abbrechen</button>
+        <button mat-button (click)="onCancel()">{{ t('md.dialog.common.cancel') }}</button>
         <button mat-raised-button color="primary" (click)="onSave()" [disabled]="form.invalid">
-          Speichern
+          {{ t('md.dialog.common.save') }}
         </button>
       </div>
     </div>

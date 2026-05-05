@@ -1,20 +1,20 @@
 <div class="admin-rules-container">
   <div class="header">
-    <h1><mat-icon>settings</mat-icon> Freigabe-Regeln (Policies)</h1>
-    <p class="subtitle">Konfiguration der automatischen und manuellen Freigabeprozesse</p>
+    <h1><mat-icon>settings</mat-icon> {{ t('dashboard.rules.header.title') }}</h1>
+    <p class="subtitle">{{ t('dashboard.rules.header.subtitle') }}</p>
   </div>
 
   <mat-tab-group [(selectedIndex)]="activeTab">
     <!-- Tab 1: Freigabe-Regeln -->
-    <mat-tab label="Freigabe-Regeln">
+    <mat-tab [label]="t('dashboard.rules.tab.rules')">
       <div class="tab-content">
         <div class="approval-rules-tab-container">
           <button mat-raised-button color="primary" (click)="createApprovalRule()" class="create-btn">
             <mat-icon>add</mat-icon>
-            Neue Regel erstellen
+            {{ t('dashboard.rules.createRule') }}
           </button>
 
-          <h3 class="section-title">AKTIVE REGELN</h3>
+          <h3 class="section-title">{{ t('dashboard.rules.activeRules') }}</h3>
 
           <div class="rules-list" *ngIf="!loading && approvalRules.length > 0">
             <mat-expansion-panel *ngFor="let rule of approvalRules; let i = index" class="rule-card">
@@ -24,10 +24,10 @@
                   <div class="rule-title">{{ rule.name }}</div>
                   <span class="rule-type-badge">{{ getRuleTypeLabel(rule.ruleType) }}</span>
                   <div class="rule-actions">
-                    <button mat-icon-button color="primary" (click)="editApprovalRule(rule); $event.stopPropagation()" matTooltip="Bearbeiten">
+                    <button mat-icon-button color="primary" (click)="editApprovalRule(rule); $event.stopPropagation()" [matTooltip]="t('dashboard.rules.edit')">
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <button mat-icon-button color="warn" (click)="deleteApprovalRule(rule); $event.stopPropagation()" matTooltip="Löschen">
+                    <button mat-icon-button color="warn" (click)="deleteApprovalRule(rule); $event.stopPropagation()" [matTooltip]="t('dashboard.rules.delete')">
                       <mat-icon>delete</mat-icon>
                     </button>
                     <mat-slide-toggle
@@ -42,13 +42,13 @@
 
               <div class="rule-details">
                 <div class="detail-section" *ngIf="rule.description">
-                  <strong>Beschreibung:</strong>
+                  <strong>{{ t('dashboard.rules.description') }}:</strong>
                   <div class="description-content">{{ rule.description }}</div>
                 </div>
 
                 <div class="conditions-actions-grid">
                   <div class="detail-section wenn-section">
-                    <strong>WENN:</strong>
+                    <strong>{{ t('dashboard.rules.when') }}:</strong>
                     <div class="conditions-list" *ngIf="rule.conditions && rule.conditions.length > 0">
                       <div *ngFor="let condition of rule.conditions; let first = first" class="condition-item">
                         <span *ngIf="!first" class="logical-op">{{ condition.logicalOperator }}</span>
@@ -58,12 +58,12 @@
                       </div>
                     </div>
                     <div *ngIf="!rule.conditions || rule.conditions.length === 0" class="no-data">
-                      Keine Bedingungen definiert
+                      {{ t('dashboard.rules.noConditions') }}
                     </div>
                   </div>
 
                   <div class="detail-section dann-section">
-                    <strong>DANN:</strong>
+                    <strong>{{ t('dashboard.rules.then') }}:</strong>
                     <div class="actions-list" *ngIf="rule.actions && rule.actions.length > 0">
                       <div *ngFor="let action of rule.actions" class="action-item">
                         <mat-icon class="arrow-icon">arrow_forward</mat-icon>
@@ -71,20 +71,20 @@
 
                         <div *ngIf="action.stages && action.stages.length > 0" class="stages-preview">
                           <div *ngFor="let stage of action.stages; let si = index" class="stage-item">
-                            Stufe {{ si + 1 }}: {{ getRoleNameFromStage(stage) }}
+                            {{ t('dashboard.rules.stage') }} {{ si + 1 }}: {{ getRoleNameFromStage(stage) }}
                           </div>
                         </div>
                       </div>
                     </div>
                     <div *ngIf="!rule.actions || rule.actions.length === 0" class="no-data">
-                      Keine Aktionen definiert
+                      {{ t('dashboard.rules.noActions') }}
                     </div>
                   </div>
                 </div>
 
                 <div class="rule-footer">
-                  <span><strong>Priorität:</strong> {{ rule.priority }}</span>
-                  <span><strong>Status:</strong> <span class="status-badge" [class.active]="rule.isActive">{{ rule.isActive ? 'Aktiv' : 'Inaktiv' }}</span></span>
+                  <span><strong>{{ t('dashboard.rules.priority') }}:</strong> {{ rule.priority }}</span>
+                  <span><strong>{{ t('dashboard.rules.status') }}:</strong> <span class="status-badge" [class.active]="rule.isActive">{{ rule.isActive ? t('dashboard.rules.active') : t('dashboard.rules.inactive') }}</span></span>
                 </div>
               </div>
             </mat-expansion-panel>
@@ -96,10 +96,10 @@
 
           <div class="empty-state" *ngIf="!loading && approvalRules.length === 0">
             <mat-icon>rule</mat-icon>
-            <p>Keine Genehmigungsregeln gefunden</p>
+            <p>{{ t('dashboard.rules.empty') }}</p>
             <button mat-raised-button color="primary" (click)="createApprovalRule()">
               <mat-icon>add</mat-icon>
-              Erste Regel erstellen
+              {{ t('dashboard.rules.createFirst') }}
             </button>
           </div>
         </div>
@@ -107,58 +107,58 @@
     </mat-tab>
 
     <!-- Tab 4: Active Directory Integration -->
-    <mat-tab label="AD Integration">
+    <mat-tab [label]="t('dashboard.rules.tab.ad')">
       <div class="tab-content">
         <div class="integration-section">
-          <h3>ACTIVE DIRECTORY INTEGRATION</h3>
-          <p class="section-description">Konfiguration der Active Directory Anbindung für automatische Freigaben</p>
+          <h3>{{ t('dashboard.rules.ad.title') }}</h3>
+          <p class="section-description">{{ t('dashboard.rules.ad.subtitle') }}</p>
 
           <mat-card class="config-card">
             <mat-card-header>
               <mat-card-title>
                 <mat-icon>group</mat-icon>
-                Active Directory Einstellungen
+                {{ t('dashboard.rules.ad.settings') }}
               </mat-card-title>
             </mat-card-header>
             <mat-card-content>
               <div class="ad-config">
                 <div class="config-item">
-                  <mat-checkbox checked>Active Directory Integration aktiviert</mat-checkbox>
+                  <mat-checkbox checked>{{ t('dashboard.rules.ad.enabled') }}</mat-checkbox>
                   <p class="config-description">
-                    Freigabe-Berechtigungen werden automatisch aus dem Active Directory abgerufen
+                    {{ t('dashboard.rules.ad.desc') }}
                   </p>
                 </div>
 
                 <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>AD Server</mat-label>
+                  <mat-label>{{ t('dashboard.rules.ad.server') }}</mat-label>
                   <input matInput value="dc.firma.local" readonly>
                 </mat-form-field>
 
                 <div class="ad-groups">
-                  <h4>Berechtigungsgruppen:</h4>
+                  <h4>{{ t('dashboard.rules.ad.groups') }}:</h4>
                   <div class="group-item">
                     <mat-icon>group</mat-icon>
-                    <span><strong>Freigabe_Manager:</strong> Kann alle Rechnungen freigeben</span>
+                    <span><strong>Freigabe_Manager:</strong> {{ t('dashboard.rules.ad.group.manager') }}</span>
                   </div>
                   <div class="group-item">
                     <mat-icon>group</mat-icon>
-                    <span><strong>Kostenstelle_IT:</strong> Kann IT-Rechnungen freigeben</span>
+                    <span><strong>Kostenstelle_IT:</strong> {{ t('dashboard.rules.ad.group.it') }}</span>
                   </div>
                   <div class="group-item">
                     <mat-icon>group</mat-icon>
-                    <span><strong>Projekt_Manager:</strong> Kann projektbezogene Rechnungen freigeben</span>
+                    <span><strong>Projekt_Manager:</strong> {{ t('dashboard.rules.ad.group.project') }}</span>
                   </div>
                 </div>
 
                 <div class="sync-status">
-                  <h4>Synchronisation:</h4>
+                  <h4>{{ t('dashboard.rules.ad.sync') }}:</h4>
                   <div class="status-item">
                     <mat-icon color="accent">check_circle</mat-icon>
-                    <span>Letzte Synchronisation: Heute, 08:30 Uhr</span>
+                    <span>{{ t('dashboard.rules.ad.lastSync') }}</span>
                   </div>
                   <button mat-raised-button color="primary">
                     <mat-icon>sync</mat-icon>
-                    Jetzt synchronisieren
+                    {{ t('dashboard.rules.ad.syncNow') }}
                   </button>
                 </div>
               </div>

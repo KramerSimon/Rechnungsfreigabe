@@ -11,6 +11,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { CostCenter } from '../../../../../../core/models/cost-center.model';
 import { Project } from '../../../../../../core/models/project.model';
 import { User } from '../../../../../../core/models/user.models';
+import { LanguageService } from '../../../../../../core/services/language.service';
 
 
 @Component({
@@ -38,7 +39,8 @@ export class EditProjectDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<EditProjectDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { project: Project, costCenters: CostCenter[], projectManagers: User[] },
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private languageService: LanguageService
   ) {
     this.costCenters = data.costCenters;
     this.projectManagers = data.projectManagers || [];
@@ -60,17 +62,17 @@ export class EditProjectDialogComponent {
   getProjectStatusMeta(status?: string | null): { label: string; color: string } {
     switch (status) {
       case 'Geplant':
-        return { label: 'Geplant', color: '#2196F3' };
+        return { label: this.t('md.dialog.project.status.planned'), color: '#2196F3' };
       case 'Aktiv':
-        return { label: 'Aktiv', color: '#4CAF50' };
+        return { label: this.t('md.dialog.project.status.active'), color: '#4CAF50' };
       case 'Pausiert':
-        return { label: 'Pausiert', color: '#FFA500' };
+        return { label: this.t('md.dialog.project.status.paused'), color: '#FFA500' };
       case 'Abgeschlossen':
-        return { label: 'Abgeschlossen', color: '#9E9E9E' };
+        return { label: this.t('md.dialog.project.status.completed'), color: '#9E9E9E' };
       case 'Abgebrochen':
-        return { label: 'Abgebrochen', color: '#F44336' };
+        return { label: this.t('md.dialog.project.status.cancelled'), color: '#F44336' };
       default:
-        return { label: '—', color: '#9E9E9E' };
+        return { label: this.t('md.common.notSpecified'), color: '#9E9E9E' };
     }
   }
 
@@ -91,5 +93,9 @@ export class EditProjectDialogComponent {
       }
       this.dialogRef.close(formValue);
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

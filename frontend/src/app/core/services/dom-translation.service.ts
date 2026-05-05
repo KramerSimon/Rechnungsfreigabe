@@ -145,6 +145,7 @@ export class DomTranslationService {
       || tag === 'CODE'
       || tag === 'PRE'
       || tag === 'TEXTAREA'
-      || tag === 'MAT-ICON';
+      || tag === 'MAT-ICON'
+      || !!element.closest('.navbar');
   }
 }

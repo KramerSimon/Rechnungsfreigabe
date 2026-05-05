@@ -15,6 +15,7 @@ import { SupplierService } from '../../../../core/services/supplier.service';
 import { StatusService } from '../../../../core/services/status.service';
 import { StatusDisplayPipe } from '../../../../core/pipes/status-display.pipe';
 import { forkJoin } from 'rxjs';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-invoices-tab',
@@ -44,7 +45,8 @@ export class InvoicesTabComponent implements OnInit {
     private snackBar: MatSnackBar,
     private invoiceService: InvoiceService,
     private supplierService: SupplierService,
-    private statusService: StatusService
+    private statusService: StatusService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -67,7 +69,7 @@ export class InvoicesTabComponent implements OnInit {
       error: (error: any) => {
         console.error('Error loading invoices:', error);
         this.loadingInvoices = false;
-        this.snackBar.open('Fehler beim Laden der Rechnungen', 'Schließen', {
+        this.snackBar.open(this.t('md.invoices.error.load'), this.t('common.close'), {
           duration: 3000,
         });
       },
@@ -117,21 +119,26 @@ export class InvoicesTabComponent implements OnInit {
   }
 
   deleteInvoice(invoiceId: number, invoiceNumber: string): void {
-    if (confirm(`Möchten Sie die Rechnung ${invoiceNumber} wirklich löschen? Dies löscht auch alle zugehörigen Genehmigungsworkflows.`)) {
+    const confirmText = this.t('md.invoices.confirm.delete').replace('{invoiceNumber}', invoiceNumber);
+    if (confirm(confirmText)) {
       this.invoiceService.deleteInvoice(invoiceId).subscribe({
         next: () => {
-          this.snackBar.open('Rechnung erfolgreich gelöscht', 'Schließen', {
+          this.snackBar.open(this.t('md.invoices.success.deleted'), this.t('common.close'), {
             duration: 3000,
           });
           this.loadInvoices();
         },
         error: (error: any) => {
           console.error('Fehler beim Löschen der Rechnung:', error);
-          this.snackBar.open('Fehler beim Löschen der Rechnung', 'Schließen', {
+          this.snackBar.open(this.t('md.invoices.error.delete'), this.t('common.close'), {
             duration: 3000,
           });
         },
       });
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

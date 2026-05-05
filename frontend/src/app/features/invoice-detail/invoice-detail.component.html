@@ -2,9 +2,9 @@
   <div class="header">
     <button mat-button routerLink="/dashboard" class="back-button">
       <mat-icon>arrow_back</mat-icon>
-      Zurück zur Übersicht
+      {{ t('invoice.detail.backToOverview') }}
     </button>
-    <h2>Rechnung #{{ invoice.invoiceNumber }} von {{ invoice.supplier.name }}</h2>
+    <h2>{{ t('invoice.detail.header.invoice') }} #{{ invoice.invoiceNumber }} {{ t('invoice.detail.header.from') }} {{ invoice.supplier.name }}</h2>
   </div>
 
   <!-- Tab Navigation -->
@@ -14,7 +14,7 @@
     <mat-tab>
       <ng-template mat-tab-label>
         <mat-icon class="tab-icon">description</mat-icon>
-        Rechnungsdetails
+        {{ t('invoice.detail.tab.details') }}
       </ng-template>
 
       <div class="tab-content">
@@ -23,13 +23,13 @@
     <div class="pdf-preview">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>PDF VORSCHAU DER RECHNUNG</mat-card-title>
+          <mat-card-title>{{ t('invoice.detail.pdf.previewTitle') }}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <!-- PDF Loader -->
           <div *ngIf="pdfLoading" class="pdf-loader">
             <mat-spinner diameter="40"></mat-spinner>
-            <p>PDF wird geladen...</p>
+            <p>{{ t('invoice.detail.pdf.loading') }}</p>
           </div>
 
           <!-- PDF Viewer mit ngx-extended-pdf-viewer -->
@@ -57,15 +57,15 @@
           <!-- Fallback: Browser-PDF-Viewer -->
           <div *ngIf="pdfSafeUrl && !pdfLoading && useFallbackViewer" class="pdf-viewer-wrapper">
             <object [data]="pdfSafeUrl" type="application/pdf" width="100%" height="700px">
-              <p>PDF-Vorschau nicht verfügbar. Bitte nutzen Sie den Download.</p>
+              <p>{{ t('invoice.detail.pdf.previewUnavailable') }}</p>
             </object>
           </div>
 
           <!-- Fallback wenn kein PDF vorhanden -->
           <div *ngIf="!pdfSrc && !pdfLoading" class="pdf-placeholder">
             <mat-icon>description</mat-icon>
-            <p>Keine PDF-Datei vorhanden</p>
-            <p class="hint">Nach dem Hochladen wird die PDF-Vorschau hier angezeigt</p>
+            <p>{{ t('invoice.detail.pdf.none') }}</p>
+            <p class="hint">{{ t('invoice.detail.pdf.noneHint') }}</p>
           </div>
         </mat-card-content>
       </mat-card>
@@ -75,23 +75,23 @@
     <div class="data-actions">
       <mat-card class="data-section">
         <mat-card-header>
-          <mat-card-title>1. DATEN VERVOLLSTÄNDIGEN</mat-card-title>
-          <mat-card-subtitle>(Bearbeiten Sie alle Rechnungsinformationen)</mat-card-subtitle>
+          <mat-card-title>{{ t('invoice.detail.section.data.title') }}</mat-card-title>
+          <mat-card-subtitle>{{ t('invoice.detail.section.data.subtitle') }}</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
           <div class="edit-mode-toggle">
             <button mat-stroked-button *ngIf="!isEditMode" (click)="toggleEditMode()">
               <mat-icon>edit</mat-icon>
-              Bearbeiten
+              {{ t('md.common.edit') }}
             </button>
             <div class="edit-mode-buttons" *ngIf="isEditMode">
               <button mat-stroked-button color="warn" (click)="cancelEdit()">
                 <mat-icon>close</mat-icon>
-                Abbrechen
+                {{ t('md.dialog.common.cancel') }}
               </button>
               <button mat-raised-button color="primary" (click)="saveData()" [disabled]="saving || !editFormDirty">
                 <mat-icon>save</mat-icon>
-                Speichern
+                {{ t('md.dialog.common.save') }}
               </button>
             </div>
           </div>
@@ -99,112 +99,112 @@
           <div class="edit-form" *ngIf="isEditMode">
             <!-- Rechnungskopf -->
             <div class="form-section">
-              <h3>Rechnungsinformationen</h3>
+              <h3>{{ t('invoice.detail.form.invoiceInfo') }}</h3>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Lieferant</mat-label>
+                <mat-label>{{ t('md.invoices.supplier') }}</mat-label>
                 <mat-select [(ngModel)]="invoice.supplier" (change)="onInvoiceFieldChange()">
                   <mat-option *ngFor="let supplier of suppliers" [value]="supplier">
                     {{ supplier.name }}
                   </mat-option>
-                  <mat-option *ngIf="suppliers.length === 0" [disabled]="true">Lieferanten werden geladen...</mat-option>
+                  <mat-option *ngIf="suppliers.length === 0" [disabled]="true">{{ t('invoice.detail.loading.suppliers') }}</mat-option>
                 </mat-select>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Rechnungsnummer</mat-label>
+                <mat-label>{{ t('md.invoices.invoiceNumber') }}</mat-label>
                 <input matInput [(ngModel)]="invoice.invoiceNumber" (change)="onInvoiceFieldChange()" disabled>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Rechnungsdatum</mat-label>
+                <mat-label>{{ t('md.invoices.invoiceDate') }}</mat-label>
                 <input matInput type="date" [(ngModel)]="invoice.invoiceDate" (change)="onInvoiceFieldChange()">
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Fälligkeitsdatum</mat-label>
+                <mat-label>{{ t('invoice.detail.field.dueDate') }}</mat-label>
                 <input matInput type="date" [(ngModel)]="invoice.dueDate" (change)="onInvoiceFieldChange()">
               </mat-form-field>
             </div>
 
             <!-- Beträge -->
             <div class="form-section">
-              <h3>Beträge</h3>
+              <h3>{{ t('invoice.detail.form.amounts') }}</h3>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Nettobetrag</mat-label>
+                <mat-label>{{ t('invoice.detail.field.netAmount') }}</mat-label>
                 <input matInput type="number" [(ngModel)]="invoice.netAmount" (change)="onInvoiceFieldChange()" step="0.01">
-                <mat-hint>EUR</mat-hint>
+                <mat-hint>{{ t('invoice.detail.currency') }}</mat-hint>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Steuerbetrag</mat-label>
+                <mat-label>{{ t('invoice.detail.field.taxAmount') }}</mat-label>
                 <input matInput type="number" [(ngModel)]="invoice.taxAmount" (change)="onInvoiceFieldChange()" step="0.01">
-                <mat-hint>EUR</mat-hint>
+                <mat-hint>{{ t('invoice.detail.currency') }}</mat-hint>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Gesamtbetrag</mat-label>
+                <mat-label>{{ t('md.common.amount') }}</mat-label>
                 <input matInput type="number" [(ngModel)]="invoice.totalAmount" (change)="onInvoiceFieldChange()" step="0.01">
-                <mat-hint>EUR</mat-hint>
+                <mat-hint>{{ t('invoice.detail.currency') }}</mat-hint>
               </mat-form-field>
             </div>
 
             <!-- Zuordnungen -->
             <div class="form-section">
-              <h3>Zuordnungen</h3>
+              <h3>{{ t('invoice.detail.form.assignments') }}</h3>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Kostenstelle</mat-label>
+                <mat-label>{{ t('md.projects.costCenter') }}</mat-label>
                 <mat-select [(ngModel)]="invoice.costCenterId" (selectionChange)="onCostCenterChange($event.value); onInvoiceFieldChange()">
                   <mat-option *ngFor="let center of costCenters" [value]="center.id">
                     {{ center.id }} — {{ center.name }}
                   </mat-option>
-                  <mat-option *ngIf="costCenters.length === 0" [disabled]="true">Kostenstellen werden geladen...</mat-option>
+                  <mat-option *ngIf="costCenters.length === 0" [disabled]="true">{{ t('invoice.detail.loading.costCenters') }}</mat-option>
                 </mat-select>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Projekt</mat-label>
+                <mat-label>{{ t('md.projects.name') }}</mat-label>
                 <mat-select [(ngModel)]="invoice.projectId" (change)="onInvoiceFieldChange()">
                   <mat-option *ngFor="let project of projects" [value]="project.id">
                     {{ project.id }} — {{ project.name }}
                   </mat-option>
-                  <mat-option *ngIf="projects.length === 0" [disabled]="true">Keine Projekte gefunden</mat-option>
+                  <mat-option *ngIf="projects.length === 0" [disabled]="true">{{ t('invoice.detail.empty.projects') }}</mat-option>
                 </mat-select>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Bestellung</mat-label>
+                <mat-label>{{ t('md.purchaseOrders.title') }}</mat-label>
                 <mat-select [(ngModel)]="invoice.purchaseOrderId" (change)="onInvoiceFieldChange()">
                   <mat-option *ngFor="let po of purchaseOrders" [value]="po.id">
                     {{ po.id }} — {{ po.title }}
                   </mat-option>
-                  <mat-option *ngIf="purchaseOrders.length === 0" [disabled]="true">Keine Bestellungen gefunden</mat-option>
+                  <mat-option *ngIf="purchaseOrders.length === 0" [disabled]="true">{{ t('invoice.detail.empty.purchaseOrders') }}</mat-option>
                 </mat-select>
               </mat-form-field>
             </div>
 
             <!-- Notizen & Beschreibung -->
             <div class="form-section">
-              <h3>Notizen & Beschreibung</h3>
+              <h3>{{ t('invoice.detail.form.notes') }}</h3>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Beschreibung</mat-label>
-                <textarea matInput [(ngModel)]="invoice.description" (change)="onInvoiceFieldChange()" rows="3" placeholder="Rechnungsbeschreibung..."></textarea>
+                <mat-label>{{ t('md.common.description') }}</mat-label>
+                <textarea matInput [(ngModel)]="invoice.description" (change)="onInvoiceFieldChange()" rows="3" [placeholder]="t('invoice.detail.placeholder.description')"></textarea>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Interne Notizen</mat-label>
-                <textarea matInput [(ngModel)]="invoice.internalNotes" (change)="onInvoiceFieldChange()" rows="3" placeholder="Interne Anmerkungen..."></textarea>
+                <mat-label>{{ t('invoice.detail.field.internalNotes') }}</mat-label>
+                <textarea matInput [(ngModel)]="invoice.internalNotes" (change)="onInvoiceFieldChange()" rows="3" [placeholder]="t('invoice.detail.placeholder.internalNotes')"></textarea>
               </mat-form-field>
             </div>
 
             <!-- Optionen -->
             <div class="form-section">
-              <h3>Optionen</h3>
+              <h3>{{ t('invoice.detail.form.options') }}</h3>
               <mat-checkbox [(ngModel)]="invoice.requiresApproval" (change)="onInvoiceFieldChange()">
-                Freigabe erforderlich
+                {{ t('invoice.detail.field.requiresApproval') }}
               </mat-checkbox>
             </div>
           </div>
@@ -213,48 +213,48 @@
           <div class="view-mode" *ngIf="!isEditMode">
             <div class="info-grid">
               <div class="info-item">
-                <strong>Lieferant:</strong>
-                <span>{{ invoice.supplier.name || '—' }}</span>
+                <strong>{{ t('md.invoices.supplier') }}:</strong>
+                <span>{{ invoice.supplier.name || t('md.common.notSpecified') }}</span>
               </div>
               <div class="info-item">
-                <strong>Rechnungsnummer:</strong>
+                <strong>{{ t('md.invoices.invoiceNumber') }}:</strong>
                 <span>{{ invoice.invoiceNumber }}</span>
               </div>
               <div class="info-item">
-                <strong>Datum:</strong>
+                <strong>{{ t('md.invoices.invoiceDate') }}:</strong>
                 <span>{{ invoice.invoiceDate }}</span>
               </div>
               <div class="info-item">
-                <strong>Fällig:</strong>
+                <strong>{{ t('invoice.detail.field.dueDate') }}:</strong>
                 <span>{{ invoice.dueDate }}</span>
               </div>
               <div class="info-item">
-                <strong>Nettobtrag:</strong>
-                <span>{{ invoice.netAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</span>
+                <strong>{{ t('invoice.detail.field.netAmount') }}:</strong>
+                <span>{{ invoice.netAmount | currency:'EUR':'symbol':'1.2-2':getLocale() }}</span>
               </div>
               <div class="info-item">
-                <strong>Steuer:</strong>
-                <span>{{ invoice.taxAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</span>
+                <strong>{{ t('invoice.detail.field.taxAmount') }}:</strong>
+                <span>{{ invoice.taxAmount | currency:'EUR':'symbol':'1.2-2':getLocale() }}</span>
               </div>
               <div class="info-item">
-                <strong>Gesamt:</strong>
-                <span><strong>{{ invoice.totalAmount | currency:'EUR':'symbol':'1.2-2':'de' }}</strong></span>
+                <strong>{{ t('md.common.amount') }}:</strong>
+                <span><strong>{{ invoice.totalAmount | currency:'EUR':'symbol':'1.2-2':getLocale() }}</strong></span>
               </div>
               <div class="info-item">
-                <strong>Kostenstelle:</strong>
+                <strong>{{ t('md.projects.costCenter') }}:</strong>
                 <span>{{ invoice.costCenterId }} — {{ invoice.costCenterName }}</span>
               </div>
               <div class="info-item">
-                <strong>Projekt:</strong>
+                <strong>{{ t('md.projects.name') }}:</strong>
                 <span>{{ invoice.projectId }} — {{ invoice.projectName }}</span>
               </div>
               <div class="info-item">
-                <strong>Bestellung:</strong>
-                <span>{{ invoice.purchaseOrderId || '—' }}</span>
+                <strong>{{ t('md.purchaseOrders.title') }}:</strong>
+                <span>{{ invoice.purchaseOrderId || t('md.common.notSpecified') }}</span>
               </div>
               <div class="info-item">
-                <strong>Beschreibung:</strong>
-                <span>{{ invoice.description || '—' }}</span>
+                <strong>{{ t('md.common.description') }}:</strong>
+                <span>{{ invoice.description || t('md.common.notSpecified') }}</span>
               </div>
             </div>
           </div>
@@ -275,29 +275,29 @@
 
       <mat-card class="decision-section">
         <mat-card-header>
-          <mat-card-title>2. ENTSCHEIDUNG</mat-card-title>
-          <mat-card-subtitle>(Blaue/Rote Boxen im Diagramm)</mat-card-subtitle>
+          <mat-card-title>{{ t('invoice.detail.section.decision.title') }}</mat-card-title>
+          <mat-card-subtitle>{{ t('invoice.detail.section.decision.subtitle') }}</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Notiz hinzufügen (Optional)</mat-label>
-            <textarea matInput [(ngModel)]="note" rows="3" placeholder="Ihre Anmerkungen..."></textarea>
+            <mat-label>{{ t('invoice.detail.note.optional') }}</mat-label>
+            <textarea matInput [(ngModel)]="note" rows="3" [placeholder]="t('invoice.detail.note.placeholder')"></textarea>
           </mat-form-field>
 
           <div class="action-buttons">
             <button mat-raised-button color="warn" class="reject-button" (click)="onReject()">
               <mat-icon>close</mat-icon>
-              ABLEHNEN
+              {{ t('invoice.detail.action.reject') }}
             </button>
             <button mat-raised-button color="primary" class="approve-button"
                   (click)="onApprove()" [disabled]="loading">
               <mat-icon>check</mat-icon>
-              FREIGEBEN
+              {{ t('invoice.detail.action.approve') }}
             </button>
           </div>
 
           <div class="status-info">
-            <strong>Status:</strong>
+            <strong>{{ t('md.common.status') }}:</strong>
             <span class="status-badge"
                   [ngStyle]="invoice.statusColor ? {
                     'background-color': invoice.statusColor,
@@ -320,7 +320,7 @@
     <mat-tab>
       <ng-template mat-tab-label>
         <mat-icon class="tab-icon">history</mat-icon>
-        Historie & Aktivitäten
+        {{ t('invoice.detail.tab.history') }}
       </ng-template>
 
       <div class="tab-content history-tab-content">

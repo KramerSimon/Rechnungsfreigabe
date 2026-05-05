@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CostCenter } from '../../../../../../core/models/cost-center.model';
 import { User } from '../../../../../../core/models/user.models';
+import { LanguageService } from '../../../../../../core/services/language.service';
 
 @Component({
   selector: 'app-edit-cost-center-dialog',
@@ -31,7 +32,8 @@ export class EditCostCenterDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<EditCostCenterDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { costCenter: CostCenter; managers: User[] },
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private languageService: LanguageService
   ) {
     this.managers = data.managers || [];
     const costCenter = data.costCenter || {};
@@ -53,5 +55,9 @@ export class EditCostCenterDialogComponent {
       const formValue = { ...this.costCenterForm.getRawValue() };
       this.dialogRef.close(formValue);
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

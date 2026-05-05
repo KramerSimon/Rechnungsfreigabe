@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { CostCenter } from '../../../../../core/models/cost-center.model';
 import { Project } from '../../../../../core/models/project.model';
 import { CreatePurchaseOrderRequest } from '../../../../../core/models/purchaseOrder.model';
+import { LanguageService } from '../../../../../core/services/language.service';
 
 interface CreatePurchaseOrderDialogData {
   costCenters: CostCenter[];
@@ -36,7 +37,8 @@ export class CreatePurchaseOrderDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<CreatePurchaseOrderDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: CreatePurchaseOrderDialogData,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private languageService: LanguageService
   ) {
     this.form = this.fb.group({
       id: ['', [Validators.required, Validators.maxLength(20)]],
@@ -67,5 +69,9 @@ export class CreatePurchaseOrderDialogComponent {
     };
 
     this.dialogRef.close(payload);
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

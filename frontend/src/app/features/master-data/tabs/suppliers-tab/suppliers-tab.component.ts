@@ -11,6 +11,7 @@ import { Supplier } from '../../../../core/models/supplier.model';
 import { SupplierService } from '../../../../core/services/supplier.service';
 import { CreateSupplierDialogComponent } from './dialogs/create-supplier-dialog.component';
 import { EditSupplierDialogComponent } from './dialogs/edit-supplier-dialog/edit-supplier-dialog.component';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-suppliers-tab',
@@ -36,7 +37,8 @@ export class SuppliersTabComponent implements OnInit {
   constructor(
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private supplierService: SupplierService
+    private supplierService: SupplierService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -53,7 +55,7 @@ export class SuppliersTabComponent implements OnInit {
       error: (error: any) => {
         console.error('Error loading suppliers:', error);
         this.loadingSuppliers = false;
-        this.snackBar.open('Fehler beim Laden der Lieferanten', 'Schließen', {
+        this.snackBar.open(this.t('md.suppliers.error.load'), this.t('common.close'), {
           duration: 3000,
         });
       },
@@ -76,7 +78,7 @@ export class SuppliersTabComponent implements OnInit {
       if (result) {
         this.supplierService.createSupplier(result).subscribe({
           next: () => {
-            this.snackBar.open('Lieferant erfolgreich erstellt', 'Schließen', {
+            this.snackBar.open(this.t('md.suppliers.success.created'), this.t('common.close'), {
               duration: 3000,
             });
             this.loadSuppliers();
@@ -84,8 +86,8 @@ export class SuppliersTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error creating supplier:', error);
             this.snackBar.open(
-              'Fehler beim Erstellen des Lieferanten',
-              'Schließen',
+              this.t('md.suppliers.error.create'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -106,8 +108,8 @@ export class SuppliersTabComponent implements OnInit {
         this.supplierService.updateSupplier(supplier.id, result).subscribe({
           next: () => {
             this.snackBar.open(
-              'Lieferant erfolgreich aktualisiert',
-              'Schließen',
+              this.t('md.suppliers.success.updated'),
+              this.t('common.close'),
               { duration: 3000 }
             );
             this.loadSuppliers();
@@ -115,8 +117,8 @@ export class SuppliersTabComponent implements OnInit {
           error: (error: any) => {
             console.error('Error updating supplier:', error);
             this.snackBar.open(
-              'Fehler beim Aktualisieren des Lieferanten',
-              'Schließen',
+              this.t('md.suppliers.error.update'),
+              this.t('common.close'),
               { duration: 3000 }
             );
           },
@@ -126,10 +128,10 @@ export class SuppliersTabComponent implements OnInit {
   }
 
   deleteSupplier(id: number): void {
-    if (confirm('Möchten Sie diesen Lieferanten wirklich löschen?')) {
+    if (confirm(this.t('md.suppliers.confirm.delete'))) {
       this.supplierService.deleteSupplier(id).subscribe({
         next: () => {
-          this.snackBar.open('Lieferant erfolgreich gelöscht', 'Schließen', {
+          this.snackBar.open(this.t('md.suppliers.success.deleted'), this.t('common.close'), {
             duration: 3000,
           });
           this.loadSuppliers();
@@ -137,12 +139,16 @@ export class SuppliersTabComponent implements OnInit {
         error: (error: any) => {
           console.error('Error deleting supplier:', error);
           this.snackBar.open(
-            'Fehler beim Löschen des Lieferanten',
-            'Schließen',
+            this.t('md.suppliers.error.delete'),
+            this.t('common.close'),
             { duration: 3000 }
           );
         },
       });
     }
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }
