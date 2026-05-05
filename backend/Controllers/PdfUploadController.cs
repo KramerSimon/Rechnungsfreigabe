@@ -4,6 +4,7 @@ using RechnungsfreigabeAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using RechnungsfreigabeAPI.Data;
 using Microsoft.EntityFrameworkCore;
+using iText.Kernel.Pdf;
 
 using RechnungsfreigabeAPI.Interfaces.Services;
 namespace RechnungsfreigabeAPI.Controllers;
@@ -165,7 +166,38 @@ public class PdfUploadController : ControllerBase
             if (invoice.PdfContent != null && invoice.PdfContent.Length > 0)
             {
                 var fileName = invoice.OriginalFilename ?? $"invoice_{invoiceId}.pdf";
-                return File(invoice.PdfContent, "application/pdf", fileName, enableRangeProcessing: true);
+                var pdfContent = NormalizePdfContent(invoice.PdfContent);
+                return File(pdfContent, "application/pdf", fileName, enableRangeProcessing: true);
+            }
+
+            return NotFound(new { message = "PDF not found in database" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// View a PDF by invoice ID (inline for browser preview)
+    /// </summary>
+    [HttpGet("view/{invoiceId}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ViewInvoicePdf(int invoiceId)
+    {
+        try
+        {
+            var invoice = await context.Invoices.FindAsync(invoiceId);
+            if (invoice == null)
+            {
+                return NotFound(new { message = "Invoice not found" });
+            }
+
+            if (invoice.PdfContent != null && invoice.PdfContent.Length > 0)
+            {
+                var fileName = invoice.OriginalFilename ?? $"invoice_{invoiceId}.pdf";
+                Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+                return File(invoice.PdfContent, "application/pdf", enableRangeProcessing: true);
             }
 
             return NotFound(new { message = "PDF not found in database" });
@@ -336,6 +368,29 @@ public class PdfUploadController : ControllerBase
         // Fallback to user ID 1 (default admin) when auth is disabled for testing
         
         return 1;
+    }
+
+    private static byte[] NormalizePdfContent(byte[] pdfContent)
+    {
+        try
+        {
+            using var sourceStream = new MemoryStream(pdfContent);
+            using var outputStream = new MemoryStream();
+            using (var reader = new PdfReader(sourceStream))
+            using (var writer = new PdfWriter(outputStream))
+            using (var document = new PdfDocument(reader, writer))
+            {
+                // Opening and closing rewrites a consistent xref/trailer structure.
+            }
+
+            var normalized = outputStream.ToArray();
+            return normalized.Length > 0 ? normalized : pdfContent;
+        }
+        catch
+        {
+            // Fall back to original bytes if normalization fails.
+            return pdfContent;
+        }
     }
 }
 

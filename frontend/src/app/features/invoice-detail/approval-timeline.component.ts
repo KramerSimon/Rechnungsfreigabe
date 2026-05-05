@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ApprovalService } from '../../core/services/approval.service';
 import { ApprovalWorkflow } from '../../core/models/approval.model';
 import { StatusTranslatorService } from '../../core/services/status-translator.service';
+import { LanguageService } from '../../core/services/language.service';
 
 @Component({
   selector: 'app-approval-timeline',
@@ -13,13 +14,13 @@ import { StatusTranslatorService } from '../../core/services/status-translator.s
   template: `
     <mat-card class="timeline-card">
       <mat-card-header>
-        <mat-card-title>Genehmigungsablauf</mat-card-title>
-        <mat-card-subtitle>Stufen und Status je Rechnung</mat-card-subtitle>
+        <mat-card-title>{{ t('invoice.approval.title') }}</mat-card-title>
+        <mat-card-subtitle>{{ t('invoice.approval.subtitle') }}</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
         <div *ngIf="loading" class="timeline-loading">
           <mat-icon>hourglass_empty</mat-icon>
-          <span>Lade Genehmigungsschritte...</span>
+          <span>{{ t('invoice.approval.loading') }}</span>
         </div>
 
         <div *ngIf="error" class="timeline-error">
@@ -29,7 +30,7 @@ import { StatusTranslatorService } from '../../core/services/status-translator.s
 
         <div *ngIf="!loading && !error && steps.length === 0" class="timeline-empty">
           <mat-icon>timeline</mat-icon>
-          <span>Keine Genehmigungsschritte vorhanden</span>
+          <span>{{ t('invoice.approval.empty') }}</span>
         </div>
 
         <div *ngIf="!loading && !error && steps.length > 0" class="timeline">
@@ -50,7 +51,7 @@ import { StatusTranslatorService } from '../../core/services/status-translator.s
                 </span>
               </div>
               <div class="step-meta" [ngStyle]="s.statusColor ? { 'color': getContrastColor(s.statusColor) } : {}">
-                <span>Stufe: {{ s.approvalLevel }}</span>
+                <span>{{ t('invoice.approval.step') }}: {{ s.approvalLevel }}</span>
                 <span *ngIf="s.approvedAt">• {{ s.approvedAt | date:'dd.MM.yyyy HH:mm' }}</span>
               </div>
             </div>
@@ -95,7 +96,8 @@ export class ApprovalTimelineComponent implements OnInit, OnChanges {
 
   constructor(
     private approvalService: ApprovalService,
-    private statusTranslator: StatusTranslatorService
+    private statusTranslator: StatusTranslatorService,
+    private languageService: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -144,5 +146,9 @@ export class ApprovalTimelineComponent implements OnInit, OnChanges {
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
     return luminance > 0.5 ? '#000000' : '#FFFFFF';
+  }
+
+  t(key: string): string {
+    return this.languageService.translateKey(key);
   }
 }

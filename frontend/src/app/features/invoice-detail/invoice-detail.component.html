@@ -32,7 +32,7 @@
             <p>{{ t('invoice.detail.pdf.loading') }}</p>
           </div>
 
-          <!-- PDF Viewer mit ngx-extended-pdf-viewer -->
+          <!-- PDF Viewer with ngx-extended-pdf-viewer -->
           <div *ngIf="pdfSrc && !pdfLoading && !useFallbackViewer" class="pdf-viewer-wrapper">
             <ngx-extended-pdf-viewer
               [src]="pdfSrc"
@@ -54,11 +54,21 @@
             ></ngx-extended-pdf-viewer>
           </div>
 
-          <!-- Fallback: Browser-PDF-Viewer -->
-          <div *ngIf="pdfSafeUrl && !pdfLoading && useFallbackViewer" class="pdf-viewer-wrapper">
-            <object [data]="pdfSafeUrl" type="application/pdf" width="100%" height="700px">
-              <p>{{ t('invoice.detail.pdf.previewUnavailable') }}</p>
-            </object>
+          <div *ngIf="useFallbackViewer && !pdfLoading" class="pdf-placeholder">
+            <mat-icon>description</mat-icon>
+            <p>{{ t('invoice.detail.pdf.previewUnavailable') }}</p>
+            <p class="hint" *ngIf="pdfLoadError">{{ pdfLoadError }}</p>
+          </div>
+
+          <div *ngIf="pdfBlobUrl && !pdfLoading" class="pdf-actions-row">
+            <button mat-stroked-button (click)="openPdfInNewTab()">
+              <mat-icon>open_in_new</mat-icon>
+              {{ t('invoice.detail.pdf.open') }}
+            </button>
+            <button mat-raised-button color="primary" (click)="downloadPdf()">
+              <mat-icon>download</mat-icon>
+              {{ t('invoice.detail.pdf.download') }}
+            </button>
           </div>
 
           <!-- Fallback wenn kein PDF vorhanden -->

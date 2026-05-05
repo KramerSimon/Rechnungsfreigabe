@@ -65,12 +65,12 @@ export class InvoiceDetailComponent implements OnInit {
   pdfLoading = false;
   pdfUrl: SafeResourceUrl | null = null;
   pdfBlobUrl: string | null = null;
+  pdfDownloadUrl: string | null = null;
+  pdfSafePreviewUrl: SafeResourceUrl | null = null;
   pdfSafeUrl: SafeResourceUrl | null = null;
   pdfSrc: Uint8Array | null = null;
   pdfLoadError: string | null = null;
   useFallbackViewer = false;
-  private pdfRenderTimer: ReturnType<typeof setTimeout> | null = null;
-  private pdfRendered = false;
 
   invoice: InvoiceDetail = {
     id: 1, // This would come from route parameters in real implementation
@@ -88,11 +88,11 @@ export class InvoiceDetailComponent implements OnInit {
     costCenterId: 'IT',
     costCenterName: 'IT',
     purchaseOrderId: 'PO-99231',
-    status: 'Wartet auf User-Freigabe',
+    status: '',
     requiresApproval: true,
     approvalLevel: 1,
     autoApproved: false,
-    description: 'Website Relaunch Projekt',
+    description: '',
     createdAt: '2024-01-16T08:00:00Z',
     updatedAt: '2024-01-16T08:00:00Z',
     isOverdue: false,
@@ -181,11 +181,14 @@ export class InvoiceDetailComponent implements OnInit {
     this.pdfLoading = true;
     this.pdfLoadError = null;
     this.useFallbackViewer = false;
-    this.pdfRendered = false;
-    if (this.pdfRenderTimer) {
-      clearTimeout(this.pdfRenderTimer);
-      this.pdfRenderTimer = null;
+    if (this.pdfBlobUrl) {
+      URL.revokeObjectURL(this.pdfBlobUrl);
     }
+    this.pdfBlobUrl = null;
+    this.pdfDownloadUrl = null;
+    this.pdfSafePreviewUrl = null;
+    this.pdfSafeUrl = null;
+    this.pdfSrc = null;
 
     // Lade PDF als Blob und konvertiere zu Uint8Array für ngx-extended-pdf-viewer
     this.invoiceService.downloadInvoicePdf(this.invoice.id).subscribe({
@@ -201,10 +204,12 @@ export class InvoiceDetailComponent implements OnInit {
         if (header !== '%PDF') {
           this.pdfSrc = null;
           this.pdfBlobUrl = null;
+          this.pdfDownloadUrl = null;
+          this.pdfSafePreviewUrl = null;
           this.pdfSafeUrl = null;
           this.pdfLoading = false;
           this.pdfLoadError = this.t('invoice.detail.pdf.error.invalid');
-          this.useFallbackViewer = false;
+          this.useFallbackViewer = true;
           this.snackBar.open(this.t('invoice.detail.pdf.error.invalidFull'), this.t('common.close'), {
             duration: 5000
           });
@@ -213,16 +218,14 @@ export class InvoiceDetailComponent implements OnInit {
 
         this.pdfSrc = uint8;
 
-        // Erstelle auch Blob URL für Fallback-Buttons
-        this.pdfBlobUrl = URL.createObjectURL(blob);
-        this.pdfSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfBlobUrl);
+        // Force application/pdf to maximize renderer compatibility.
+        const normalizedPdfBlob = new Blob([arrayBuffer], { type: 'application/pdf' });
 
-        // Fallback: if viewer doesn't render shortly after load, show browser viewer
-        this.pdfRenderTimer = setTimeout(() => {
-          if (!this.pdfRendered) {
-            this.useFallbackViewer = true;
-          }
-        }, 1500);
+        // Use the validated blob as single source for preview and download.
+        this.pdfBlobUrl = URL.createObjectURL(normalizedPdfBlob);
+        this.pdfDownloadUrl = this.pdfBlobUrl;
+        this.pdfSafePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfBlobUrl);
+        this.pdfSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfBlobUrl);
 
         this.pdfLoading = false;
         console.log('PDF successfully loaded, pdfSrc length:', this.pdfSrc.length, 'bytes');
@@ -236,8 +239,13 @@ export class InvoiceDetailComponent implements OnInit {
         console.error('Error statusText:', error.statusText);
 
         this.pdfSrc = null;
+        if (this.pdfBlobUrl) {
+          URL.revokeObjectURL(this.pdfBlobUrl);
+        }
         this.pdfBlobUrl = null;
+        this.pdfSafePreviewUrl = null;
         this.pdfSafeUrl = null;
+        this.pdfDownloadUrl = null;
         this.pdfLoading = false;
         this.pdfLoadError = error?.message || this.t('common.unknownError');
         this.snackBar.open(this.tp('invoice.detail.pdf.error.load', { message: error.status || this.t('common.unknownError') }), this.t('common.close'), {
@@ -249,32 +257,44 @@ export class InvoiceDetailComponent implements OnInit {
 
   onPdfLoadingFailed(error: any): void {
     console.error('PDF viewer failed to render:', error);
-    this.pdfLoadError = error?.message || 'PDF konnte nicht gerendert werden';
+    this.pdfLoadError = error?.message || this.t('invoice.detail.pdf.previewUnavailable');
     this.useFallbackViewer = true;
   }
 
   onPdfLoaded(): void {
-    this.pdfRendered = true;
-    if (this.pdfRenderTimer) {
-      clearTimeout(this.pdfRenderTimer);
-      this.pdfRenderTimer = null;
-    }
+    this.useFallbackViewer = false;
+    this.pdfLoadError = null;
   }
 
   private configurePdfViewerAssets(): void {
-    pdfDefaultOptions.workerSrc = () => 'assets/pdf.worker-5.4.1105.min.mjs';
-    pdfDefaultOptions.cMapUrl = () => 'assets/cmaps/';
-    pdfDefaultOptions.standardFontDataUrl = () => 'assets/standard_fonts/';
-    pdfDefaultOptions.sandboxBundleSrc = () => 'assets/pdf.sandbox-5.4.1105.min.mjs';
+    pdfDefaultOptions.workerSrc = () => '/assets/pdf.worker-5.4.1105.min.mjs';
+    pdfDefaultOptions.cMapUrl = () => '/assets/cmaps/';
+    pdfDefaultOptions.standardFontDataUrl = () => '/assets/standard_fonts/';
+    pdfDefaultOptions.sandboxBundleSrc = () => '/assets/pdf.sandbox-5.4.1105.min.mjs';
   }
 
   openPdfInNewTab(): void {
+    if (this.pdfDownloadUrl) {
+      window.open(this.pdfDownloadUrl, '_blank');
+      return;
+    }
+
     if (this.pdfBlobUrl) {
       window.open(this.pdfBlobUrl, '_blank');
     }
   }
 
   downloadPdf(): void {
+    if (this.pdfDownloadUrl) {
+      const link = document.createElement('a');
+      link.href = this.pdfDownloadUrl;
+      link.download = `${this.invoice.invoiceNumber}.pdf`;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.click();
+      return;
+    }
+
     if (this.pdfBlobUrl) {
       const link = document.createElement('a');
       link.href = this.pdfBlobUrl;
