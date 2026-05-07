@@ -219,7 +219,7 @@ export class EditApprovalRuleDialogComponent implements OnInit {
   }
 
   private normalizeRuleType(value: string): 'automatic' | 'manual' {
-    return (value || '').toLowerCase() === 'automatic' ? 'automatic' : 'manual';
+    return String(value ?? '').toLowerCase() === 'automatic' ? 'automatic' : 'manual';
   }
 
   addCondition() {

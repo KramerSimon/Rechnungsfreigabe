@@ -250,6 +250,11 @@
   font-family: monospace;
 }
 
+.workflow-action-cell {
+  text-align: left;
+  white-space: nowrap;
+}
+
 /* Status Colors */
 .status-badge {
   display: inline-block;

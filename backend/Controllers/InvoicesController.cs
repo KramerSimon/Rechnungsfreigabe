@@ -14,11 +14,14 @@ public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService invoiceService;
     private readonly IUserService userService;
-    public InvoicesController(IInvoiceService invoiceService, IUserService userService)
+    private readonly IApprovalService approvalService;
+
+    public InvoicesController(IInvoiceService invoiceService, IUserService userService, IApprovalService approvalService)
     {
         this.invoiceService = invoiceService;
         this.userService = userService;
-        }
+        this.approvalService = approvalService;
+    }
 
     /// <summary>
     /// Get all invoices with pagination
@@ -215,7 +218,6 @@ public class InvoicesController : ControllerBase
 
             var userId = GetCurrentUserId();
 
-            // Pre-check: Block approval when required data is missing
             var userPermissions = await userService.GetUserPermissionsAsync(userId);
             var invoice = await invoiceService.GetInvoiceByIdAsync(id, userId, userPermissions);
             if (invoice == null)
@@ -278,6 +280,72 @@ public class InvoicesController : ControllerBase
         {
             
             return StatusCode(500, new { message = "An error occurred while updating the invoice status" });
+        }
+    }
+
+    /// <summary>
+    /// Manually create an approval workflow for an invoice when none exists.
+    /// Intended for accounting task handling when no rule matched automatically.
+    /// </summary>
+    [HttpPost("{id}/workflows/manual")]
+    public async Task<IActionResult> CreateManualWorkflow(int id)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var userPermissions = await userService.GetUserPermissionsAsync(userId);
+
+            var canCreateWorkflow = userPermissions.Contains("invoices.edit") ||
+                                    userPermissions.Contains("invoices.approve") ||
+                                    userPermissions.Contains("invoices.approve_cost_center") ||
+                                    userPermissions.Contains("dashboards.view_admin") ||
+                                    userPermissions.Contains("dashboards.view_all");
+
+            if (!canCreateWorkflow)
+            {
+                return Forbid();
+            }
+
+            var invoice = await invoiceService.GetInvoiceByIdAsync(id, userId, userPermissions);
+            if (invoice == null)
+            {
+                return NotFound(new { message = $"Invoice with ID {id} not found" });
+            }
+
+            if (!invoice.RequiresApproval)
+            {
+                return BadRequest(new { message = "Invoice does not require approval." });
+            }
+
+            var existingWorkflows = (await approvalService.GetAllWorkflowsAsync())
+                .Where(w => w.InvoiceId == id)
+                .ToList();
+
+            if (existingWorkflows.Any())
+            {
+                return BadRequest(new { message = "A workflow already exists for this invoice." });
+            }
+
+            await approvalService.CreateApprovalWorkflowAsync(id);
+
+            var createdWorkflows = (await approvalService.GetAllWorkflowsAsync())
+                .Where(w => w.InvoiceId == id)
+                .ToList();
+
+            if (!createdWorkflows.Any())
+            {
+                return BadRequest(new { message = "No workflow could be created. Check approval rule and default approver configuration." });
+            }
+
+            return Ok(new
+            {
+                message = "Workflow created successfully.",
+                workflowCount = createdWorkflows.Count
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { message = "An error occurred while creating the workflow." });
         }
     }
 

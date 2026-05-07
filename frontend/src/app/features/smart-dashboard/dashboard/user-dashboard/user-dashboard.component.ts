@@ -131,7 +131,15 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
     let actionClass: string;
     let reason: string | undefined;
 
-    if (isOverdue || isEscalated) {
+    if (isIncomplete) {
+      status = 'incomplete';
+      statusIcon = 'help_outline';
+      statusText = this.t('dashboard.user.status.incomplete');
+      statusClass = 'status-incomplete';
+      actionText = this.t('dashboard.user.action.complete');
+      actionClass = 'action-incomplete';
+      reason = this.t('dashboard.user.reason.projectMissing');
+    } else if (isOverdue || isEscalated) {
       status = 'urgent';
       statusIcon = 'warning';
       statusText = this.t('dashboard.user.status.urgent');
@@ -141,14 +149,6 @@ export class UserDashboardComponent implements OnInit, OnDestroy {
       reason = isEscalated
         ? this.t('dashboard.user.reason.escalated')
         : this.t('dashboard.user.reason.overdue');
-    } else if (isIncomplete) {
-      status = 'incomplete';
-      statusIcon = 'help_outline';
-      statusText = this.t('dashboard.user.status.incomplete');
-      statusClass = 'status-incomplete';
-      actionText = this.t('dashboard.user.action.complete');
-      actionClass = 'action-incomplete';
-      reason = this.t('dashboard.user.reason.projectMissing');
     } else {
       status = 'normal';
       statusIcon = 'radio_button_unchecked';

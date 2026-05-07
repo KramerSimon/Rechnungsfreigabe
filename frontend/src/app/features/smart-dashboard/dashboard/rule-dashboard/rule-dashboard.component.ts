@@ -266,60 +266,40 @@ export class RuleDashboardComponent implements OnInit {
   }
 
   onEditRule(rule: ApprovalRule) {
-    this.loading = true;
-    this.approvalService.getApprovalRuleById(rule.id).subscribe({
-      next: (fullRule) => {
-        this.loading = false;
-        const dialogRule = this.mapToDialogRule(fullRule ?? rule);
-        const dialogRef = this.dialog.open(EditApprovalRuleDialogComponent, {
-          width: '95vw',
-          maxWidth: '1100px',
-          data: dialogRule
-        });
+    try {
+      const dialogRule = this.mapToDialogRule(rule);
+      const dialogRef = this.dialog.open(EditApprovalRuleDialogComponent, {
+        width: '95vw',
+        maxWidth: '1100px',
+        data: dialogRule
+      });
 
-        dialogRef.afterClosed().subscribe(result => {
-          if (result) {
-            const updateDto = this.buildUpdateRuleDto(result);
-            this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
-              next: () => {
-                this.snackBar.open(this.t('dashboard.rules.success.updated'), this.t('common.close'), { duration: 3000 });
-                this.loadApprovalRules();
-              },
-              error: (error) => {
-                console.error('Fehler beim Aktualisieren der Regel:', error);
-                this.snackBar.open(this.t('dashboard.rules.error.update'), this.t('common.close'), { duration: 3000 });
-              }
-            });
-          }
-        });
-      },
-      error: (error) => {
-        console.error('Fehler beim Laden der Regeldetails:', error);
-        this.loading = false;
-        const dialogRule = this.mapToDialogRule(rule);
-        const dialogRef = this.dialog.open(EditApprovalRuleDialogComponent, {
-          width: '95vw',
-          maxWidth: '1100px',
-          data: dialogRule
-        });
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          const updateDto = this.buildUpdateRuleDto(result);
+          this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
+            next: () => {
+              this.snackBar.open(this.t('dashboard.rules.success.updated'), this.t('common.close'), { duration: 3000 });
+              this.loadApprovalRules();
+            },
+            error: (error) => {
+              console.error('Fehler beim Aktualisieren der Regel:', error);
+              this.snackBar.open(this.t('dashboard.rules.error.update'), this.t('common.close'), { duration: 3000 });
+            }
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Fehler beim Offnen des Bearbeiten-Dialogs:', error);
+      this.snackBar.open(this.t('dashboard.rules.error.update'), this.t('common.close'), { duration: 3000 });
+    }
+  }
 
-        dialogRef.afterClosed().subscribe(result => {
-          if (result) {
-            const updateDto = this.buildUpdateRuleDto(result);
-            this.approvalService.updateApprovalRule(rule.id, updateDto).subscribe({
-              next: () => {
-                this.snackBar.open(this.t('dashboard.rules.success.updated'), this.t('common.close'), { duration: 3000 });
-                this.loadApprovalRules();
-              },
-              error: (error) => {
-                console.error('Fehler beim Aktualisieren der Regel:', error);
-                this.snackBar.open(this.t('dashboard.rules.error.update'), this.t('common.close'), { duration: 3000 });
-              }
-            });
-          }
-        });
-      }
-    });
+  onEditRuleClick(event: MouseEvent, rule: ApprovalRule): void {
+    event.preventDefault();
+    event.stopPropagation();
+    (event as any).stopImmediatePropagation?.();
+    setTimeout(() => this.onEditRule(rule), 0);
   }
 
   private mapToDialogRule(rule: ApprovalRule): any {
@@ -339,7 +319,7 @@ export class RuleDashboardComponent implements OnInit {
   }
 
   private normalizeRuleType(value: string): string {
-    const lower = (value || '').toLowerCase();
+    const lower = String(value ?? '').toLowerCase();
     return lower === 'automatic' || lower === 'manual' ? lower : 'manual';
   }
 
@@ -599,19 +579,29 @@ export class RuleDashboardComponent implements OnInit {
   }
 
   private mapConditionsFromApi(conditions: any): any[] {
-    if (!conditions) return [];
-    return Array.isArray(conditions) ? conditions : [];
+    if (!Array.isArray(conditions)) {
+      return [];
+    }
+
+    return conditions.map((condition: any) => ({
+      field: condition?.field ?? '',
+      operator: condition?.operator ?? '=',
+      value: condition?.value ?? '',
+      logicalOperator: condition?.logicalOperator
+    }));
   }
 
   private mapActionsFromApi(actions: any): any[] {
-    if (!actions) return [];
-    if (!Array.isArray(actions)) return [];
+    if (!Array.isArray(actions)) {
+      return [];
+    }
 
     return actions.map((action: any) => ({
-      type: action.actionType,
-      value: action.actionValue ?? '',
-      description: action.description ?? '',
-      stages: this.mapStagesFromApi(action.stages)
+      // Accept both API DTO shape and UI shape so edit works for all loaded rules.
+      type: action?.type ?? action?.actionType ?? 'require_approval',
+      value: action?.value ?? action?.actionValue ?? '',
+      description: action?.description ?? '',
+      stages: this.mapStagesFromApi(action?.stages)
     }));
   }
 

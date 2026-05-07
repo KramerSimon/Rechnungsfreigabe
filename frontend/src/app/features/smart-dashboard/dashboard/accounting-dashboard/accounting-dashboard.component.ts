@@ -17,6 +17,7 @@ import { catchError, finalize, of, forkJoin, skip } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { LanguageService } from '../../../../core/services/language.service';
+import { ManualWorkflowActionComponent } from './components/manual-workflow-action.component';
 
 interface AccountingOverview {
   rejectedCount: number;
@@ -57,7 +58,8 @@ interface AccountingInvoice {
     MatInputModule,
     MatSelectModule,
     MatFormFieldModule,
-    FormsModule
+    FormsModule,
+    ManualWorkflowActionComponent
   ]
 })
 export class AccountingDashboardComponent implements OnInit {
@@ -80,7 +82,7 @@ export class AccountingDashboardComponent implements OnInit {
   invoices: AccountingInvoice[] = [];
   filteredInvoices: AccountingInvoice[] = [];
 
-  displayedColumns: string[] = ['id', 'supplier', 'status', 'assignedTo', 'amount'];
+  displayedColumns: string[] = ['id', 'supplier', 'status', 'assignedTo', 'amount', 'workflowAction'];
 
   statusOptions: Array<{ value: string; label: string }> = [];
 
@@ -128,7 +130,7 @@ export class AccountingDashboardComponent implements OnInit {
     let assignedTo: string;
     let reason: string | undefined;
 
-    const status = invoice.status.toLowerCase();
+    const status = this.getEffectiveStatus(invoice);
 
     switch (status) {
       case 'rejected':
@@ -181,7 +183,7 @@ export class AccountingDashboardComponent implements OnInit {
       id: invoice.id,
       invoiceNumber: `#${invoice.invoiceNumber}`,
       supplierName: invoice.supplier.name,
-      status: invoice.status,
+      status,
       statusDisplay,
       statusClass,
       statusColor: invoice.statusColor,
@@ -190,6 +192,20 @@ export class AccountingDashboardComponent implements OnInit {
       reason,
       originalInvoice: invoice
     };
+  }
+
+  private getEffectiveStatus(invoice: Invoice): string {
+    const rawStatus = (invoice.status || '').toLowerCase();
+    const hasOpenApprovalStep = (invoice.pendingApprovals || []).some(aw => {
+      const s = (aw?.status || '').toLowerCase();
+      return s === 'pending' || s === 'waiting';
+    });
+
+    if (hasOpenApprovalStep && (rawStatus === 'received' || rawStatus === 'under_review')) {
+      return 'approval_required';
+    }
+
+    return rawStatus;
   }
 
   getInvoiceCountLabel(count: number): string {
@@ -288,6 +304,26 @@ export class AccountingDashboardComponent implements OnInit {
 
   onInvoiceClick(invoice: AccountingInvoice): void {
     this.router.navigate(['/invoice', invoice.id]);
+  }
+
+  canCreateManualWorkflow(invoice: AccountingInvoice): boolean {
+    const status = (invoice.status || '').toLowerCase();
+    const isOpenForManualCreation = status === 'received' || status === 'under_review';
+    const hasOpenApprovals = (invoice.originalInvoice.pendingApprovals || []).some(aw => {
+      const approvalStatus = (aw?.status || '').toLowerCase();
+      return approvalStatus === 'pending' || approvalStatus === 'waiting';
+    });
+
+    return invoice.originalInvoice.requiresApproval && isOpenForManualCreation && !hasOpenApprovals;
+  }
+
+  onManualWorkflowCreated(): void {
+    this.snackBar.open(this.t('dashboard.accounting.workflow.success'), 'OK', { duration: 3500 });
+    this.loadAccountingData();
+  }
+
+  onManualWorkflowFailed(message: string): void {
+    this.snackBar.open(message || this.t('dashboard.accounting.workflow.error'), 'OK', { duration: 4500 });
   }
 
   onResolveRejected(): void {

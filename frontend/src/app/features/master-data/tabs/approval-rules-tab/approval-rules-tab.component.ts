@@ -120,18 +120,7 @@ export class ApprovalRulesTabComponent implements OnInit {
   }
 
   editApprovalRule(rule: ApprovalRule): void {
-    this.isLoading = true;
-    this.approvalService.getApprovalRuleById(rule.id).subscribe({
-      next: (fullRule) => {
-        this.isLoading = false;
-        this.openEditDialog(fullRule ?? rule, rule.id);
-      },
-      error: (error: any) => {
-        console.error('Error loading approval rule details:', error);
-        this.isLoading = false;
-        this.openEditDialog(rule, rule.id);
-      }
-    });
+    this.openEditDialog(rule, rule.id);
   }
 
   private openEditDialog(rule: ApprovalRule, ruleId: number): void {
@@ -221,7 +210,7 @@ export class ApprovalRulesTabComponent implements OnInit {
   }
 
   private normalizeRuleType(value: string): string {
-    const lower = (value || '').toLowerCase();
+    const lower = String(value ?? '').toLowerCase();
     return lower === 'automatic' || lower === 'manual' ? lower : 'manual';
   }
 

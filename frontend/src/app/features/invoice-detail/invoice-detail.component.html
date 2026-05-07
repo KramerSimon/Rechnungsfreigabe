@@ -300,7 +300,7 @@
               {{ t('invoice.detail.action.reject') }}
             </button>
             <button mat-raised-button color="primary" class="approve-button"
-                  (click)="onApprove()" [disabled]="loading">
+              (click)="onApprove()" [disabled]="loading || !canApprove()">
               <mat-icon>check</mat-icon>
               {{ t('invoice.detail.action.approve') }}
             </button>

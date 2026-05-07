@@ -518,11 +518,20 @@ export class InvoiceDetailComponent implements OnInit {
 
     const isPendingApprover = hasPendingStep || hasEligibleWaitingStep || hasEligibleLegacyOpenStep;
 
-    if (this.currentUserIsAdministrator) {
-      return !!this.invoice && hasCostCenter && hasProject;
+    if (!this.invoice) {
+      return false;
     }
 
-    return !!this.invoice && hasCostCenter && hasProject && hasPermission && isPendingApprover;
+    if (this.currentUserIsAdministrator) {
+      return hasCostCenter && hasProject;
+    }
+
+    // Assigned approvers can approve their active step even without broad global permission grants.
+    if (isPendingApprover) {
+      return hasCostCenter && hasProject;
+    }
+
+    return hasCostCenter && hasProject && hasPermission && isPendingApprover;
   }
 
   getContrastColor(hexColor: string): string {

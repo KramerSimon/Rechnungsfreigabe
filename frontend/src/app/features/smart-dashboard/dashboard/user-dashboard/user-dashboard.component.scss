@@ -254,7 +254,11 @@
 /* Action Buttons */
 .action-urgent {
   background: #f44336;
-  color: white;
+  color: white !important;
+
+  .mdc-button__label {
+    color: white !important;
+  }
 
   &:hover {
     background: #d32f2f;
@@ -263,7 +267,11 @@
 
 .action-incomplete {
   background: #ff9800;
-  color: white;
+  color: white !important;
+
+  .mdc-button__label {
+    color: white !important;
+  }
 
   &:hover {
     background: #f57c00;
@@ -272,7 +280,11 @@
 
 .action-normal {
   background: #1976d2;
-  color: white;
+  color: white !important;
+
+  .mdc-button__label {
+    color: white !important;
+  }
 
   &:hover {
     background: #1565c0;

@@ -14,7 +14,7 @@
           <div class="rule-title">{{ rule.name }}</div>
           <span class="rule-type-badge">{{ rule.ruleType === 'automatic' ? t('md.rules.type.automatic') : t('md.rules.type.manual') }}</span>
           <div class="rule-actions">
-            <button mat-icon-button color="primary" (click)="editApprovalRule(rule); $event.stopPropagation()" [matTooltip]="t('md.common.edit')">
+            <button mat-icon-button color="primary" (click)="$event.stopPropagation(); editApprovalRule(rule)" [matTooltip]="t('md.common.edit')">
               <mat-icon>edit</mat-icon>
             </button>
             <button mat-icon-button color="warn" (click)="deleteApprovalRule(rule); $event.stopPropagation()" [matTooltip]="t('md.common.delete')">

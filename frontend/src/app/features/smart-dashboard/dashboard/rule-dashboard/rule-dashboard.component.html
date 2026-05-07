@@ -24,7 +24,7 @@
                   <div class="rule-title">{{ rule.name }}</div>
                   <span class="rule-type-badge">{{ getRuleTypeLabel(rule.ruleType) }}</span>
                   <div class="rule-actions">
-                    <button mat-icon-button color="primary" (click)="editApprovalRule(rule); $event.stopPropagation()" [matTooltip]="t('dashboard.rules.edit')">
+                    <button type="button" mat-icon-button color="primary" (click)="onEditRuleClick($event, rule)" [matTooltip]="t('dashboard.rules.edit')">
                       <mat-icon>edit</mat-icon>
                     </button>
                     <button mat-icon-button color="warn" (click)="deleteApprovalRule(rule); $event.stopPropagation()" [matTooltip]="t('dashboard.rules.delete')">

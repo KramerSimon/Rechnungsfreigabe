@@ -3,6 +3,7 @@ using RechnungsfreigabeAPI.DTOs;
 using RechnungsfreigabeAPI.Models;
 using RechnungsfreigabeAPI.Interfaces.Repositories;
 using System.Text.Json;
+using System.Globalization;
 
 using RechnungsfreigabeAPI.Interfaces.Services;
 namespace RechnungsfreigabeAPI.Interfaces.Services.Implementations;
@@ -188,7 +189,7 @@ public class ApprovalService : IApprovalService
 
     private bool EvaluateNumericCondition(decimal value, ApprovalRuleCondition condition)
     {
-        if (!decimal.TryParse(condition.Value, out var conditionValue))
+        if (!TryParseDecimalFlexible(condition.Value, out var conditionValue))
             return false;
 
         return condition.Operator switch
@@ -218,6 +219,28 @@ public class ApprovalService : IApprovalService
             "!=" => value != conditionValue,
             _ => false
         };
+    }
+
+    private static bool TryParseDecimalFlexible(string input, out decimal result)
+    {
+        if (decimal.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+        {
+            return true;
+        }
+
+        if (decimal.TryParse(input, NumberStyles.Any, CultureInfo.CurrentCulture, out result))
+        {
+            return true;
+        }
+
+        var normalizedComma = input.Replace('.', ',');
+        if (decimal.TryParse(normalizedComma, NumberStyles.Any, CultureInfo.GetCultureInfo("de-DE"), out result))
+        {
+            return true;
+        }
+
+        var normalizedDot = input.Replace(',', '.');
+        return decimal.TryParse(normalizedDot, NumberStyles.Any, CultureInfo.InvariantCulture, out result);
     }
 
     private bool EvaluateStringCondition(string? value, ApprovalRuleCondition condition)
@@ -312,6 +335,7 @@ public class ApprovalService : IApprovalService
     {
         // If explicit staged workflow is provided in rule action, honor it
         var stages = action.Stages.OrderBy(s => s.StepNumber).ToList();
+        var createdStageCount = 0;
         if (stages.Any())
         {
             foreach (var stage in stages)
@@ -335,10 +359,10 @@ public class ApprovalService : IApprovalService
                 {
                     InvoiceId = invoice.Id,
                     RuleId = rule.Id,
-                    StepNumber = stage.StepNumber,
+                    StepNumber = createdStageCount + 1,
                     ApproverId = approverId.Value,
                     ApprovalLevel = stage.ApprovalLevel,
-                    StatusId = (stage.StepNumber == 1) ? 
+                    StatusId = (createdStageCount == 0) ? 
                         (await unitOfWork.Statuses.GetByCodeAndTypeAsync(
                             RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending,
                             EntityTypes.ApprovalWorkflow))?.Id :
@@ -349,6 +373,14 @@ public class ApprovalService : IApprovalService
                 };
 
                 unitOfWork.ApprovalWorkflows.Add(workflow);
+                createdStageCount++;
+            }
+
+            if (createdStageCount == 0)
+            {
+                Console.WriteLine($"[WARNING] No valid stages resolved for invoice {invoice.Id}, using default workflow");
+                await CreateDefaultApprovalWorkflowAsync(invoice);
+                return;
             }
         }
         else
@@ -409,10 +441,11 @@ public class ApprovalService : IApprovalService
             }
         }
 
+        var hasOpenSteps = (await unitOfWork.ApprovalWorkflows.GetByInvoiceIdAsync(invoice.Id)).Any();
         var freigabeErforderlich = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
             RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich,
             EntityTypes.Invoice);
-        if (freigabeErforderlich != null)
+        if (hasOpenSteps && freigabeErforderlich != null)
         {
             invoice.StatusId = freigabeErforderlich.Id;
         }
@@ -714,12 +747,6 @@ public class ApprovalService : IApprovalService
             if (approval.ApproverId != userId)
             {
                 
-                return false;
-            }
-
-            // Block approval if required data is missing
-            if (string.IsNullOrWhiteSpace(approval.Invoice.CostCenterId) || string.IsNullOrWhiteSpace(approval.Invoice.ProjectId))
-            {
                 return false;
             }
 

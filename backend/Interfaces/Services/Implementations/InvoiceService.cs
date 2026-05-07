@@ -194,8 +194,9 @@ public class InvoiceService : IInvoiceService
                 throw new InvalidOperationException(fullMessage, dbEx);
             }
 
-            // Create approval workflows based on rules
-            if (createInvoiceDto.RequiresApproval && isComplete)
+            // Create approval workflows based on rules for every approval-required invoice,
+            // even if some metadata is still incomplete at upload time.
+            if (createInvoiceDto.RequiresApproval)
             {
                 await approvalService.CreateApprovalWorkflowAsync(invoice.Id);
             }
@@ -383,6 +384,16 @@ public class InvoiceService : IInvoiceService
                     await approvalService.CreateApprovalWorkflowAsync(invoice.Id);
                 }
             }
+            else if (invoice.RequiresApproval)
+            {
+                // Safety net for imported invoices: if no workflow exists yet, create one
+                // regardless of completeness so configured rules can assign approvers.
+                var existingWorkflows = await unitOfWork.ApprovalWorkflows.GetByInvoiceIdAsync(invoice.Id);
+                if (!existingWorkflows.Any())
+                {
+                    await approvalService.CreateApprovalWorkflowAsync(invoice.Id);
+                }
+            }
 
             await unitOfWork.CommitTransactionAsync();
 
@@ -539,18 +550,18 @@ public class InvoiceService : IInvoiceService
 
             if (invoice == null) return false;
 
-            // Check if user has permission to approve
+            if (string.IsNullOrWhiteSpace(invoice.CostCenterId) || string.IsNullOrWhiteSpace(invoice.ProjectId))
+            {
+                return false;
+            }
+
+            // Check whether user is globally allowed or explicitly assigned in workflow.
             var userPermissions = await userService.GetUserPermissionsAsync(approverId);
             var canApprove = userPermissions.Contains("invoices.approve") ||
                              userPermissions.Contains("invoices.approve_cost_center");
             var userEntity = await userService.GetUserEntityByIdAsync(approverId);
             var isAdministrator = userEntity?.UserRoles.Any(ur =>
                 string.Equals(ur.Role.Name, "Administrator", StringComparison.OrdinalIgnoreCase)) == true;
-
-            if (!canApprove)
-            {
-                return false;
-            }
 
             var pendingStatus2 = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
                 RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Pending,
@@ -564,6 +575,12 @@ public class InvoiceService : IInvoiceService
             var rejectedStatus2 = await unitOfWork.Statuses.GetByCodeAndTypeAsync(
                 RechnungsfreigabeAPI.Models.StatusCodes.ApprovalWorkflow.Rejected,
                 EntityTypes.ApprovalWorkflow);
+
+            var isAssignedApprover = invoice.ApprovalWorkflows.Any(aw => aw.ApproverId == approverId);
+            if (!canApprove && !isAdministrator && !isAssignedApprover)
+            {
+                return false;
+            }
             
             var allWorkflows = (await unitOfWork.ApprovalWorkflows.GetAllAsync())
                 .Where(aw => aw.InvoiceId == invoiceId && (isAdministrator || aw.ApproverId == approverId))
@@ -773,6 +790,8 @@ public class InvoiceService : IInvoiceService
 
     private static InvoiceDto MapToDto(Invoice invoice)
     {
+        var effectiveStatus = ResolveEffectiveInvoiceStatus(invoice);
+
         return new InvoiceDto
         {
             Id = invoice.Id,
@@ -795,7 +814,7 @@ public class InvoiceService : IInvoiceService
             InvoiceDate = invoice.InvoiceDate,
             DueDate = invoice.DueDate,
             ReceivedDate = invoice.ReceivedDate,
-            Status = invoice.Status?.Code ?? RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen,
+            Status = effectiveStatus,
             StatusColor = invoice.Status?.Color,
             RequiresApproval = invoice.RequiresApproval,
             ApprovalLevel = invoice.ApprovalLevel,
@@ -854,6 +873,24 @@ public class InvoiceService : IInvoiceService
                 })
                 .ToArray()
         };
+    }
+
+    private static string ResolveEffectiveInvoiceStatus(Invoice invoice)
+    {
+        var currentStatus = invoice.Status?.Code ?? RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen;
+
+        var hasOpenApprovalStep = invoice.ApprovalWorkflows.Any(aw =>
+        {
+            var code = NormalizeApprovalStatusCode(aw.Status?.Code);
+            return code is "pending" or "waiting";
+        });
+
+        if (hasOpenApprovalStep && string.Equals(currentStatus, RechnungsfreigabeAPI.Models.StatusCodes.Invoice.Eingegangen, StringComparison.OrdinalIgnoreCase))
+        {
+            return RechnungsfreigabeAPI.Models.StatusCodes.Invoice.FreigabeErforderlich;
+        }
+
+        return currentStatus;
     }
 
     // Implementierung der neuen Statistik-Methoden f�r Dashboard

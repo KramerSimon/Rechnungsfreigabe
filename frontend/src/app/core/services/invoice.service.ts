@@ -113,6 +113,10 @@ export class InvoiceService {
     });
   }
 
+  createManualWorkflow(id: number): Observable<{ message: string; workflowCount: number }> {
+    return this.http.post<{ message: string; workflowCount: number }>(`${this.apiUrl}/${id}/workflows/manual`, {});
+  }
+
   getOverdueInvoices(): Observable<Invoice[]> {
     return this.http.get<Invoice[]>(`${this.apiUrl}/overdue`);
   }
