@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -21,12 +21,15 @@ import { Project } from '../../../../../../core/models/project.model';
 import { Status } from '../../../../../../core/models/status.model';
 import { RoleDto, User } from '../../../../../../core/models/user.models';
 import { LanguageService } from '../../../../../../core/services/language.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-edit-approval-rule-dialog',
   templateUrl: './edit-approval-rule-dialog.component.html',
   styleUrls: ['./edit-approval-rule-dialog.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     FormsModule,
@@ -40,7 +43,7 @@ import { LanguageService } from '../../../../../../core/services/language.servic
     MatChipsModule
   ]
 })
-export class EditApprovalRuleDialogComponent implements OnInit {
+export class EditApprovalRuleDialogComponent implements OnInit, OnDestroy {
   rule: DialogRule;
   users: User[] = [];
   suppliers: Supplier[] = [];
@@ -49,8 +52,50 @@ export class EditApprovalRuleDialogComponent implements OnInit {
   statusOptions: Status[] = [];
   roles: RoleDto[] = [];
 
+  // Cached properties to prevent infinite change detection cycles
+  private _availableFields: { value: string; label: string }[] = [];
+  private _availableOperators: { value: string; label: string }[] = [];
+  private _dateOperators: { value: string; label: string }[] = [];
+  private _availableActions: { value: string; label: string }[] = [];
+  private _fieldsInitialized = false;
+
+  // Subject for managing subscriptions
+  private destroy$ = new Subject<void>();
+
+  // Style caches to prevent object recreation
+  private statusBadgeStylesCache = new Map<string | null | undefined, { [key: string]: string | null }>();
+  private roleBadgeStylesCache = new Map<number | null | undefined, { [key: string]: string | null }>();
+
   get availableFields() {
-    return [
+    if (!this._fieldsInitialized) {
+      this._initializeFieldLists();
+    }
+    return this._availableFields;
+  }
+
+  get availableOperators() {
+    if (!this._fieldsInitialized) {
+      this._initializeFieldLists();
+    }
+    return this._availableOperators;
+  }
+
+  get dateOperators() {
+    if (!this._fieldsInitialized) {
+      this._initializeFieldLists();
+    }
+    return this._dateOperators;
+  }
+
+  get availableActions() {
+    if (!this._fieldsInitialized) {
+      this._initializeFieldLists();
+    }
+    return this._availableActions;
+  }
+
+  private _initializeFieldLists(): void {
+    this._availableFields = [
       { value: 'amount', label: this.t('md.dialog.rule.field.amount') },
       { value: 'supplier', label: this.t('md.dialog.rule.field.supplier') },
       { value: 'costCenter', label: this.t('md.dialog.rule.field.costCenter') },
@@ -58,10 +103,8 @@ export class EditApprovalRuleDialogComponent implements OnInit {
       { value: 'invoiceDate', label: this.t('md.dialog.rule.field.invoiceDate') },
       { value: 'dueDate', label: this.t('md.dialog.rule.field.dueDate') }
     ];
-  }
 
-  get availableOperators() {
-    return [
+    this._availableOperators = [
       { value: '=', label: this.t('md.dialog.rule.operator.equals') },
       { value: '!=', label: this.t('md.dialog.rule.operator.notEquals') },
       { value: '>', label: this.t('md.dialog.rule.operator.greaterThan') },
@@ -70,10 +113,8 @@ export class EditApprovalRuleDialogComponent implements OnInit {
       { value: '<=', label: this.t('md.dialog.rule.operator.lessOrEqual') },
       { value: 'contains', label: this.t('md.dialog.rule.operator.contains') }
     ];
-  }
 
-  get dateOperators() {
-    return [
+    this._dateOperators = [
       { value: '<', label: this.t('md.dialog.rule.operator.before') },
       { value: '<=', label: this.t('md.dialog.rule.operator.beforeOrOn') },
       { value: '=', label: this.t('md.dialog.rule.operator.on') },
@@ -81,15 +122,15 @@ export class EditApprovalRuleDialogComponent implements OnInit {
       { value: '>', label: this.t('md.dialog.rule.operator.after') },
       { value: '!=', label: this.t('md.dialog.rule.operator.notEquals') }
     ];
-  }
 
-  get availableActions() {
-    return [
+    this._availableActions = [
       { value: 'auto_approve', label: this.t('md.dialog.rule.action.autoApprove') },
       { value: 'require_approval', label: this.t('md.dialog.rule.action.requireApproval') },
       { value: 'set_status', label: this.t('md.dialog.rule.action.setStatus') },
       { value: 'assign_to', label: this.t('md.dialog.rule.action.assignTo') }
     ];
+
+    this._fieldsInitialized = true;
   }
 
   constructor(
@@ -121,62 +162,79 @@ export class EditApprovalRuleDialogComponent implements OnInit {
       this.addAction();
     }
 
-    this.userService.getUsers().subscribe({
-      next: (users) => (this.users = users || []),
-      error: () => (this.users = [])
-    });
+    this.userService.getUsers()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (users) => (this.users = users || []),
+        error: () => (this.users = [])
+      });
 
     this.loadSuppliers();
     this.loadCostCenters();
     this.loadProjects();
 
-    this.statusService.getInvoiceStatuses().subscribe({
-      next: (statuses) => {
-        this.statusOptions = statuses || [];
-      },
-      error: () => {
-        this.statusOptions = [];
-      }
-    });
+    this.statusService.getInvoiceStatuses()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (statuses) => {
+          this.statusOptions = statuses || [];
+        },
+        error: () => {
+          this.statusOptions = [];
+        }
+      });
 
-    this.roleService.getRoles().subscribe({
-      next: (roles) => {
-        this.roles = roles || [];
-        this.syncStageRoleIds();
-      },
-      error: () => {
-        this.roles = [];
-      }
-    });
+    this.roleService.getRoles()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (roles) => {
+          this.roles = roles || [];
+          this.syncStageRoleIds();
+        },
+        error: () => {
+          this.roles = [];
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadSuppliers(): void {
-    this.supplierService.getSuppliers().subscribe({
-      next: (suppliers) => {
-        this.suppliers = suppliers;
-        this.clearDropdownCache();
-      },
-      error: (error) => {
-        console.error('Fehler beim Laden der Lieferanten:', error);
-      }
-    });
+    this.supplierService.getSuppliers()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (suppliers) => {
+          this.suppliers = suppliers;
+          this.clearDropdownCache();
+        },
+        error: (error) => {
+          console.error('Fehler beim Laden der Lieferanten:', error);
+        }
+      });
   }
 
   loadCostCenters(): void {
-    this.costCenterService.getCostCenters().subscribe({
-      next: (costCenters) => {
-        this.costCenters = costCenters;
-        this.clearDropdownCache();
-      },
-      error: (error) => {
-        console.error('Fehler beim Laden der Kostenstellen:', error);
-      }
-    });
+    this.costCenterService.getCostCenters()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (costCenters) => {
+          this.costCenters = costCenters;
+          this.clearDropdownCache();
+        },
+        error: (error) => {
+          console.error('Fehler beim Laden der Kostenstellen:', error);
+        }
+      });
   }
 
   loadProjects(): void {
-    this.projectService.getProjects().subscribe({
-      next: (projects) => {
+    this.projectService.getProjects()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (projects) => {
         this.projects = projects;
         this.clearDropdownCache();
       },
@@ -406,12 +464,20 @@ export class EditApprovalRuleDialogComponent implements OnInit {
   }
 
   getStatusBadgeStyles(status?: Status): { [key: string]: string | null } {
+    const cacheKey = status?.code;
+    if (this.statusBadgeStylesCache.has(cacheKey)) {
+      return this.statusBadgeStylesCache.get(cacheKey)!;
+    }
+
     const color = status?.color || '#9e9e9e';
-    return {
+    const styles = {
       'background-color': color,
       color: '#fff',
       'border-color': null
     };
+
+    this.statusBadgeStylesCache.set(cacheKey, styles);
+    return styles;
   }
 
   getRoleById(id?: number | null): RoleDto | undefined {
@@ -420,12 +486,20 @@ export class EditApprovalRuleDialogComponent implements OnInit {
   }
 
   getRoleBadgeStyles(role?: RoleDto): { [key: string]: string | null } {
+    const cacheKey = role?.id;
+    if (this.roleBadgeStylesCache.has(cacheKey)) {
+      return this.roleBadgeStylesCache.get(cacheKey)!;
+    }
+
     const color = role?.color || '#9e9e9e';
-    return {
+    const styles = {
       'background-color': color,
       color: '#fff',
       'border-color': null
     };
+
+    this.roleBadgeStylesCache.set(cacheKey, styles);
+    return styles;
   }
 
   private syncStageRoleIds(): void {
