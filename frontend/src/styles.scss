@@ -82,6 +82,12 @@ textarea {
   color: var(--text-color) !important;
 }
 
+body.dark-theme .mat-mdc-tab,
+body.dark-theme .mat-mdc-tab .mdc-tab__text-label,
+body.dark-theme .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+  color: var(--text-color) !important;
+}
+
 body.dark-theme .mdc-text-field--filled {
   background-color: var(--surface-alt-color) !important;
 }
@@ -114,6 +120,11 @@ body.dark-theme .accounting-dashboard,
 body.dark-theme .admin-dashboard,
 body.dark-theme .pdf-upload-dashboard {
   background: var(--app-bg-color) !important;
+  color: var(--text-color) !important;
+}
+
+body.dark-theme .master-data-container h1,
+body.dark-theme .masterdata-section h2 {
   color: var(--text-color) !important;
 }
 
